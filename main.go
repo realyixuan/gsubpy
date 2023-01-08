@@ -35,7 +35,81 @@ After that, I try to and may be possibly come up with a relatively generic way.
 
 package main
 
+import (
+    // "fmt"
+)
+
 func main() {
-    println("Hello World")
+    input := `
+a = 1
+b = 2
+c = a + b
+`
+    brutalforce(input)
+
+}
+
+
+func brutalforce(input string) {
+    /*
+    Here I also wanna feel the difference in difficulty between 
+    doing it all at once and splitting them into more pieces of smaller function
+
+    */
+
+    env := map[string]int{}
+    var curvar string
+    var curval int
+    var location string
+    var exprval int
+    var operator string = "+"
+
+    for _, c := range input {
+        // There are still a lot of mess 
+        // So I decide to keep direction right, and simplify problems
+        // continuely simplify the rules:
+        //      single-char variable and single-digit number of value
+
+        if c == '=' {
+            location = "right"
+            continue
+        }
+
+        if '0' <= c && c <= '9' {
+            curval = int(c - '0')
+        }
+
+        if c == ' ' {
+            continue
+        }
+
+        if c == '\n' {
+            if exprval > 0 {
+                env[curvar] = exprval
+            } else {
+                env[curvar] = curval
+            }
+
+            location = "left"
+        }
+
+        if 'a' <= c && c <= 'z' {
+            if location == "left" {
+                curvar = string(c)
+            } else if location == "right" {
+                if operator == "+" {
+                    exprval += env[string(c)]
+                }
+            }
+        }
+
+        if c == '+' {
+            operator = "+"
+        }
+
+    }
+
+    println(env["c"])
+
 }
 
