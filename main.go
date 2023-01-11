@@ -31,6 +31,24 @@ My first thought is to write the rough code which can process simple python code
 
 After that, I try to and may be possibly come up with a relatively generic way.
 
+eventually, I should be able to interpreter the code: 
+
+    def return_even_or_zero(n):
+        if i % 2 == 0:
+            return i
+        return 0
+    total = 0
+    i = 0
+    while i < 10:
+        val = return_even_or_zero(i)
+        total = total + val
+        i = i + 1
+    print(total)
+
+for brutalforce, the order of implementation is: simplest > multi-char-variable > multi-digit-number > minus-operator > single-condition-if > while loop
+
+
+
 */
 
 package main
@@ -85,6 +103,38 @@ sum = -twentyone - twelve
     if env := brutalforce(input5); env["sum"] != -33 {
         fmt.Println("pre-minus-operator failed:", env["sum"], env)
     }
+
+
+    input6 := `
+twelve = 12
+twentyone = 21
+sum = -twentyone - twelve
+`
+    if env := brutalforce(input6); env["sum"] != -33 {
+        fmt.Println("pre-minus-operator failed:", env["sum"], env)
+    }
+
+    input7 := `
+twelve = 12
+twentyone = 21
+difference = twentyone - twelve
+if difference < 0:
+    difference = 0
+`
+    if env := brutalforce(input7); env["difference"] != 9 {
+        fmt.Println("single-if-condition failed:", env["difference"], env)
+    }
+
+    input8 := `
+twelve = 12
+twentyone = 21
+difference = twelve - twentyone
+if difference < 0:
+    different = 0
+`
+    if env := brutalforce(input8); env["res"] != 0 {
+        fmt.Println("single-if-condition failed:", env["difference"], env)
+    }
 }
 
 
@@ -93,84 +143,172 @@ func brutalforce(input string) map[string]int {
     Here I also wanna feel the difference in difficulty between 
     doing it all at once and splitting them into more pieces of smaller function
 
-    then, implement multi-char variable and multi-digit number
-
     */
 
+    is_alphabet := func(c rune) bool { return 'a' <= c && c <= 'z' }
+    is_digit := func(c rune) bool { return '0' <= c && c <= '9' }
+
     env := map[string]int{}
-    var curvar string
+    var word string
+    var number string
+    var tovar string
     var curval string
     var location string
     var exprval int
-    var operator string = "+"
-    var tcurvar string
+    var operator string = ""
+    var fromvar string
+    var keyword string
+    var lcond int
+    var rcond int
+    var ifcondresult bool
+    var curindent int
+    var columncount int
+
 
     for _, c := range input {
-        // if we use this approach of if-condition, then our way of thought is 
-        // splitting variable and the others.
-        // but, it's not that normal, maybe we split it by left and right 
-        // is more suitable for us using if-condition.
-        // later, I will try it.
-
-        // And this patching-way can just resolve simple structure, 
-        // can't go far, and I also wanna see.
-
-        if 'a' <= c && c <= 'z' {
-            if location == "left" {
-                curvar += string(c)
-            } else if location == "right" {
-                tcurvar += string(c)
-            }
+        columncount += 1
+        if is_alphabet(c) {
+            word += string(c)
+        } else if is_digit(c) {
+            number += string(c)
         } else {
-            if location == "right" {
-                if tcurvar != "" {
-                    if operator == "+" {
-                        exprval += env[tcurvar]
-                    } else if operator == "-" {
-                        exprval -= env[tcurvar]
-                    }
-                    tcurvar = ""
-                }
-            }
-            if c == '=' {
-                location = "right"
-                continue
-            }
-
-            if '0' <= c && c <= '9' {
-                curval += string(c)
-            }
-
-            if c == ' ' {
-                continue
-            }
-
-            if c == '\n' {
-                if curvar != "" {
-                    if curval != "" {
-                        v, err := strconv.Atoi(curval)
-                        if err == nil {
-                            env[curvar] = v
+            if keyword != "" {
+                if keyword == "if" {
+                    // TODO: if set condition by operator? try it later
+                    if word != "" {
+                        if operator == "" {
+                            v, err := env[word]
+                            if err == true {
+                                lcond = v
+                            } else {
+                                fmt.Println("err:", lcond)
+                            }
                         } else {
-                            fmt.Println("there is a error:", err)
+                            v, err := env[word]
+                            if err == true {
+                                rcond = v
+                            } else {
+                                fmt.Println("err:", lcond)
+                            }
                         }
-                    } else {
-                        env[curvar] = exprval
+                    }
+
+                    if number != "" {
+                        if operator == "" {
+                            v, err := strconv.Atoi(number)
+                            if err == nil {
+                                lcond = v
+                            } else {
+                                fmt.Println("err: ", err)
+                            }
+                        } else {
+                            v, err := strconv.Atoi(number)
+                            if err == nil {
+                                rcond = v
+                            } else {
+                                fmt.Println("err: ", err)
+                            }
+                        }
+                    }
+
+                    if c == ':' {
+                        if operator == ">" {
+                            if lcond > rcond {
+                                ifcondresult = true
+                            } else {
+                                ifcondresult = false
+                            }
+                        } else if operator == "<" {
+                            if lcond < rcond {
+                                ifcondresult = true
+                            } else {
+                                ifcondresult = false
+                            }
+                        }
+                        keyword = "ifblock"
+                    }
+
+                }
+            }
+
+            if word == "if" {
+                // Here would add more variable to record current situation
+                // Also, here should a variable to record the indents level
+                keyword = "if"
+            }
+
+            {
+                if c == ' ' {
+                    if columncount - curindent == 1 {
+                        curindent += 1
                     }
                 }
 
-                location = "left"
+                if columncount == 1 && curindent == 0 {
+                    keyword = ""
+                }
 
-                curvar = ""
-                tcurvar = ""
-                curval = ""
-                operator = "+"
-                exprval = 0
-            }
+                if c == '=' {
+                    location = "right"
+                }
 
-            if c == '+' || c == '-' {
-                operator = string(c)
+                if word != "" {
+                    if location == "left" {
+                        tovar = word
+                    } else if location == "right" {
+                        fromvar = word
+                    }
+                }
+
+                if location == "right" {
+                    if fromvar != "" {
+                        if operator == "+" || operator == ""{
+                            exprval += env[fromvar]
+                        } else if operator == "-" {
+                            exprval -= env[fromvar]
+                        }
+                        fromvar = ""
+                    }
+                }
+                if number != "" {
+                    curval = number
+                }
+
+                if c == '\n' {
+                    if keyword == "ifblock" && ifcondresult == false {
+                    } else {
+                        if tovar != "" {
+                            if curval != "" {
+                                v, err := strconv.Atoi(curval)
+                                if err == nil {
+                                    env[tovar] = v
+                                } else {
+                                    fmt.Println("there is a error:", err)
+                                }
+                            } else {
+                                env[tovar] = exprval
+                            }
+                        }
+                    }
+
+                    location = "left"
+
+                    tovar = ""
+                    fromvar = ""
+                    curval = ""
+                    operator = ""
+                    exprval = 0
+                    curindent = 0
+                    columncount = 0
+                }
+
+                if c == '+' || c == '-' || c == '<' || c == '>' {
+                    operator = string(c)
+                }
+
             }
+            word = ""
+            number = ""
         }
 
     }
