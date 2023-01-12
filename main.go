@@ -45,7 +45,7 @@ eventually, I should be able to interpreter the code:
         i = i + 1
     print(total)
 
-for brutalforce, the order of implementation is: simplest > multi-char-variable > multi-digit-number > minus-operator > single-condition-if > while loop
+for brutalforce, the order of implementation is: simplest > multi-char-variable > multi-digit-number > minus-operator > single-condition-if > while loop > expr including number > nested indent > if and while > function
 
 
 
@@ -55,10 +55,15 @@ package main
 
 import (
     "fmt"
+    "strings"
     "strconv"
 )
 
 func main() {
+    test_brutalforce()
+}
+
+func test_brutalforce() {
     input1 := `
 a = 1
 b = 2
@@ -122,7 +127,7 @@ if difference < 0:
     difference = 0
 `
     if env := brutalforce(input7); env["difference"] != 9 {
-        fmt.Println("single-if-condition failed:", env["difference"], env)
+        fmt.Println("single-if-condition-1 failed:", env["difference"], env)
     }
 
     input8 := `
@@ -130,10 +135,31 @@ twelve = 12
 twentyone = 21
 difference = twelve - twentyone
 if difference < 0:
-    different = 0
+    difference = 0
 `
-    if env := brutalforce(input8); env["res"] != 0 {
-        fmt.Println("single-if-condition failed:", env["difference"], env)
+    if env := brutalforce(input8); env["difference"] != 0 {
+        fmt.Println("single-if-condition-2 failed:", env["difference"], env)
+    }
+
+    input9 := `
+total = 0
+i = 0
+k = 1
+while i < 20: 
+    total = total + i
+    i = i + k
+`
+    // instead of previous implementations, here I can't iterate
+    // each char once, I need to return to origin of while-block, 
+    // and still collecting while computing, or collecting and computing
+    // apparently, latter is easier, but former is what I wanna try once,
+    // and figure out why it is so. 
+
+    // the obvious way is: record the origin the while-block, of course extra variable
+    // is necessary, then set up the loop.
+
+    if env := brutalforce(input9); env["total"] != 190 {
+        fmt.Println("single-condition-while-loop failed:", env["total"], env)
     }
 }
 
@@ -145,8 +171,8 @@ func brutalforce(input string) map[string]int {
 
     */
 
-    is_alphabet := func(c rune) bool { return 'a' <= c && c <= 'z' }
-    is_digit := func(c rune) bool { return '0' <= c && c <= '9' }
+    is_alphabet := func(c byte) bool { return 'a' <= c && c <= 'z' }
+    is_digit := func(c byte) bool { return '0' <= c && c <= '9' }
 
     env := map[string]int{}
     var word string
@@ -163,10 +189,14 @@ func brutalforce(input string) map[string]int {
     var ifcondresult bool
     var curindent int
     var columncount int
+    var whileorigin int = -1
+    var whilecondresult bool
 
 
-    for _, c := range input {
+    for i := 0; i < len(input); i++ {
+        c := input[i]
         columncount += 1
+
         if is_alphabet(c) {
             word += string(c)
         } else if is_digit(c) {
@@ -175,6 +205,59 @@ func brutalforce(input string) map[string]int {
             if keyword != "" {
                 if keyword == "if" {
                     // TODO: if set condition by operator? try it later
+                    if word != "" {
+                        if operator == "" {
+                            v, err := env[word]
+                            if err == true {
+                                lcond = v
+                            } else {
+                                fmt.Println("if condition err:", err, env, word)
+                            }
+                        } else {
+                            v, err := env[word]
+                            if err == true {
+                                rcond = v
+                            } else {
+                                fmt.Println("if condition err:", err, env, word)
+                            }
+                        }
+                    }
+
+                    if number != "" {
+                        if operator == "" {
+                            v, err := strconv.Atoi(number)
+                            if err == nil {
+                                lcond = v
+                            } else {
+                                fmt.Println("while condition err: ", err, env, word)
+                            }
+                        } else {
+                            v, err := strconv.Atoi(number)
+                            if err == nil {
+                                rcond = v
+                            } else {
+                                fmt.Println("while condition err: ", word, env, word)
+                            }
+                        }
+                    }
+
+                    if c == ':' {
+                        if operator == ">" {
+                            if lcond > rcond {
+                                ifcondresult = true
+                            } else {
+                                ifcondresult = false
+                            }
+                        } else if operator == "<" {
+                            if lcond < rcond {
+                                ifcondresult = true
+                            } else {
+                                ifcondresult = false
+                            }
+                        }
+                    }
+
+                } else if keyword == "while" {
                     if word != "" {
                         if operator == "" {
                             v, err := env[word]
@@ -214,38 +297,41 @@ func brutalforce(input string) map[string]int {
                     if c == ':' {
                         if operator == ">" {
                             if lcond > rcond {
-                                ifcondresult = true
+                                whilecondresult = true
                             } else {
-                                ifcondresult = false
+                                whilecondresult = false
                             }
                         } else if operator == "<" {
                             if lcond < rcond {
-                                ifcondresult = true
+                                whilecondresult = true
                             } else {
-                                ifcondresult = false
+                                whilecondresult = false
                             }
                         }
-                        keyword = "ifblock"
                     }
 
                 }
             }
 
-            if word == "if" {
-                // Here would add more variable to record current situation
-                // Also, here should a variable to record the indents level
-                keyword = "if"
+
+            {
+                if word == "if" {
+                    // Here would add more variable to record current situation
+                    // Also, here should a variable to record the indents level
+                    keyword = "if"
+                } else if word == "while" {
+                    keyword = "while"
+                    whileorigin = i - len("while")
+
+                }
             }
+
 
             {
                 if c == ' ' {
                     if columncount - curindent == 1 {
                         curindent += 1
                     }
-                }
-
-                if columncount == 1 && curindent == 0 {
-                    keyword = ""
                 }
 
                 if c == '=' {
@@ -262,7 +348,7 @@ func brutalforce(input string) map[string]int {
 
                 if location == "right" {
                     if fromvar != "" {
-                        if operator == "+" || operator == ""{
+                        if operator == "+" || operator == "" {
                             exprval += env[fromvar]
                         } else if operator == "-" {
                             exprval -= env[fromvar]
@@ -275,8 +361,9 @@ func brutalforce(input string) map[string]int {
                 }
 
                 if c == '\n' {
-                    if keyword == "ifblock" && ifcondresult == false {
-                    } else {
+                    if keyword == "ifblock" && ifcondresult == true ||
+                        keyword == "" ||
+                        keyword == "whileblock" && whilecondresult == true {
                         if tovar != "" {
                             if curval != "" {
                                 v, err := strconv.Atoi(curval)
@@ -291,6 +378,52 @@ func brutalforce(input string) map[string]int {
                         }
                     }
 
+                    if keyword == "if" {
+                        keyword = "ifblock"
+                    } else if keyword == "ifblock" {
+                        if i+1+curindent >= len(input) || i >= len(input) {
+                            keyword = ""
+                        } else if strings.Repeat(" ", curindent) != input[i+1:i+1+curindent] {
+                            keyword = ""
+                        }
+                    } else if keyword == "while" {
+                        keyword = "whileblock"
+                    } else if keyword == "whileblock" {
+                        if whilecondresult == true {
+                            if i+1+curindent >= len(input) || i >= len(input) {
+                                i = whileorigin - 1
+                                keyword = ""
+                            } else if strings.Repeat(" ", curindent) != input[i+1:i+1+curindent] {
+                                i = whileorigin - 1
+                                keyword = ""
+                            }
+                        } else {
+                            if i+1+curindent >= len(input) || i >= len(input) {
+                                keyword = ""
+                                whileorigin = -1
+                            } else if strings.Repeat(" ", curindent) != input[i+1:i+1+curindent] {
+                                keyword = ""
+                                whileorigin = -1
+                            }
+                        }
+
+                        // if i+1+curindent >= len(input) {
+                        //     if whilecondresult == true {
+                        //         i = whileorigin - 1
+                        //     } else {
+                        //         whileorigin = -1
+                        //     }
+                        //     keyword = ""
+                        // } else if strings.Repeat(" ", curindent) != input[i+1:i+1+curindent] {
+                        //     if whilecondresult == true {
+                        //         i = whileorigin - 1
+                        //     } else {
+                        //         whileorigin = -1
+                        //     }
+                        //     keyword = ""
+                        // }
+                    }
+
                     location = "left"
 
                     tovar = ""
@@ -298,8 +431,9 @@ func brutalforce(input string) map[string]int {
                     curval = ""
                     operator = ""
                     exprval = 0
-                    curindent = 0
                     columncount = 0
+
+                    curindent = 0
                 }
 
                 if c == '+' || c == '-' || c == '<' || c == '>' {
