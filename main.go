@@ -161,6 +161,21 @@ while i < 20:
     if env := brutalforce(input9); env["total"] != 190 {
         fmt.Println("single-condition-while-loop failed:", env["total"], env)
     }
+
+    input10 := `
+sum = 12 + 21
+`
+    if env := brutalforce(input10); env["sum"] != 33 {
+        fmt.Println("number-in-expression-1 failed:", env["sum"], env)
+    }
+
+    input11 := `
+twelve = 12
+sum = twelve + 21
+`
+    if env := brutalforce(input11); env["sum"] != 33 {
+        fmt.Println("number-in-expression-2 failed:", env["sum"], env)
+    }
 }
 
 
@@ -354,10 +369,18 @@ func brutalforce(input string) map[string]int {
                             exprval -= env[fromvar]
                         }
                         fromvar = ""
+                    } else if number != "" {
+                        v, err := strconv.Atoi(number)
+                        if err != nil {
+                            fmt.Println("strconv.Atoi(number) err", v, err)
+                        } else {
+                            if operator == "+" || operator == "" {
+                                exprval += v
+                            } else if operator == "-" {
+                                exprval -= v
+                            }
+                        }
                     }
-                }
-                if number != "" {
-                    curval = number
                 }
 
                 if c == '\n' {
@@ -407,21 +430,6 @@ func brutalforce(input string) map[string]int {
                             }
                         }
 
-                        // if i+1+curindent >= len(input) {
-                        //     if whilecondresult == true {
-                        //         i = whileorigin - 1
-                        //     } else {
-                        //         whileorigin = -1
-                        //     }
-                        //     keyword = ""
-                        // } else if strings.Repeat(" ", curindent) != input[i+1:i+1+curindent] {
-                        //     if whilecondresult == true {
-                        //         i = whileorigin - 1
-                        //     } else {
-                        //         whileorigin = -1
-                        //     }
-                        //     keyword = ""
-                        // }
                     }
 
                     location = "left"
