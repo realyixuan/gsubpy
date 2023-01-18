@@ -45,7 +45,7 @@ eventually, I should be able to interpreter the code:
         i = i + 1
     print(total)
 
-for brutalforce, the order of implementation is: simplest > multi-char-variable > multi-digit-number > minus-operator > single-condition-if > while loop > expr including number > nested indent > if and while > function
+for brutalforce, the order of implementation is: simplest > multi-char-variable > multi-digit-number > minus-operator > single-condition-if > while loop > expr including number > function > nested indent > if and while
 
 
 
@@ -176,6 +176,18 @@ sum = twelve + 21
     if env := brutalforce(input11); env["sum"] != 33 {
         fmt.Println("number-in-expression-2 failed:", env["sum"], env)
     }
+
+    input12 := `
+def add(a, b):
+    return a + b
+
+ten = 10
+nine = 9
+
+`
+    // just initialized function
+    brutalforce(input12)
+
 }
 
 
@@ -206,6 +218,17 @@ func brutalforce(input string) map[string]int {
     var columncount int
     var whileorigin int = -1
     var whilecondresult bool
+    var curstate string
+
+    type function struct {
+        name string
+        args []string
+        begin int
+        end int
+        env map[string]int
+    }
+    // var funcs [string]function
+    var curfunc function
 
 
     for i := 0; i < len(input); i++ {
@@ -324,7 +347,22 @@ func brutalforce(input string) map[string]int {
                             }
                         }
                     }
+                } else if keyword == "def" {
+                    if curstate == "funcname" {
+                        curfunc.name = word
+                    } else if curstate == "funcargs" {
+                        if word != "" {
+                            curfunc.args = append(curfunc.args, word)
+                        }
+                    }
 
+                    if c == '(' {
+                        curstate = "funcargs"
+                    } else if c == ')' {
+                        curstate = "funcblock"
+                    } else if c == ',' {
+                    } else if c == ':' {
+                    }
                 }
             }
 
@@ -337,7 +375,9 @@ func brutalforce(input string) map[string]int {
                 } else if word == "while" {
                     keyword = "while"
                     whileorigin = i - len("while")
-
+                } else if word == "def" {
+                    keyword = "def"
+                    curstate = "funcname"
                 }
             }
 
@@ -429,7 +469,17 @@ func brutalforce(input string) map[string]int {
                                 whileorigin = -1
                             }
                         }
-
+                    } else if keyword == "def" {
+                        keyword = "defblock"
+                        curfunc.begin = i + 1
+                    } else if keyword == "defblock" {
+                        if i+1+curindent >= len(input) || i >= len(input) {
+                            keyword = ""
+                            curfunc.end = i
+                        } else if strings.Repeat(" ", curindent) != input[i+1:i+1+curindent] {
+                            keyword = ""
+                            curfunc.end = i
+                        }
                     }
 
                     location = "left"
