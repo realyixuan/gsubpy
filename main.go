@@ -60,7 +60,7 @@ import (
 )
 
 func main() {
-    test_brutalforce()
+    test_normalapproach()
 }
 
 func test_brutalforce() {
@@ -506,5 +506,128 @@ func brutalforce(input string) map[string]int {
     }
 
     return env
+}
+
+func test_normalapproach() {
+    input := `
+abc = 10+ 1111
+`
+    normalapproach(input)
+
+//     input1 := `
+// a = 1
+// b = 2
+// `
+//     if env := normalapproach(input1); env["c"] != 3 {
+//         fmt.Println("simplest impl failed:", env["c"], env)
+//     }
+}
+
+func normalapproach(input string) map[string]int {
+    /*
+    In this approach, separate the process into difference parts.
+    some difference parts from above brutalforce:
+        - define sematics, statement and expression
+        - separate lexer and eval
+    */
+
+    tokens := lexer(input)
+
+    ret := parser(tokens)
+    // fmt.Println(reflect.TypeOf(ret[0]))
+
+    fmt.Println(ret)
+
+    return map[string]int{"Hello": 1}
+}
+
+type Statement struct {
+    tokens []string
+}
+
+type Assignment struct {
+    variable string
+    expression Statement
+}
+
+func parser(tokens []string) []interface{} {
+    var stmt []interface{}
+    statements := get_statements(tokens)
+    for _, statement := range statements {
+        if idx := contain(statement.tokens, "="); idx != -1 {
+            var assignment = Assignment{
+                variable: statement.tokens[idx-1],
+                expression: Statement{statement.tokens[idx+1:]},
+            }
+            stmt = append(stmt, assignment)
+        }
+    }
+
+    return stmt
+}
+
+func get_statements(tokens []string) []Statement {
+    var statements []Statement
+
+    var idx int = -1
+    for i := 0; i < len(tokens); i++ {
+        if tokens[i] == "END" {
+            if i-idx > 1 {
+                statements = append(statements, Statement{tokens[idx+1:i]})
+            }
+            idx = i
+        }
+    }
+
+    return statements
+}
+
+func lexer(s string) []string {
+    /*
+    converting code text into tokens, and
+        - linefeed becoming string `END`
+    */
+    is_digit := func(c rune) bool {return '0' <= c && c <= '9'}
+    is_alphabet := func(c rune) bool {return 'a' <= c && c <= 'z'}
+
+    var tokens []string
+    var word string
+    for _, c := range s {
+        if is_digit(c) {
+            word += string(c)
+        } else if is_alphabet(c) {
+            word += string(c)
+        } else {
+            if word != "" {
+                tokens = append(tokens, word)
+            }
+
+            if c == ' ' {
+                // pass
+            } else if c == '\n'{
+                tokens = append(tokens, "END")
+            } else {
+                tokens = append(tokens, string(c))
+            }
+
+            word = ""
+        }
+    }
+
+    if word != "" {
+        tokens = append(tokens, word)
+    }
+
+    return tokens
+}
+
+func contain(arr []string, target string) int {
+    for i, s := range arr {
+        if s == target {
+            return i
+        }
+    }
+
+    return -1
 }
 
