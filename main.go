@@ -510,9 +510,12 @@ func brutalforce(input string) map[string]int {
 
 func test_normalapproach() {
     input := `
-abc = 10+ 1111
+result = 10+ 1111
 `
-    normalapproach(input)
+    if env := normalapproach(input); env["result"] != 1121 {
+        fmt.Println("simplest impl failed:", input, env)
+    }
+
 
 //     input1 := `
 // a = 1
@@ -525,6 +528,13 @@ abc = 10+ 1111
 
 func normalapproach(input string) map[string]int {
     /*
+    structure:
+        lexer -> parser -> ret
+                   ^
+                   |
+                   v
+                  eval
+    
     In this approach, separate the process into difference parts.
     some difference parts from above brutalforce:
         - define sematics, statement and expression
@@ -533,12 +543,12 @@ func normalapproach(input string) map[string]int {
 
     tokens := lexer(input)
 
-    ret := parser(tokens)
+    stmts := parser(tokens)
     // fmt.Println(reflect.TypeOf(ret[0]))
 
-    fmt.Println(ret)
+    env := eval(stmts)
 
-    return map[string]int{"Hello": 1}
+    return env
 }
 
 type Statement struct {
@@ -550,8 +560,41 @@ type Assignment struct {
     expression Statement
 }
 
+func eval(stmts []interface{}) map[string]int {
+    env := map[string]int{}
+
+    for _, stmt := range stmts {
+        switch stmt.(type) {
+        case Assignment:
+            env[stmt.(Assignment).variable] = eval_expression(stmt.(Assignment).expression.tokens)
+        }
+    }
+
+    return env
+}
+
+func eval_expression(tokens []string) int {
+    /*
+    in order to simplify the problem, here just implement '+-', and
+    no negatives, such as '1+2-3+4'
+    */
+
+    res, _ := strconv.Atoi(tokens[0])
+    for i := 1; i < len(tokens); i += 2 {
+        operator := tokens[i]
+        operand, _ := strconv.Atoi(tokens[i+1])
+        if operator == "-" {
+            res -= operand
+        } else if operator == "+" {
+            res += operand
+        }
+    }
+
+    return res
+}
+
 func parser(tokens []string) []interface{} {
-    var stmt []interface{}
+    var stmts []interface{}
     statements := get_statements(tokens)
     for _, statement := range statements {
         if idx := contain(statement.tokens, "="); idx != -1 {
@@ -559,14 +602,17 @@ func parser(tokens []string) []interface{} {
                 variable: statement.tokens[idx-1],
                 expression: Statement{statement.tokens[idx+1:]},
             }
-            stmt = append(stmt, assignment)
+            stmts = append(stmts, assignment)
         }
     }
 
-    return stmt
+    return stmts
 }
 
 func get_statements(tokens []string) []Statement {
+    /*
+    separate tokens into different statement parts
+    */
     var statements []Statement
 
     var idx int = -1
@@ -584,6 +630,15 @@ func get_statements(tokens []string) []Statement {
 
 func lexer(s string) []string {
     /*
+    convert string into tokens of string
+        "\n" -> "END"
+
+        and, like:
+            "a = 1 + 2"
+                |
+                V
+            [a, =, 1, +, 2]
+
     converting code text into tokens, and
         - linefeed becoming string `END`
     */
@@ -622,6 +677,10 @@ func lexer(s string) []string {
 }
 
 func contain(arr []string, target string) int {
+    /*
+    return the index of target, or -1 if None
+    */
+
     for i, s := range arr {
         if s == target {
             return i
