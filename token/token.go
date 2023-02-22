@@ -4,8 +4,8 @@ type tokenType string
 
 const (
     EOF         = "EOF"
-    ASSIGN      = "="
-    PLUS        = "+"
+    ASSIGN      = "ASSIGN"
+    PLUS        = "PLUS"
     IDENTIFIER  = "IDENTIFIER"
     NUMBER      = "NUMBER"
 )

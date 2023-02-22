@@ -5,11 +5,11 @@ import (
 )
 
 type Lexer struct {
-    input   string
+    Input   string
     idx     int
 }
 
-func (l *Lexer) nextToken() token.Token {
+func (l *Lexer) NextToken() token.Token {
     //  get tokens
     l.skipWhitespace()
 
@@ -17,7 +17,7 @@ func (l *Lexer) nextToken() token.Token {
         return token.Token{TokenType: token.EOF}
     }
 
-    switch ch := l.input[l.idx]; ch {
+    switch ch := l.Input[l.idx]; ch {
     case '=':
         tk := token.Token{TokenType: token.ASSIGN, Literals: string(ch)}
         l.idx += 1
@@ -40,20 +40,24 @@ func (l *Lexer) nextToken() token.Token {
 
 }
 
+func (l *Lexer) peekNextToken() {
+    //
+}
+
 func (l *Lexer) skipWhitespace() {
-    for !l.isExhausted() && (l.input[l.idx] == ' ' || l.input[l.idx] == '\t' || l.input[l.idx] == '\r') {
+    for !l.isExhausted() && (l.Input[l.idx] == ' ' || l.Input[l.idx] == '\t' || l.Input[l.idx] == '\r') {
         l.idx += 1
     }
 }
 
 func (l *Lexer) isExhausted() bool {
-    return l.idx >= len(l.input)
+    return l.idx >= len(l.Input)
 }
 
 func (l *Lexer) readNumber() string {
     res := ""
-    for !l.isExhausted() && isDigit(l.input[l.idx]) {
-        res += string(l.input[l.idx])
+    for !l.isExhausted() && isDigit(l.Input[l.idx]) {
+        res += string(l.Input[l.idx])
         l.idx += 1
     }
     return res
@@ -61,8 +65,8 @@ func (l *Lexer) readNumber() string {
 
 func (l *Lexer) readLetter() string {
     res := ""
-    for !l.isExhausted() && isLetter(l.input[l.idx]) {
-        res += string(l.input[l.idx])
+    for !l.isExhausted() && isLetter(l.Input[l.idx]) {
+        res += string(l.Input[l.idx])
         l.idx += 1
     }
     return res
