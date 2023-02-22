@@ -1,0 +1,8 @@
+name: gsubpy testing
+run-name: ${{ github.actor }} is testing out GitHub Actions
+on: [push]
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    steps:
+      - run: go test ./...
