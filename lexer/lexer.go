@@ -4,72 +4,89 @@ import (
     "gsubpy/token"
 )
 
+/*
+the lexer have following aiblities: 
+    - view current token of lexer
+    - read next token
+    - peek next token
+    
+*/
+
 type Lexer struct {
-    Input   string
-    idx     int
+    input       string
+    idx         int
+    ch          byte
+    CurToken    token.Token
 }
 
-func (l *Lexer) NextToken() token.Token {
-    //  get tokens
+func New(input string) *Lexer {
+    l := &Lexer{input: input}
+    l.readChar()
+    l.ReadNextToken()
+    return l
+}
+
+func (l *Lexer) ReadNextToken() {
     l.skipWhitespace()
 
-    if l.isExhausted() {
-        return token.Token{TokenType: token.EOF}
-    }
-
-    switch ch := l.Input[l.idx]; ch {
+    switch l.ch {
     case '=':
-        tk := token.Token{TokenType: token.ASSIGN, Literals: string(ch)}
-        l.idx += 1
-        return tk
+        l.CurToken = token.Token{TokenType: token.ASSIGN, Literals: string(l.ch)}
+        l.readChar()
+    case '+':
+        l.CurToken = token.Token{TokenType: token.PLUS, Literals: string(l.ch)}
+        l.readChar()
+    case '\x03':
+        l.CurToken = token.Token{TokenType: token.EOF}
     default:
-        if isDigit(ch) {
+        if isDigit(l.ch) {
             num := l.readNumber()
-            tk := token.Token{TokenType: token.NUMBER, Literals: num}
-            l.idx += 1
-            return tk
-        } else if isLetter(ch) {
+            l.CurToken = token.Token{TokenType: token.NUMBER, Literals: num}
+        } else if isLetter(l.ch) {
             identifier := l.readLetter()
-            tk := token.Token{TokenType: token.IDENTIFIER, Literals: identifier}
-            l.idx += 1
-            return tk
+            l.CurToken = token.Token{TokenType: token.IDENTIFIER, Literals: identifier}
         }
     }
-
-    return token.Token{TokenType: token.EOF}
-
 }
 
-func (l *Lexer) peekNextToken() {
-    //
+func (l *Lexer) PeekNextToken() token.Token {
+    // A trick
+    lc := *l
+    lc.ReadNextToken()
+    return lc.CurToken
 }
 
 func (l *Lexer) skipWhitespace() {
-    for !l.isExhausted() && (l.Input[l.idx] == ' ' || l.Input[l.idx] == '\t' || l.Input[l.idx] == '\r') {
-        l.idx += 1
+    for l.ch == ' ' || l.ch == '\t' || l.ch == '\r' {
+        l.readChar()
     }
-}
-
-func (l *Lexer) isExhausted() bool {
-    return l.idx >= len(l.Input)
 }
 
 func (l *Lexer) readNumber() string {
     res := ""
-    for !l.isExhausted() && isDigit(l.Input[l.idx]) {
-        res += string(l.Input[l.idx])
-        l.idx += 1
+    for isDigit(l.ch) {
+        res += string(l.ch)
+        l.readChar()
     }
     return res
 }
 
 func (l *Lexer) readLetter() string {
     res := ""
-    for !l.isExhausted() && isLetter(l.Input[l.idx]) {
-        res += string(l.Input[l.idx])
-        l.idx += 1
+    for isLetter(l.ch) {
+        res += string(l.ch)
+        l.readChar()
     }
     return res
+}
+
+func (l *Lexer) readChar() {
+    if l.idx < len(l.input) {
+        l.ch = l.input[l.idx]
+    } else {
+        l.ch = '\x03'   // end of text, special byte
+    }
+    l.idx += 1
 }
 
 func isDigit(ch byte) bool {

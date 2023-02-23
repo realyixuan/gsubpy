@@ -7,14 +7,29 @@ import (
 
 var E = map[string]int{}
 
-func eval(stmts []ast.AssignStatement) {
+func eval(stmts []ast.Statement) {
     for _, stmt := range stmts {
-        evalAssignStatement(stmt)
+        switch node := stmt.(type) {
+        case *ast.AssignStatement:
+            evalAssignStatement(node)
+        }
     }
 }
 
-func evalAssignStatement(stmt ast.AssignStatement) {
-    val, _ := strconv.Atoi(stmt.Value.Literals)
-    E[stmt.Identifier.Literals] = val
+func evalAssignStatement(stmt *ast.AssignStatement) {
+    E[stmt.Identifier.Literals] = evalExpression(stmt.Value)
+}
+
+func evalExpression(expression ast.Expression) int{
+    switch node := expression.(type) {
+    case *ast.PlusExpression:
+        left := evalExpression(node.Left)
+        right := evalExpression(node.Right)
+        return left + right
+    case *ast.NumberExpression:
+        val, _ := strconv.Atoi(node.Value.Literals)
+        return val
+    }
+    return 0    // XXX: temporary solution
 }
 
