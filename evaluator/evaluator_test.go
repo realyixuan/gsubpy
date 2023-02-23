@@ -4,6 +4,7 @@ import (
     "testing"
     "gsubpy/lexer"
     "gsubpy/parser"
+    "gsubpy/object"
 )
 
 func TestEvaluator(t *testing.T) {
@@ -13,8 +14,8 @@ func TestEvaluator(t *testing.T) {
     p := parser.New(l)
     stmts := p.Parsing()
     eval(stmts)
-    if E["val"] != 1 {
-        t.Errorf("expected %d, got %d", 1, E["val"])
+    if node := E["val"].(*object.NumberObject); node.Value != 1 {
+        t.Errorf("expected %d, got %d", 1, node.Value)
     }
 }
 
@@ -25,8 +26,8 @@ func TestEvaluator2(t *testing.T) {
     p := parser.New(l)
     stmts := p.Parsing()
     eval(stmts)
-    if E["val"] != 2 {
-        t.Errorf("expected %d, got %d", 2, E["val"])
+    if node := E["val"].(*object.NumberObject); node.Value != 2 {
+        t.Errorf("expected %d, got %d", 2, node.Value)
     }
 }
 

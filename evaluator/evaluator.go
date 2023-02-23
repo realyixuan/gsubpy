@@ -3,9 +3,10 @@ package evaluator
 import (
     "strconv"
     "gsubpy/ast"
+    "gsubpy/object"
 )
 
-var E = map[string]int{}
+var E = map[string]object.Object{}
 
 func eval(stmts []ast.Statement) {
     for _, stmt := range stmts {
@@ -20,16 +21,18 @@ func evalAssignStatement(stmt *ast.AssignStatement) {
     E[stmt.Identifier.Literals] = evalExpression(stmt.Value)
 }
 
-func evalExpression(expression ast.Expression) int{
+func evalExpression(expression ast.Expression) object.Object {
     switch node := expression.(type) {
     case *ast.PlusExpression:
-        left := evalExpression(node.Left)
-        right := evalExpression(node.Right)
-        return left + right
+        leftObj := evalExpression(node.Left)
+        rightObj := evalExpression(node.Right)
+        return &object.NumberObject{
+            Value: leftObj.(*object.NumberObject).Value + rightObj.(*object.NumberObject).Value,
+            }
     case *ast.NumberExpression:
         val, _ := strconv.Atoi(node.Value.Literals)
-        return val
+        return &object.NumberObject{Value: val}
     }
-    return 0    // XXX: temporary solution
+    return nil    // XXX: temporary solution
 }
 
