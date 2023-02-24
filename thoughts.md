@@ -1,44 +1,21 @@
-For realizing an interpreter of subset of Python
+# Some Thoughts For realizing an interpreter of subset of Python
 
 There, Python has a lot of syntax, implementing them all at once is nearly impossible. So, it's better to take a small step at a time.
 
-First things first:
+### Here's the rough plans:
 
-Removing, except for int, all complex data structure such as string, list ..., for data structure, just focus on int. Then, take concentration on statements of sequence, selection and iteration...
+Along realizing it, the development is parted into several phases, then solve all, step by step, phase by phase.
 
-So, for now, here is focus:
+##### Phase 1: most-basic features
 
-- first step
-    - data structre:
-        - int
-    - simplifying indent, say
-        - fixed 4 spaces, and
-        - one layer of indent
-    - basic control flows:
-        - sequence
-        - selection
-        - iteration
-    - simple function
+desired outcomes:
 
-- second step
-    - put in builtin function
-
-- thrid step
-    - put class in
-
-
-1. ANYWAY, implement "a = 1" and "a = 1 + 1" first
-
-2. sequence execution
-
-3. if-statement
-
-Consequently, after first step having been finished, the interpreter should at least be able to interpret this:
+- being able to interpreter following code:
 
 ~~~python
 def return_even_or_zero(n):
-    if i % 2 == 0:
-        return i
+    if n % 2 == 0:
+        return n
     return 0
 total = 0
 i = 0
@@ -48,3 +25,49 @@ while i < 10:
     i = i + 1
 ~~~
 
+First things first:
+
+simplifying problem: take concentration on something foundamental
+
+- data type
+    - int
+- features
+    - assignment statement
+    - arithmic of plus, multiply
+    - selection (i.e. if-else)
+    - iteration (i.e. while)
+    - and simple function
+
+the key point of this phase is just getting things done. Keep general direction right, other than that I shouldn't take care of trivial details, as many things havne't got very clear, at least I think so.
+    
+steps:
+
+step1: `assignment identifier = <expression>`
+
+step2: `if statement`
+
+step3: `while-loop statement`
+
+step4: `function-definition and function-call`
+
+
+##### Phase 2: enhancement
+
+desired outcomes:
+
+- built function putted in
+- more builtin data types
+    - str
+    - list
+    - dict
+
+...
+
+##### Phase 3: superior
+
+desired outcomes:
+
+- class added
+
+...
+    
