@@ -4,10 +4,15 @@ type tokenType string
 
 const (
     EOF         = "EOF"
+    ILLEGAL     = "ILLEGAL"
+
     ASSIGN      = "ASSIGN"
-    PLUS        = "PLUS"
     IDENTIFIER  = "IDENTIFIER"
+
     NUMBER      = "NUMBER"
+
+    PLUS        = "PLUS"
+    MUL         = "MUL"
 )
 
 

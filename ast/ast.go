@@ -23,6 +23,11 @@ type AssignStatement struct {
 
 func (as *AssignStatement) getStatement() {}
 
+type IdentifierExpression struct {
+    Identifier  token.Token
+    Literals    string
+}
+
 type NumberExpression struct {
     Value   token.Token
 }
@@ -35,4 +40,11 @@ type PlusExpression struct {
 }
 
 func (pe *PlusExpression) getExpression() {}
+
+type MulExpression struct {
+    Left    Expression
+    Right   Expression
+}
+
+func (me *MulExpression) getExpression() {}
 

@@ -36,6 +36,9 @@ func (l *Lexer) ReadNextToken() {
     case '+':
         l.CurToken = token.Token{TokenType: token.PLUS, Literals: string(l.ch)}
         l.readChar()
+    case '*':
+        l.CurToken = token.Token{TokenType: token.MUL, Literals: string(l.ch)}
+        l.readChar()
     case '\x03':
         l.CurToken = token.Token{TokenType: token.EOF}
     default:
@@ -45,6 +48,9 @@ func (l *Lexer) ReadNextToken() {
         } else if isLetter(l.ch) {
             identifier := l.readLetter()
             l.CurToken = token.Token{TokenType: token.IDENTIFIER, Literals: identifier}
+        } else {
+            l.CurToken = token.Token{TokenType: token.ILLEGAL}
+            l.readChar()
         }
     }
 }

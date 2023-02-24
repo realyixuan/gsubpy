@@ -41,28 +41,54 @@ func (p *Parser)parsingAssignStatement() *ast.AssignStatement {
     assignment := ast.AssignStatement{Identifier: p.l.CurToken}
     p.l.ReadNextToken()
     p.l.ReadNextToken()
-    assignment.Value = p.parsingExpression()
+    assignment.Value = p.parsingExpression(0)
     p.l.ReadNextToken()
     return &assignment
 }
 
-func (p *Parser)parsingExpression() ast.Expression {
-    if p.l.PeekNextToken().TokenType == token.PLUS {
-        left := p.l.CurToken
-        p.l.ReadNextToken()
-        p.l.ReadNextToken()
-        right := p.l.CurToken
-        rtExpression := &ast.PlusExpression{
-            Left: &ast.NumberExpression{left},
-            Right: &ast.NumberExpression{right},
-        }
-        p.l.ReadNextToken()
-        return rtExpression
-    } else if p.l.PeekNextToken().TokenType == token.EOF {
-        rtExpression := &ast.NumberExpression{p.l.CurToken}
-        p.l.ReadNextToken()
-        return rtExpression
+func (p *Parser)parsingExpression(precedence int) ast.Expression {
+    left := p.prefixFn()
+    p.l.ReadNextToken()
+
+    var infixPrecedence int
+    if p.l.CurToken.Literals == "+" {
+        infixPrecedence = 1
+    } else {
+        infixPrecedence = 2
     }
+
+    for p.l.CurToken.TokenType != token.EOF && infixPrecedence > precedence {
+        left = p.infixFn(left)
+    }
+
+    return left
+}
+
+func (p *Parser) prefixFn() ast.Expression {
+    if p.l.CurToken.TokenType == token.IDENTIFIER {
+        // pass
+    } else if p.l.CurToken.TokenType == token.NUMBER {
+        return &ast.NumberExpression{p.l.CurToken}
+    }
+    return nil
+}
+
+func (p *Parser) infixFn(expression ast.Expression) ast.Expression {
+    curTokenType := p.l.CurToken.TokenType
+    p.l.ReadNextToken()
+    switch curTokenType {
+    case token.PLUS:
+        return &ast.PlusExpression{
+            Left: expression,
+            Right: p.parsingExpression(1),
+        }
+    case token.MUL:
+        return &ast.MulExpression{
+            Left: expression,
+            Right: p.parsingExpression(2),
+        }
+    }
+
     return nil
 }
 
