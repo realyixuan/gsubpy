@@ -8,7 +8,7 @@ import (
     "testing"
 )
 
-func TestLexer(t *testing.T) {
+func TestAssignStatement(t *testing.T) {
     testCases := []struct {
         input   string
         expectedTokens []token.Token
@@ -57,5 +57,40 @@ func TestLexer(t *testing.T) {
             l.ReadNextToken()
         }
     }
+}
+
+func TestMultiLineStatement(t *testing.T) {
+    testCases := []struct{
+        input           string
+        expectedTokens  []token.Token
+    } {
+        {
+            "a = 1\n" +
+            "b = 2\n",
+            []token.Token{
+                token.Token{TokenType: token.IDENTIFIER, Literals: "a"},
+                token.Token{TokenType: token.ASSIGN, Literals: "="},
+                token.Token{TokenType: token.NUMBER, Literals: "1"},
+                token.Token{TokenType: token.LINEFEED, Literals: "\n"},
+                token.Token{TokenType: token.IDENTIFIER, Literals: "b"},
+                token.Token{TokenType: token.ASSIGN, Literals: "="},
+                token.Token{TokenType: token.NUMBER, Literals: "2"},
+                token.Token{TokenType: token.LINEFEED, Literals: "\n"},
+                token.Token{TokenType: token.EOF},
+            },
+        },
+    }
+
+
+    for _, testCase := range testCases {
+        l := New(testCase.input)
+        for _, tk := range testCase.expectedTokens {
+            if tk != l.CurToken {
+                t.Errorf("expected %s, got %s", tk, l.CurToken)
+            }
+            l.ReadNextToken()
+        }
+    }
+
 }
 

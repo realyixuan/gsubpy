@@ -6,9 +6,9 @@ import (
     "gsubpy/object"
 )
 
-var E = map[string]object.Object{}
+var env = map[string]object.Object{}
 
-func eval(stmts []ast.Statement) {
+func run(stmts []ast.Statement) {
     for _, stmt := range stmts {
         switch node := stmt.(type) {
         case *ast.AssignStatement:
@@ -18,7 +18,7 @@ func eval(stmts []ast.Statement) {
 }
 
 func evalAssignStatement(stmt *ast.AssignStatement) {
-    E[stmt.Identifier.Literals] = evalExpression(stmt.Value)
+    env[stmt.Identifier.Literals] = evalExpression(stmt.Value)
 }
 
 func evalExpression(expression ast.Expression) object.Object {

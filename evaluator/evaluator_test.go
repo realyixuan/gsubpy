@@ -7,39 +7,74 @@ import (
     "gsubpy/object"
 )
 
-func TestEvaluator(t *testing.T) {
-    input := `val = 1`
+func TestOneLineAssignStatement(t *testing.T) {
+    testCases := []struct {
+        input       string
+        expected    map[string]*object.NumberObject
+    }{
+        {
+            `val = 1`,
+            map[string]*object.NumberObject{
+                "val": &object.NumberObject{Value: 1},
+            },
+        },
+        {
+            `val = 1 + 1`,
+            map[string]*object.NumberObject{
+                "val": &object.NumberObject{Value: 2},
+            },
+        },
+        {
+            `val = 10 + 20 * 2`,
+            map[string]*object.NumberObject{
+                "val": &object.NumberObject{Value: 50},
+            },
+        },
+    }
 
-    l := lexer.New(input)
-    p := parser.New(l)
-    stmts := p.Parsing()
-    eval(stmts)
-    if node := E["val"].(*object.NumberObject); node.Value != 1 {
-        t.Errorf("expected %d, got %d", 1, node.Value)
+    for _, testCase := range testCases {
+        l := lexer.New(testCase.input)
+        p := parser.New(l)
+        stmts := p.Parsing()
+        run(stmts)
+        for target, expectedObj := range testCase.expected {
+            if resultedObj := env[target].(*object.NumberObject); *resultedObj != *expectedObj {
+                t.Errorf("expected (%s=%v), got (%s=%v)",
+                    target, *expectedObj, target, *resultedObj)
+            }
+        }
     }
 }
 
-func TestEvaluator2(t *testing.T) {
-    input := `val = 1 + 1`
-
-    l := lexer.New(input)
-    p := parser.New(l)
-    stmts := p.Parsing()
-    eval(stmts)
-    if node := E["val"].(*object.NumberObject); node.Value != 2 {
-        t.Errorf("expected %d, got %d", 2, node.Value)
+func TestMultiLineAssignStatement(t *testing.T) {
+    testCases := []struct {
+        input       string
+        expected    map[string]*object.NumberObject
+    }{
+        {
+            "vala = 1\n" +
+            "valb = 2\n",
+            map[string]*object.NumberObject{
+                "vala": &object.NumberObject{Value: 1},
+                "valb": &object.NumberObject{Value: 2},
+            },
+        },
     }
-}
 
-func TestEvaluator3(t *testing.T) {
-    input := `val = 10 + 20 * 2`
-
-    l := lexer.New(input)
-    p := parser.New(l)
-    stmts := p.Parsing()
-    eval(stmts)
-    if node := E["val"].(*object.NumberObject); node.Value != 50 {
-        t.Errorf("expected %d, got %d", 50, node.Value)
+    for _, testCase := range testCases {
+        l := lexer.New(testCase.input)
+        p := parser.New(l)
+        stmts := p.Parsing()
+        run(stmts)
+        for varname, expectedObj := range testCase.expected {
+            res, ok := env[varname]
+            if !ok {
+                t.Errorf("no variable %v", varname)
+            } else if resultedObj := res.(*object.NumberObject); *resultedObj != *expectedObj {
+                t.Errorf("expected (%s=%v), got (%s=%v)",
+                    varname, *expectedObj, varname, *resultedObj)
+            }
+        }
     }
 }
 

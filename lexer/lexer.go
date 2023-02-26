@@ -39,6 +39,9 @@ func (l *Lexer) ReadNextToken() {
     case '*':
         l.CurToken = token.Token{TokenType: token.MUL, Literals: string(l.ch)}
         l.readChar()
+    case '\n':
+        l.CurToken = token.Token{TokenType: token.LINEFEED, Literals: string(l.ch)}
+        l.readChar()
     case '\x03':
         l.CurToken = token.Token{TokenType: token.EOF}
     default:

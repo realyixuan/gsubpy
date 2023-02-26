@@ -5,6 +5,7 @@ type tokenType string
 const (
     EOF         = "EOF"
     ILLEGAL     = "ILLEGAL"
+    LINEFEED    = "LINEFEED"
 
     ASSIGN      = "ASSIGN"
     IDENTIFIER  = "IDENTIFIER"

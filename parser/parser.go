@@ -19,10 +19,10 @@ func (p *Parser)Parsing() []ast.Statement {
     // return statements
     var stmts []ast.Statement
 
-    stmt := p.parsingStatement()
-
-    stmts = append(stmts, stmt)
-
+    for p.l.PeekNextToken().TokenType != token.EOF {
+        stmt := p.parsingStatement()
+        stmts = append(stmts, stmt)
+    }
     return stmts
 
 }
@@ -57,7 +57,7 @@ func (p *Parser)parsingExpression(precedence int) ast.Expression {
         infixPrecedence = 2
     }
 
-    for p.l.CurToken.TokenType != token.EOF && infixPrecedence > precedence {
+    for p.l.CurToken.TokenType != token.LINEFEED && p.l.CurToken.TokenType != token.EOF && infixPrecedence > precedence {
         left = p.infixFn(left)
     }
 
