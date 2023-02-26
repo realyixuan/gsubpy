@@ -59,6 +59,16 @@ func TestMultiLineAssignStatement(t *testing.T) {
                 "valb": &object.NumberObject{Value: 2},
             },
         },
+        {
+            "a = 1\n" +
+            "b = 2\n" +
+            "c = a + b\n",
+            map[string]*object.NumberObject{
+                "a": &object.NumberObject{Value: 1},
+                "b": &object.NumberObject{Value: 2},
+                "c": &object.NumberObject{Value: 3},
+            },
+        },
     }
 
     for _, testCase := range testCases {

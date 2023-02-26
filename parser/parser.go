@@ -66,7 +66,7 @@ func (p *Parser)parsingExpression(precedence int) ast.Expression {
 
 func (p *Parser) prefixFn() ast.Expression {
     if p.l.CurToken.TokenType == token.IDENTIFIER {
-        // pass
+        return &ast.IdentifierExpression{p.l.CurToken}
     } else if p.l.CurToken.TokenType == token.NUMBER {
         return &ast.NumberExpression{p.l.CurToken}
     }

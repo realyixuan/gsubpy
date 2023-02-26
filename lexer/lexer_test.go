@@ -79,6 +79,23 @@ func TestMultiLineStatement(t *testing.T) {
                 token.Token{TokenType: token.EOF},
             },
         },
+        {
+            "a = 1\n" +
+            "b = a + 2\n",
+            []token.Token{
+                token.Token{TokenType: token.IDENTIFIER, Literals: "a"},
+                token.Token{TokenType: token.ASSIGN, Literals: "="},
+                token.Token{TokenType: token.NUMBER, Literals: "1"},
+                token.Token{TokenType: token.LINEFEED, Literals: "\n"},
+                token.Token{TokenType: token.IDENTIFIER, Literals: "b"},
+                token.Token{TokenType: token.ASSIGN, Literals: "="},
+                token.Token{TokenType: token.IDENTIFIER, Literals: "a"},
+                token.Token{TokenType: token.PLUS, Literals: "+"},
+                token.Token{TokenType: token.NUMBER, Literals: "2"},
+                token.Token{TokenType: token.LINEFEED, Literals: "\n"},
+                token.Token{TokenType: token.EOF},
+            },
+        },
     }
 
 

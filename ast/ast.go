@@ -25,8 +25,9 @@ func (as *AssignStatement) getStatement() {}
 
 type IdentifierExpression struct {
     Identifier  token.Token
-    Literals    string
 }
+
+func (ie *IdentifierExpression) getExpression() {}
 
 type NumberExpression struct {
     Value   token.Token
