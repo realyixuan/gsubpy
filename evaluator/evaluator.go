@@ -24,10 +24,7 @@ func evalAssignStatement(stmt *ast.AssignStatement) {
 func evalExpression(expression ast.Expression) object.Object {
     switch node := expression.(type) {
     case *ast.IdentifierExpression:
-        switch obj := env[node.Identifier.Literals].(type) {
-        case *object.NumberObject:
-            return &object.NumberObject{obj.Value}
-        }
+        return env[node.Identifier.Literals]
     case *ast.PlusExpression:
         leftObj := evalExpression(node.Left)
         rightObj := evalExpression(node.Right)
