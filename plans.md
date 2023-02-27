@@ -13,16 +13,13 @@ desired outcomes:
 - being able to interpreter following code:
 
 ~~~python
-def return_even_or_zero(n):
-    if n % 2 == 0:
-        return n
-    return 0
 total = 0
 i = 0
 while i < 10:
-    val = return_even_or_zero(i)
-    total = total + val
+    total = total + i
     i = i + 1
+if total > 5:
+    total = 10
 ~~~
 
 First things first:
@@ -36,10 +33,9 @@ simplifying problem: take concentration on something foundamental
     - arithmic of plus, multiply
     - selection (i.e. if-else)
     - iteration (i.e. while)
-    - and simple function
 
 the key point of this phase is just getting things done. Keep general direction right, other than that I shouldn't take care of trivial details, as many things havne't got very clear, at least I think so.
-    
+
 steps:
 
 step1: `assignment identifier = <expression>`
@@ -48,8 +44,7 @@ step2: `if statement`
 
 step3: `while-loop statement`
 
-step4: `function-definition and function-call`
-
+phase 1 should get done as quickly as possible.
 
 ##### Phase 2: enhancement
 
@@ -60,6 +55,7 @@ desired outcomes:
     - str
     - list
     - dict
+- simple function
 
 ...
 
