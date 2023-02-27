@@ -1,8 +1,6 @@
 package evaluator
 
 import (
-    "fmt"
-
     "strconv"
     "gsubpy/ast"
     "gsubpy/object"
@@ -60,7 +58,6 @@ func Eval(expression ast.Expression) object.Object {
     case *ast.ComparisonExpression:
         leftObj := Eval(node.Left)
         rightObj := Eval(node.Right)
-        fmt.Println(leftObj, rightObj)
         switch node.Operator.TokenType {
         case token.GT:
             if leftObj.(*object.NumberObject).Value > rightObj.(*object.NumberObject).Value {
