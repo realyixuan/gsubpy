@@ -16,11 +16,13 @@ type Lexer struct {
     input       string
     idx         int
     ch          byte
+    Indents     int
+    indentReady bool
     CurToken    token.Token
 }
 
 func New(input string) *Lexer {
-    l := &Lexer{input: input}
+    l := &Lexer{input: input, indentReady: true}
     l.readChar()
     l.ReadNextToken()
     return l
@@ -57,6 +59,7 @@ func (l *Lexer) ReadNextToken() {
     case '\n':
         l.CurToken = token.Token{TokenType: token.LINEFEED, Literals: string(l.ch)}
         l.readChar()
+        l.indentReady = true
     case '\x03':
         l.CurToken = token.Token{TokenType: token.EOF}
     default:
@@ -85,8 +88,15 @@ func (l *Lexer) PeekNextToken() token.Token {
 }
 
 func (l *Lexer) skipWhitespace() {
-    for l.ch == ' ' || l.ch == '\t' || l.ch == '\r' {
+    var count int = 0
+    for l.ch == ' ' {
         l.readChar()
+        count += 1
+    }
+
+    if l.indentReady {
+        l.Indents = count
+        l.indentReady = false
     }
 }
 

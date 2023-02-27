@@ -82,18 +82,27 @@ func TestIfStatement(t *testing.T) {
         expected    map[string]*object.NumberObject
     }{
         {
-            "if 2 > 1:\n" +
-            "    a = 1\n",
+            "a = 10\n" +
+            "b = 20\n" +
+            "if a > b:\n" +
+            "    a = a * 10\n" +
+            "    b = b * 10\n" +
+            "a = a + 10\n",
             map[string]*object.NumberObject{
-                "a": &object.NumberObject{Value: 1},
+                "a": &object.NumberObject{Value: 20},
+                "b": &object.NumberObject{Value: 20},
             },
         },
         {
-            "a = 0\n" +
-            "if 2 < 1:\n" +
-            "    a = 1\n",
+            "a = 10\n" +
+            "b = 20\n" +
+            "if a < b:\n" +
+            "    a = a * 10\n" +
+            "    b = b * 10\n" +
+            "a = a + 10\n",
             map[string]*object.NumberObject{
-                "a": &object.NumberObject{Value: 0},
+                "a": &object.NumberObject{Value: 110},
+                "b": &object.NumberObject{Value: 200},
             },
         },
     }

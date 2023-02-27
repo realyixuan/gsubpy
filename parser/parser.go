@@ -16,12 +16,19 @@ func New(l *lexer.Lexer) *Parser {
 }
 
 func (p *Parser)Parsing() []ast.Statement {
+    return p.parsing(0)
+}
+
+func (p *Parser)parsing(indents int) []ast.Statement {
     // return statements
     var stmts []ast.Statement
 
     for p.l.PeekNextToken().TokenType != token.EOF {
         stmt := p.parsingStatement()
         stmts = append(stmts, stmt)
+        if indents != p.l.Indents {
+            break   // precisely speaking, whether p.l.Indents == indents or p.l.Indents < indents
+        }
     }
     return stmts
 
@@ -40,6 +47,8 @@ func (p *Parser)parsingStatement() ast.Statement {
 }
 
 func (p *Parser)parsingIfStatement() *ast.IfStatement {
+    curIndents := p.l.Indents
+
     ifStatement := &ast.IfStatement{}
     p.l.ReadNextToken()
     ifStatement.Condition = p.parsingExpression(0)
@@ -49,7 +58,11 @@ func (p *Parser)parsingIfStatement() *ast.IfStatement {
         p.l.ReadNextToken()
     }
 
-    ifStatement.Body = p.Parsing()
+    if p.l.Indents <= curIndents {
+        panic("wrong indents")
+    }
+    
+    ifStatement.Body = p.parsing(p.l.Indents)
 
     return ifStatement
 }
