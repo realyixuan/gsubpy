@@ -95,3 +95,39 @@ func TestMultiLineStatement(t *testing.T) {
 
 }
 
+func TestIfStatement(t *testing.T) {
+    testCases := []struct{
+        input           string
+        expectedTokens  []token.Token
+    } {
+        {
+            "if 10 > 5:\n" +
+            "    a = 1\n",
+            []token.Token{
+                token.Token{TokenType: token.IF, Literals: "if"},
+                token.Token{TokenType: token.NUMBER, Literals: "10"},
+                token.Token{TokenType: token.GT, Literals: ">"},
+                token.Token{TokenType: token.NUMBER, Literals: "5"},
+                token.Token{TokenType: token.COLON, Literals: ":"},
+                token.Token{TokenType: token.LINEFEED, Literals: "\n"},
+                token.Token{TokenType: token.IDENTIFIER, Literals: "a"},
+                token.Token{TokenType: token.ASSIGN, Literals: "="},
+                token.Token{TokenType: token.NUMBER, Literals: "1"},
+                token.Token{TokenType: token.LINEFEED, Literals: "\n"},
+            },
+        },
+    }
+
+
+    for _, testCase := range testCases {
+        l := New(testCase.input)
+        for _, tk := range testCase.expectedTokens {
+            if tk != l.CurToken {
+                t.Errorf("expected %s, got %s", tk, l.CurToken)
+            }
+            l.ReadNextToken()
+        }
+    }
+
+}
+

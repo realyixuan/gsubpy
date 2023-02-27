@@ -4,21 +4,23 @@ import (
     "strconv"
     "gsubpy/ast"
     "gsubpy/object"
+    "gsubpy/token"
 )
 
-var env = map[string]object.Object{}
+var env = map[string]object.Object{
+    "False": &object.BoolObject{Value: 0},
+    "True": &object.BoolObject{Value: 1},
+}
 
-func run(stmts []ast.Statement) {
+func exec(stmts []ast.Statement) {
     for _, stmt := range stmts {
         switch node := stmt.(type) {
         case *ast.AssignStatement:
-            evalAssignStatement(node)
+            execAssignStatement(node)
+        case *ast.IfStatement:
+            execIfStatement(node)
         }
     }
-}
-
-func evalAssignStatement(stmt *ast.AssignStatement) {
-    env[stmt.Identifier.Literals] = evalExpression(stmt.Value)
 }
 
 func evalExpression(expression ast.Expression) object.Object {
@@ -49,6 +51,23 @@ func evalExpression(expression ast.Expression) object.Object {
         return &object.NumberObject{
             Value: leftObj.(*object.NumberObject).Value / rightObj.(*object.NumberObject).Value,
             }
+    case *ast.ComparisonExpression:
+        leftObj := evalExpression(node.Left)
+        rightObj := evalExpression(node.Right)
+        switch node.Operator.TokenType {
+        case token.GT:
+            if leftObj.(*object.NumberObject).Value > rightObj.(*object.NumberObject).Value {
+                return env["True"]
+            } else {
+                return env["False"]
+            }
+        case token.LT:
+            if leftObj.(*object.NumberObject).Value < rightObj.(*object.NumberObject).Value {
+                return env["True"]
+            } else {
+                return env["False"]
+            }
+        }
     case *ast.NumberExpression:
         val, _ := strconv.Atoi(node.Value.Literals)
         return &object.NumberObject{Value: val}
@@ -56,3 +75,12 @@ func evalExpression(expression ast.Expression) object.Object {
     return nil    // XXX: temporary solution
 }
 
+func execAssignStatement(stmt *ast.AssignStatement) {
+    env[stmt.Identifier.Literals] = evalExpression(stmt.Value)
+}
+
+func execIfStatement(stmt *ast.IfStatement) {
+    if evalExpression(stmt.Condition) == env["True"] {
+        exec(stmt.Body)
+    }
+}

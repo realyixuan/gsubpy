@@ -24,7 +24,7 @@ func TestOneLineAssignStatement(t *testing.T) {
         l := lexer.New(testCase.input)
         p := parser.New(l)
         stmts := p.Parsing()
-        run(stmts)
+        exec(stmts)
         for target, expectedObj := range testCase.expected {
             if resultedObj := env[target].(*object.NumberObject); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
@@ -63,7 +63,46 @@ func TestMultiLineAssignStatement(t *testing.T) {
         l := lexer.New(testCase.input)
         p := parser.New(l)
         stmts := p.Parsing()
-        run(stmts)
+        exec(stmts)
+        for varname, expectedObj := range testCase.expected {
+            res, ok := env[varname]
+            if !ok {
+                t.Errorf("no variable %v", varname)
+            } else if resultedObj := res.(*object.NumberObject); *resultedObj != *expectedObj {
+                t.Errorf("expected (%s=%v), got (%s=%v)",
+                    varname, *expectedObj, varname, *resultedObj)
+            }
+        }
+    }
+}
+
+func TestIfStatement(t *testing.T) {
+    testCases := []struct {
+        input       string
+        expected    map[string]*object.NumberObject
+    }{
+        {
+            "if 2 > 1:\n" +
+            "    a = 1\n",
+            map[string]*object.NumberObject{
+                "a": &object.NumberObject{Value: 1},
+            },
+        },
+        {
+            "a = 0\n" +
+            "if 2 < 1:\n" +
+            "    a = 1\n",
+            map[string]*object.NumberObject{
+                "a": &object.NumberObject{Value: 0},
+            },
+        },
+    }
+
+    for _, testCase := range testCases {
+        l := lexer.New(testCase.input)
+        p := parser.New(l)
+        stmts := p.Parsing()
+        exec(stmts)
         for varname, expectedObj := range testCase.expected {
             res, ok := env[varname]
             if !ok {

@@ -63,3 +63,19 @@ type DivideExpression struct {
 
 func (de *DivideExpression) getExpression() {}
 
+type IfStatement struct {
+    Condition   Expression
+    Body        []Statement
+    // else
+}
+
+func (ie *IfStatement) getStatement() {}
+
+type ComparisonExpression struct {
+    Operator    token.Token
+    Left        Expression
+    Right       Expression
+}
+
+func (ce *ComparisonExpression) getExpression() {}
+

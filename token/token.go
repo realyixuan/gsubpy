@@ -7,6 +7,9 @@ const (
     ILLEGAL     = "ILLEGAL"
     LINEFEED    = "LINEFEED"
 
+    IF          = "if"
+    COLON       = ":"
+
     ASSIGN      = "ASSIGN"
     IDENTIFIER  = "IDENTIFIER"
 
@@ -16,7 +19,14 @@ const (
     MINUS       = "MINUS"
     MUL         = "MUL"
     DIVIDE      = "DIVIDE"
+
+    GT          = ">"
+    LT          = "<"
 )
+
+var Keywords = map[string]tokenType {
+    "if":   IF,
+}
 
 
 type Token struct {

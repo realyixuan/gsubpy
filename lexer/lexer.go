@@ -45,6 +45,15 @@ func (l *Lexer) ReadNextToken() {
     case '/':
         l.CurToken = token.Token{TokenType: token.DIVIDE, Literals: string(l.ch)}
         l.readChar()
+    case '>':
+        l.CurToken = token.Token{TokenType: token.GT, Literals: string(l.ch)}
+        l.readChar()
+    case '<':
+        l.CurToken = token.Token{TokenType: token.LT, Literals: string(l.ch)}
+        l.readChar()
+    case ':':
+        l.CurToken = token.Token{TokenType: token.COLON, Literals: string(l.ch)}
+        l.readChar()
     case '\n':
         l.CurToken = token.Token{TokenType: token.LINEFEED, Literals: string(l.ch)}
         l.readChar()
@@ -56,7 +65,11 @@ func (l *Lexer) ReadNextToken() {
             l.CurToken = token.Token{TokenType: token.NUMBER, Literals: num}
         } else if isLetter(l.ch) {
             identifier := l.readLetter()
-            l.CurToken = token.Token{TokenType: token.IDENTIFIER, Literals: identifier}
+            if tokType, ok := token.Keywords[identifier]; ok {
+                l.CurToken = token.Token{TokenType: tokType, Literals: identifier}
+            } else {
+                l.CurToken = token.Token{TokenType: token.IDENTIFIER, Literals: identifier}
+            }
         } else {
             l.CurToken = token.Token{TokenType: token.ILLEGAL}
             l.readChar()
