@@ -131,3 +131,33 @@ func TestIfStatement(t *testing.T) {
 
 }
 
+func TestWhileStatement(t *testing.T) {
+    testCases := []struct{
+        input           string
+        expectedTokens  []token.Token
+    } {
+        {
+            "while 10 > 5:",
+            []token.Token{
+                token.Token{TokenType: token.WHILE, Literals: "while"},
+                token.Token{TokenType: token.NUMBER, Literals: "10"},
+                token.Token{TokenType: token.GT, Literals: ">"},
+                token.Token{TokenType: token.NUMBER, Literals: "5"},
+                token.Token{TokenType: token.COLON, Literals: ":"},
+            },
+        },
+    }
+
+
+    for _, testCase := range testCases {
+        l := New(testCase.input)
+        for _, tk := range testCase.expectedTokens {
+            if tk != l.CurToken {
+                t.Errorf("expected %s, got %s", tk, l.CurToken)
+            }
+            l.ReadNextToken()
+        }
+    }
+
+}
+

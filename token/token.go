@@ -8,6 +8,7 @@ const (
     LINEFEED    = "LINEFEED"
 
     IF          = "if"
+    WHILE       = "while"
     COLON       = ":"
 
     ASSIGN      = "ASSIGN"
@@ -25,7 +26,8 @@ const (
 )
 
 var Keywords = map[string]tokenType {
-    "if":   IF,
+    "if":       IF,
+    "while":    WHILE,
 }
 
 

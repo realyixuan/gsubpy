@@ -42,6 +42,8 @@ func (p *Parser)parsingStatement() ast.Statement {
         }
     case token.IF:
         return p.parsingIfStatement()
+    case token.WHILE:
+        return p.parsingWhileStatement()
     }
     return nil
 }
@@ -65,6 +67,27 @@ func (p *Parser)parsingIfStatement() *ast.IfStatement {
     ifStatement.Body = p.parsing(p.l.Indents)
 
     return ifStatement
+}
+
+func (p *Parser)parsingWhileStatement() *ast.WhileStatement {
+    curIndents := p.l.Indents
+
+    stmt := &ast.WhileStatement{}
+    p.l.ReadNextToken()
+    stmt.Condition = p.parsingExpression(0)
+
+    if p.l.CurToken.TokenType == token.COLON {
+        p.l.ReadNextToken()
+        p.l.ReadNextToken()
+    }
+
+    if p.l.Indents <= curIndents {
+        panic("wrong indents")
+    }
+    
+    stmt.Body = p.parsing(p.l.Indents)
+
+    return stmt
 }
 
 func (p *Parser)parsingAssignStatement() *ast.AssignStatement {

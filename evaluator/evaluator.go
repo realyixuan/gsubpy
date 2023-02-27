@@ -1,6 +1,8 @@
 package evaluator
 
 import (
+    "fmt"
+
     "strconv"
     "gsubpy/ast"
     "gsubpy/object"
@@ -19,6 +21,8 @@ func exec(stmts []ast.Statement) {
             execAssignStatement(node)
         case *ast.IfStatement:
             execIfStatement(node)
+        case *ast.WhileStatement:
+            execWhileStatement(node)
         }
     }
 }
@@ -54,6 +58,7 @@ func evalExpression(expression ast.Expression) object.Object {
     case *ast.ComparisonExpression:
         leftObj := evalExpression(node.Left)
         rightObj := evalExpression(node.Right)
+        fmt.Println(leftObj, rightObj)
         switch node.Operator.TokenType {
         case token.GT:
             if leftObj.(*object.NumberObject).Value > rightObj.(*object.NumberObject).Value {
@@ -84,3 +89,10 @@ func execIfStatement(stmt *ast.IfStatement) {
         exec(stmt.Body)
     }
 }
+
+func execWhileStatement(stmt *ast.WhileStatement) {
+    for evalExpression(stmt.Condition) == env["True"] {
+        exec(stmt.Body)
+    }
+}
+

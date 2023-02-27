@@ -71,6 +71,13 @@ type IfStatement struct {
 
 func (ie *IfStatement) getStatement() {}
 
+type WhileStatement struct {
+    Condition   Expression
+    Body        []Statement
+}
+
+func (ws *WhileStatement) getStatement() {}
+
 type ComparisonExpression struct {
     Operator    token.Token
     Left        Expression
