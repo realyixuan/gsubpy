@@ -36,8 +36,14 @@ func (l *Lexer) ReadNextToken() {
     case '+':
         l.CurToken = token.Token{TokenType: token.PLUS, Literals: string(l.ch)}
         l.readChar()
+    case '-':
+        l.CurToken = token.Token{TokenType: token.MINUS, Literals: string(l.ch)}
+        l.readChar()
     case '*':
         l.CurToken = token.Token{TokenType: token.MUL, Literals: string(l.ch)}
+        l.readChar()
+    case '/':
+        l.CurToken = token.Token{TokenType: token.DIVIDE, Literals: string(l.ch)}
         l.readChar()
     case '\n':
         l.CurToken = token.Token{TokenType: token.LINEFEED, Literals: string(l.ch)}

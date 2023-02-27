@@ -14,27 +14,7 @@ func TestAssignStatement(t *testing.T) {
         expectedTokens []token.Token
     }{
         {
-            `val = 1`,
-            []token.Token{
-                token.Token{TokenType: token.IDENTIFIER, Literals: "val"},
-                token.Token{TokenType: token.ASSIGN, Literals: "="},
-                token.Token{TokenType: token.NUMBER, Literals: "1"},
-                token.Token{TokenType: token.EOF},
-            },
-        },
-        {
-            `val = 1 + 1`,
-            []token.Token{
-                token.Token{TokenType: token.IDENTIFIER, Literals: "val"},
-                token.Token{TokenType: token.ASSIGN, Literals: "="},
-                token.Token{TokenType: token.NUMBER, Literals: "1"},
-                token.Token{TokenType: token.PLUS, Literals: "+"},
-                token.Token{TokenType: token.NUMBER, Literals: "1"},
-                token.Token{TokenType: token.EOF},
-            },
-        },
-        {
-            `val = 10 + 20 * 10`,
+            `val = 10 + 20 * 10 / 2 - 50`,
             []token.Token{
                 token.Token{TokenType: token.IDENTIFIER, Literals: "val"},
                 token.Token{TokenType: token.ASSIGN, Literals: "="},
@@ -43,6 +23,10 @@ func TestAssignStatement(t *testing.T) {
                 token.Token{TokenType: token.NUMBER, Literals: "20"},
                 token.Token{TokenType: token.MUL, Literals: "*"},
                 token.Token{TokenType: token.NUMBER, Literals: "10"},
+                token.Token{TokenType: token.DIVIDE, Literals: "/"},
+                token.Token{TokenType: token.NUMBER, Literals: "2"},
+                token.Token{TokenType: token.MINUS, Literals: "-"},
+                token.Token{TokenType: token.NUMBER, Literals: "50"},
                 token.Token{TokenType: token.EOF},
             },
         },

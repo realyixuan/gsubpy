@@ -13,7 +13,9 @@ const (
     NUMBER      = "NUMBER"
 
     PLUS        = "PLUS"
+    MINUS       = "MINUS"
     MUL         = "MUL"
+    DIVIDE      = "DIVIDE"
 )
 
 

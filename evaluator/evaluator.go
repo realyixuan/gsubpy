@@ -31,11 +31,23 @@ func evalExpression(expression ast.Expression) object.Object {
         return &object.NumberObject{
             Value: leftObj.(*object.NumberObject).Value + rightObj.(*object.NumberObject).Value,
             }
+    case *ast.MinusExpression:
+        leftObj := evalExpression(node.Left)
+        rightObj := evalExpression(node.Right)
+        return &object.NumberObject{
+            Value: leftObj.(*object.NumberObject).Value - rightObj.(*object.NumberObject).Value,
+            }
     case *ast.MulExpression:
         leftObj := evalExpression(node.Left)
         rightObj := evalExpression(node.Right)
         return &object.NumberObject{
             Value: leftObj.(*object.NumberObject).Value * rightObj.(*object.NumberObject).Value,
+            }
+    case *ast.DivideExpression:
+        leftObj := evalExpression(node.Left)
+        rightObj := evalExpression(node.Right)
+        return &object.NumberObject{
+            Value: leftObj.(*object.NumberObject).Value / rightObj.(*object.NumberObject).Value,
             }
     case *ast.NumberExpression:
         val, _ := strconv.Atoi(node.Value.Literals)

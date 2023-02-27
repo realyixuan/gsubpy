@@ -13,21 +13,9 @@ func TestOneLineAssignStatement(t *testing.T) {
         expected    map[string]*object.NumberObject
     }{
         {
-            `val = 1`,
+            `val = 10 + 20 * 10 / 2 - 50`,
             map[string]*object.NumberObject{
-                "val": &object.NumberObject{Value: 1},
-            },
-        },
-        {
-            `val = 1 + 1`,
-            map[string]*object.NumberObject{
-                "val": &object.NumberObject{Value: 2},
-            },
-        },
-        {
-            `val = 10 + 20 * 2`,
-            map[string]*object.NumberObject{
-                "val": &object.NumberObject{Value: 50},
+                "val": &object.NumberObject{Value: 60},
             },
         },
     }

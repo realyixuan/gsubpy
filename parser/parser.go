@@ -51,7 +51,7 @@ func (p *Parser)parsingExpression(precedence int) ast.Expression {
     p.l.ReadNextToken()
 
     var infixPrecedence int
-    if p.l.CurToken.Literals == "+" {
+    if p.l.CurToken.Literals == "+" || p.l.CurToken.Literals == "-" {
         infixPrecedence = 1
     } else {
         infixPrecedence = 2
@@ -82,8 +82,18 @@ func (p *Parser) infixFn(expression ast.Expression) ast.Expression {
             Left: expression,
             Right: p.parsingExpression(1),
         }
+    case token.MINUS:
+        return &ast.MinusExpression{
+            Left: expression,
+            Right: p.parsingExpression(1),
+        }
     case token.MUL:
         return &ast.MulExpression{
+            Left: expression,
+            Right: p.parsingExpression(2),
+        }
+    case token.DIVIDE:
+        return &ast.DivideExpression{
             Left: expression,
             Right: p.parsingExpression(2),
         }

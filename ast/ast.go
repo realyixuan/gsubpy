@@ -42,10 +42,24 @@ type PlusExpression struct {
 
 func (pe *PlusExpression) getExpression() {}
 
+type MinusExpression struct {
+    Left    Expression
+    Right   Expression
+}
+
+func (me *MinusExpression) getExpression() {}
+
 type MulExpression struct {
     Left    Expression
     Right   Expression
 }
 
 func (me *MulExpression) getExpression() {}
+
+type DivideExpression struct {
+    Left    Expression
+    Right   Expression
+}
+
+func (de *DivideExpression) getExpression() {}
 
