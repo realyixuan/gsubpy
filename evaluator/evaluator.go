@@ -14,7 +14,7 @@ var env = map[string]object.Object{
     "True": &object.BoolObject{Value: 1},
 }
 
-func exec(stmts []ast.Statement) {
+func Exec(stmts []ast.Statement) {
     for _, stmt := range stmts {
         switch node := stmt.(type) {
         case *ast.AssignStatement:
@@ -23,41 +23,43 @@ func exec(stmts []ast.Statement) {
             execIfStatement(node)
         case *ast.WhileStatement:
             execWhileStatement(node)
+        case *ast.ExpressionStatement:
+            Eval(node)
         }
     }
 }
 
-func evalExpression(expression ast.Expression) object.Object {
+func Eval(expression ast.Expression) object.Object {
     switch node := expression.(type) {
     case *ast.IdentifierExpression:
         return env[node.Identifier.Literals]
     case *ast.PlusExpression:
-        leftObj := evalExpression(node.Left)
-        rightObj := evalExpression(node.Right)
+        leftObj := Eval(node.Left)
+        rightObj := Eval(node.Right)
         return &object.NumberObject{
             Value: leftObj.(*object.NumberObject).Value + rightObj.(*object.NumberObject).Value,
             }
     case *ast.MinusExpression:
-        leftObj := evalExpression(node.Left)
-        rightObj := evalExpression(node.Right)
+        leftObj := Eval(node.Left)
+        rightObj := Eval(node.Right)
         return &object.NumberObject{
             Value: leftObj.(*object.NumberObject).Value - rightObj.(*object.NumberObject).Value,
             }
     case *ast.MulExpression:
-        leftObj := evalExpression(node.Left)
-        rightObj := evalExpression(node.Right)
+        leftObj := Eval(node.Left)
+        rightObj := Eval(node.Right)
         return &object.NumberObject{
             Value: leftObj.(*object.NumberObject).Value * rightObj.(*object.NumberObject).Value,
             }
     case *ast.DivideExpression:
-        leftObj := evalExpression(node.Left)
-        rightObj := evalExpression(node.Right)
+        leftObj := Eval(node.Left)
+        rightObj := Eval(node.Right)
         return &object.NumberObject{
             Value: leftObj.(*object.NumberObject).Value / rightObj.(*object.NumberObject).Value,
             }
     case *ast.ComparisonExpression:
-        leftObj := evalExpression(node.Left)
-        rightObj := evalExpression(node.Right)
+        leftObj := Eval(node.Left)
+        rightObj := Eval(node.Right)
         fmt.Println(leftObj, rightObj)
         switch node.Operator.TokenType {
         case token.GT:
@@ -76,23 +78,25 @@ func evalExpression(expression ast.Expression) object.Object {
     case *ast.NumberExpression:
         val, _ := strconv.Atoi(node.Value.Literals)
         return &object.NumberObject{Value: val}
+    case *ast.ExpressionStatement:
+        return Eval(node.Value)
     }
     return nil    // XXX: temporary solution
 }
 
 func execAssignStatement(stmt *ast.AssignStatement) {
-    env[stmt.Identifier.Literals] = evalExpression(stmt.Value)
+    env[stmt.Identifier.Literals] = Eval(stmt.Value)
 }
 
 func execIfStatement(stmt *ast.IfStatement) {
-    if evalExpression(stmt.Condition) == env["True"] {
-        exec(stmt.Body)
+    if Eval(stmt.Condition) == env["True"] {
+        Exec(stmt.Body)
     }
 }
 
 func execWhileStatement(stmt *ast.WhileStatement) {
-    for evalExpression(stmt.Condition) == env["True"] {
-        exec(stmt.Body)
+    for Eval(stmt.Condition) == env["True"] {
+        Exec(stmt.Body)
     }
 }
 

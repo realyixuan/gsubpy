@@ -24,7 +24,7 @@ func TestOneLineAssignStatement(t *testing.T) {
         l := lexer.New(testCase.input)
         p := parser.New(l)
         stmts := p.Parsing()
-        exec(stmts)
+        Exec(stmts)
         for target, expectedObj := range testCase.expected {
             if resultedObj := env[target].(*object.NumberObject); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
@@ -63,7 +63,7 @@ func TestMultiLineAssignStatement(t *testing.T) {
         l := lexer.New(testCase.input)
         p := parser.New(l)
         stmts := p.Parsing()
-        exec(stmts)
+        Exec(stmts)
         for varname, expectedObj := range testCase.expected {
             res, ok := env[varname]
             if !ok {
@@ -111,7 +111,7 @@ func TestIfStatement(t *testing.T) {
         l := lexer.New(testCase.input)
         p := parser.New(l)
         stmts := p.Parsing()
-        exec(stmts)
+        Exec(stmts)
         for varname, expectedObj := range testCase.expected {
             res, ok := env[varname]
             if !ok {
@@ -155,7 +155,7 @@ func TestWhileStatement(t *testing.T) {
         l := lexer.New(testCase.input)
         p := parser.New(l)
         stmts := p.Parsing()
-        exec(stmts)
+        Exec(stmts)
         for varname, expectedObj := range testCase.expected {
             res, ok := env[varname]
             if !ok {
@@ -166,5 +166,17 @@ func TestWhileStatement(t *testing.T) {
             }
         }
     }
+}
+
+func TestExpressionStatement(t *testing.T) {
+    // should have no error
+    input := ""+
+    // "a = 1 + 1\n"
+    "1 + 1\n" +
+    "a + 1\n"
+    l := lexer.New(input)
+    p := parser.New(l)
+    stmts := p.Parsing()
+    Exec(stmts)
 }
 

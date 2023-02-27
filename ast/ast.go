@@ -23,6 +23,13 @@ type AssignStatement struct {
 
 func (as *AssignStatement) getStatement() {}
 
+type ExpressionStatement struct {
+    Value       Expression
+}
+
+func (es *ExpressionStatement) getStatement() {}
+func (es *ExpressionStatement) getExpression() {}
+
 type IdentifierExpression struct {
     Identifier  token.Token
 }

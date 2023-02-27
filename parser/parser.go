@@ -39,13 +39,25 @@ func (p *Parser)parsingStatement() ast.Statement {
     case token.IDENTIFIER:
         if p.l.PeekNextToken().TokenType == token.ASSIGN {
             return p.parsingAssignStatement()
+        } else {
+            return p.parsingExpressionStatement()
         }
+    case token.NUMBER:
+        return p.parsingExpressionStatement()
     case token.IF:
         return p.parsingIfStatement()
     case token.WHILE:
         return p.parsingWhileStatement()
     }
     return nil
+}
+
+func (p *Parser)parsingExpressionStatement() *ast.ExpressionStatement {
+    val := p.parsingExpression(0)
+    p.l.ReadNextToken()
+    return &ast.ExpressionStatement{
+        Value: val,
+    }
 }
 
 func (p *Parser)parsingIfStatement() *ast.IfStatement {
