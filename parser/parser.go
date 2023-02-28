@@ -23,12 +23,19 @@ func (p *Parser)parsing(indents int) []ast.Statement {
     // return statements
     var stmts []ast.Statement
 
-    for p.l.PeekNextToken().TokenType != token.EOF {
+    for p.l.CurToken.TokenType != token.EOF {
+        if p.isWhiteLine() {
+            p.l.ReadNextToken()
+            continue
+        }
+        if indents != p.l.Indents {
+            // precisely speaking, whether p.l.Indents == indents or p.l.Indents < indents
+            // but there now isn't error handling
+            // so omit the error
+            break
+        }
         stmt := p.parsingStatement()
         stmts = append(stmts, stmt)
-        if indents != p.l.Indents {
-            break   // precisely speaking, whether p.l.Indents == indents or p.l.Indents < indents
-        }
     }
     return stmts
 
@@ -172,6 +179,13 @@ func (p *Parser) infixFn(expression ast.Expression) ast.Expression {
     }
 
     return nil
+}
+
+func (p *Parser)isWhiteLine() bool {
+    if p.l.CurToken.TokenType != token.LINEFEED {
+        return false
+    }
+    return true
 }
 
 func getPrecedence(literals string) int {

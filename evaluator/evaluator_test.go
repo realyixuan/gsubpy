@@ -171,12 +171,46 @@ func TestWhileStatement(t *testing.T) {
 func TestExpressionStatement(t *testing.T) {
     // should have no error
     input := ""+
-    // "a = 1 + 1\n"
+    "a = 1 + 1\n" + 
     "1 + 1\n" +
     "a + 1\n"
     l := lexer.New(input)
     p := parser.New(l)
     stmts := p.Parsing()
     Exec(stmts)
+}
+
+func TestBlankLineStatement(t *testing.T) {
+    // should have no error
+    input := ""+
+    "a = 1 + 1\n" +
+    "     \n" +
+    "1 + 1\n" +
+    "\n"      +
+    "     \n" +
+    "a + 1\n" +
+    "b = a + 1\n"
+    l := lexer.New(input)
+    p := parser.New(l)
+    stmts := p.Parsing()
+    Exec(stmts)
+    if obj, _ := env["b"]; obj.(*object.NumberObject).Value != 3 {
+        t.Errorf("expected %v, got %v", 3, obj.(*object.NumberObject).Value)
+    }
+}
+
+func TestEOFLineStatement(t *testing.T) {
+    // should have no error
+    input := ""+
+    "a = 1 + 1\n" +
+    "a + 1\n" +
+    "b = a + 1"
+    l := lexer.New(input)
+    p := parser.New(l)
+    stmts := p.Parsing()
+    Exec(stmts)
+    if obj, _ := env["b"]; obj.(*object.NumberObject).Value != 3 {
+        t.Errorf("expected %v, got %v", 3, obj.(*object.NumberObject).Value)
+    }
 }
 
