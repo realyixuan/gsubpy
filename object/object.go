@@ -1,5 +1,9 @@
 package object
 
+import (
+    "gsubpy/ast"
+)
+
 type Object interface {
     isObject()
 }
@@ -14,4 +18,13 @@ type NumberObject struct {
 }
 
 func (no *NumberObject) isObject() {}
+
+type FunctionObject struct {
+    Name    string
+    Params  []string
+    Body    []ast.Statement
+}
+
+func (no *FunctionObject) isObject() {}
+
 

@@ -21,6 +21,8 @@ func Exec(stmts []ast.Statement) {
             execIfStatement(node)
         case *ast.WhileStatement:
             execWhileStatement(node)
+        case *ast.DefStatement:
+            execDefStatement(node)
         case *ast.ExpressionStatement:
             Eval(node)
         }
@@ -95,5 +97,19 @@ func execWhileStatement(stmt *ast.WhileStatement) {
     for Eval(stmt.Condition) == env["True"] {
         Exec(stmt.Body)
     }
+}
+
+func execDefStatement(stmt *ast.DefStatement) {
+    funcObj := &object.FunctionObject{
+        Name: stmt.Name.Literals,
+        Body: stmt.Body,
+    }
+
+    var params []string
+    for _, tok := range stmt.Params {
+        params = append(params, tok.Literals)
+    }
+    funcObj.Params = params
+    env[funcObj.Name] = funcObj
 }
 

@@ -93,3 +93,11 @@ type ComparisonExpression struct {
 
 func (ce *ComparisonExpression) getExpression() {}
 
+type DefStatement struct {
+    Name    token.Token
+    Params  []token.Token
+    Body    []Statement
+}
+
+func (fs *DefStatement) getStatement() {}
+

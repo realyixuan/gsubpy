@@ -53,6 +53,15 @@ func (l *Lexer) ReadNextToken() {
     case '<':
         l.CurToken = token.Token{TokenType: token.LT, Literals: string(l.ch)}
         l.readChar()
+    case '(':
+        l.CurToken = token.Token{TokenType: token.LPAREN, Literals: string(l.ch)}
+        l.readChar()
+    case ')':
+        l.CurToken = token.Token{TokenType: token.RPAREN, Literals: string(l.ch)}
+        l.readChar()
+    case ',':
+        l.CurToken = token.Token{TokenType: token.COMMA, Literals: string(l.ch)}
+        l.readChar()
     case ':':
         l.CurToken = token.Token{TokenType: token.COLON, Literals: string(l.ch)}
         l.readChar()

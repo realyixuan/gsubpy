@@ -55,6 +55,8 @@ func (p *Parser)parsingStatement() ast.Statement {
         return p.parsingIfStatement()
     case token.WHILE:
         return p.parsingWhileStatement()
+    case token.DEF:
+        return p.parsingDefStatement()
     }
     return nil
 }
@@ -107,6 +109,57 @@ func (p *Parser)parsingWhileStatement() *ast.WhileStatement {
     stmt.Body = p.parsing(p.l.Indents)
 
     return stmt
+}
+
+func (p *Parser)parsingDefStatement() *ast.DefStatement {
+    curIndents := p.l.Indents
+
+    p.l.ReadNextToken()
+    stmt := &ast.DefStatement{
+        Name: p.l.CurToken,
+    }
+
+    p.l.ReadNextToken()
+    if p.l.CurToken.TokenType == token.LPAREN {
+        p.l.ReadNextToken()
+    } else {
+        panic("wrong syntax")
+    }
+
+    p.l.ReadNextToken()
+    stmt.Params = p.parsingDefParams()
+
+    if p.l.CurToken.TokenType != token.RPAREN {
+        panic("wrong syntax")
+    }
+
+    p.l.ReadNextToken()
+    if p.l.CurToken.TokenType == token.COLON {
+        p.l.ReadNextToken()
+        p.l.ReadNextToken() // skip over '\n'
+    }
+
+    if p.l.Indents <= curIndents {
+        panic("wrong indents")
+    }
+    
+    stmt.Body = p.parsing(p.l.Indents)
+
+    return stmt
+}
+
+func (p *Parser)parsingDefParams() []token.Token {
+    var params []token.Token
+
+    for p.l.CurToken.TokenType != token.RPAREN {
+        params = append(params, p.l.CurToken)
+        p.l.ReadNextToken()
+        if p.l.CurToken.TokenType == token.COMMA {
+            p.l.ReadNextToken()
+        }
+    }
+
+    return params
 }
 
 func (p *Parser)parsingAssignStatement() *ast.AssignStatement {
@@ -191,20 +244,27 @@ func (p *Parser)isWhiteLine() bool {
 func getPrecedence(literals string) int {
     switch literals {
     case "<":
-        return 1
+        return COMPARISON
     case ">":
-        return 1
+        return COMPARISON
     case "+":
-        return 2
+        return SUM
     case "-":
-        return 2
+        return SUM
     case "*":
-        return 3
+        return PRODUCT
     case "/":
-        return 3
+        return PRODUCT
     default:
-        return 0
+        return LOWEST
     }
 
 }
+
+const (
+    LOWEST int = iota
+    COMPARISON
+    SUM
+    PRODUCT
+)
 

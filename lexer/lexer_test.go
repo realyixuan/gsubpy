@@ -161,3 +161,36 @@ func TestWhileStatement(t *testing.T) {
 
 }
 
+func TestDefStatement(t *testing.T) {
+    testCases := []struct{
+        input           string
+        expectedTokens  []token.Token
+    } {
+        {
+            "def foo(a, b):",
+            []token.Token{
+                token.Token{TokenType: token.DEF, Literals: "def"},
+                token.Token{TokenType: token.IDENTIFIER, Literals: "foo"},
+                token.Token{TokenType: token.LPAREN, Literals: "("},
+                token.Token{TokenType: token.IDENTIFIER, Literals: "a"},
+                token.Token{TokenType: token.COMMA, Literals: ","},
+                token.Token{TokenType: token.IDENTIFIER, Literals: "b"},
+                token.Token{TokenType: token.RPAREN, Literals: ")"},
+                token.Token{TokenType: token.COLON, Literals: ":"},
+            },
+        },
+    }
+
+
+    for _, testCase := range testCases {
+        l := New(testCase.input)
+        for _, tk := range testCase.expectedTokens {
+            if tk != l.CurToken {
+                t.Errorf("expected %s, got %s", tk, l.CurToken)
+            }
+            l.ReadNextToken()
+        }
+    }
+
+}
+

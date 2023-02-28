@@ -214,3 +214,17 @@ func TestEOFLineStatement(t *testing.T) {
     }
 }
 
+func TestFunctionDefStatement(t *testing.T) {
+    // should have no error
+    input := ""+
+    "def foo(a, b):\n" +
+    "    c = a + b\n"
+    l := lexer.New(input)
+    p := parser.New(l)
+    stmts := p.Parsing()
+    Exec(stmts)
+    if obj, _ := env["foo"]; obj == nil {
+        t.Errorf("func 'foo' does not exists")
+    }
+}
+

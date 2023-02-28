@@ -9,7 +9,7 @@ const (
 
     IF          = "if"
     WHILE       = "while"
-    COLON       = ":"
+    DEF         = "def"
 
     ASSIGN      = "ASSIGN"
     IDENTIFIER  = "IDENTIFIER"
@@ -23,11 +23,17 @@ const (
 
     GT          = ">"
     LT          = "<"
+
+    LPAREN      = "("
+    RPAREN      = ")"
+    COLON       = ":"
+    COMMA       = ","
 )
 
 var Keywords = map[string]tokenType {
     "if":       IF,
     "while":    WHILE,
+    "def":      DEF,
 }
 
 
