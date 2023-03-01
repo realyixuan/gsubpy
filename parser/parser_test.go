@@ -6,55 +6,7 @@ import (
     "gsubpy/lexer"
 )
 
-func TestIndentParsing(t *testing.T) {
-    input := "" +
-    "    a =       1\n" + 
-    "a = 1\n" + 
-    "    a =     1\n" + 
-    "        a      = 1\n" + 
-    "    a    =          1\n" + 
-    "   a =    1\n" + 
-    "a = 5\n"
-
-    p := New(lexer.New(input))
-
-    if p.l.Indents != 4 {
-        t.Errorf("expect %v, got %v", 4, p.l.Indents)
-    }
-
-    p.parsingStatement()
-    if p.l.Indents != 0 {
-        t.Errorf("expect %v, got %v", 0, p.l.Indents)
-    }
-
-    p.parsingStatement()
-    if p.l.Indents != 4 {
-        t.Errorf("expect %v, got %v", 4, p.l.Indents)
-    }
-
-    p.parsingStatement()
-    if p.l.Indents != 8 {
-        t.Errorf("expect %v, got %v", 8, p.l.Indents)
-    }
-
-    p.parsingStatement()
-    if p.l.Indents != 4 {
-        t.Errorf("expect %v, got %v", 4, p.l.Indents)
-    }
-
-    p.parsingStatement()
-    if p.l.Indents != 3 {
-        t.Errorf("expect %v, got %v", 4, p.l.Indents)
-    }
-
-    p.parsingStatement()
-    if p.l.Indents != 0 {
-        t.Errorf("expect %v, got %v", 0, p.l.Indents)
-    }
-
-}
-
-func TestIndent2Parsing(t *testing.T) {
+func TestSpaceIndentParsing(t *testing.T) {
     input := "" +
     "a = 1\n" + 
     "if 2 > 1:\n" + 
@@ -65,17 +17,69 @@ func TestIndent2Parsing(t *testing.T) {
 
     p := New(lexer.New(input))
 
-    if p.l.Indents != 0 {
+    if len(p.l.Indents) != 0 {
         t.Errorf("expect %v, got %v", 0, p.l.Indents)
     }
 
     p.parsingStatement()
-    if p.l.Indents != 0 {
+    if len(p.l.Indents) != 0 {
         t.Errorf("expect %v, got %v", 0, p.l.Indents)
     }
 
     p.parsingStatement()
-    if p.l.Indents != 0 {
+    if len(p.l.Indents) != 0 {
+        t.Errorf("expect %v, got %v", 0, p.l.Indents)
+    }
+}
+
+func TestTabIndentParsing(t *testing.T) {
+    input := "" +
+    "a = 1\n" + 
+    "if 2 > 1:\n" + 
+    "\tif 3 > 2:\n" + 
+    "\t\ta = 4\n" + 
+    "\t\tb = 4\n" + 
+    "a = 5\n"
+
+    p := New(lexer.New(input))
+
+    if p.l.Indents != "" {
+        t.Errorf("expect %v, got %v", 0, p.l.Indents)
+    }
+
+    p.parsingStatement()
+    if p.l.Indents != "" {
+        t.Errorf("expect %v, got %v", 0, p.l.Indents)
+    }
+
+    p.parsingStatement()
+    if p.l.Indents != "" {
+        t.Errorf("expect %v, got %v", 0, p.l.Indents)
+    }
+}
+
+func TestTabSpaceIndentParsing(t *testing.T) {
+    input := "" +
+    "a = 1\n" + 
+    "if 2 > 1:\n" + 
+    "\t if 3 > 2:\n" + 
+    "\t\t a = 4\n" + 
+    "\t\t b = 4\n" + 
+    "a = 5\n"
+
+    p := New(lexer.New(input))
+
+    if p.l.Indents != "" {
+        t.Errorf("expect %v, got %v", 0, p.l.Indents)
+    }
+
+    p.parsingStatement()
+    if p.l.Indents != "" {
+        t.Errorf("expect %v, got %v", 0, p.l.Indents)
+    }
+
+    p.parsingStatement()
+    if p.l.Indents != "" {
         t.Errorf("expect %v, got %v", 0, p.l.Indents)
     }
 }

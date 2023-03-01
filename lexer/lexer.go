@@ -16,7 +16,7 @@ type Lexer struct {
     input       string
     idx         int
     ch          byte
-    Indents     int
+    Indents     string
     indentReady bool
     CurToken    token.Token
 }
@@ -97,14 +97,14 @@ func (l *Lexer) PeekNextToken() token.Token {
 }
 
 func (l *Lexer) skipWhitespace() {
-    var count int = 0
-    for l.ch == ' ' {
+    var indentStr string
+    for l.ch == ' ' || l.ch == '\t' {
+        indentStr += string(l.ch)
         l.readChar()
-        count += 1
     }
 
     if l.indentReady {
-        l.Indents = count
+        l.Indents = indentStr
         l.indentReady = false
     }
 }

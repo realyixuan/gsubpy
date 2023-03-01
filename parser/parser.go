@@ -16,10 +16,10 @@ func New(l *lexer.Lexer) *Parser {
 }
 
 func (p *Parser)Parsing() []ast.Statement {
-    return p.parsing(0)
+    return p.parsing(NO_INDENTS)
 }
 
-func (p *Parser)parsing(indents int) []ast.Statement {
+func (p *Parser)parsing(indents string) []ast.Statement {
     // return statements
     var stmts []ast.Statement
 
@@ -28,7 +28,7 @@ func (p *Parser)parsing(indents int) []ast.Statement {
             p.l.ReadNextToken()
             continue
         }
-        if indents != p.l.Indents {
+        if !isEQIndents(indents, p.l.Indents) {
             // precisely speaking, whether p.l.Indents == indents or p.l.Indents < indents
             // but there now isn't error handling
             // so omit the error
@@ -81,7 +81,7 @@ func (p *Parser)parsingIfStatement() *ast.IfStatement {
         p.l.ReadNextToken()
     }
 
-    if p.l.Indents <= curIndents {
+    if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
         panic("wrong indents")
     }
     
@@ -102,7 +102,7 @@ func (p *Parser)parsingWhileStatement() *ast.WhileStatement {
         p.l.ReadNextToken()
     }
 
-    if p.l.Indents <= curIndents {
+    if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
         panic("wrong indents")
     }
     
@@ -139,7 +139,7 @@ func (p *Parser)parsingDefStatement() *ast.DefStatement {
         p.l.ReadNextToken() // skip over '\n'
     }
 
-    if p.l.Indents <= curIndents {
+    if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
         panic("wrong indents")
     }
     
@@ -267,4 +267,20 @@ const (
     SUM
     PRODUCT
 )
+
+const (
+    NO_INDENTS = ""
+)
+
+func isEQIndents(indents1, indents2 string) bool {
+    return indents1 == indents2
+}
+
+func isGTIndents(indents1, indents2 string) bool {
+    return len(indents1) > len(indents2) && indents1[:len(indents2)] == indents2
+}
+
+func isLTIndents(indents1, indents2 string) bool {
+    return len(indents1) < len(indents2) && indents2[:len(indents1)] == indents1
+}
 
