@@ -120,9 +120,7 @@ func (p *Parser)parsingDefStatement() *ast.DefStatement {
     }
 
     p.l.ReadNextToken()
-    if p.l.CurToken.TokenType == token.LPAREN {
-        p.l.ReadNextToken()
-    } else {
+    if p.l.CurToken.TokenType != token.LPAREN {
         panic("wrong syntax")
     }
 
