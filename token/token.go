@@ -10,6 +10,7 @@ const (
     IF          = "if"
     WHILE       = "while"
     DEF         = "def"
+    RETURN      = "return"
 
     ASSIGN      = "ASSIGN"
     IDENTIFIER  = "IDENTIFIER"
@@ -34,6 +35,7 @@ var Keywords = map[string]tokenType {
     "if":       IF,
     "while":    WHILE,
     "def":      DEF,
+    "return":   RETURN,
 }
 
 

@@ -57,6 +57,8 @@ func (p *Parser)parsingStatement() ast.Statement {
         return p.parsingWhileStatement()
     case token.DEF:
         return p.parsingDefStatement()
+    case token.RETURN:
+        return p.parsingReturnStatement()
     }
     return nil
 }
@@ -146,6 +148,14 @@ func (p *Parser)parsingDefStatement() *ast.DefStatement {
     return stmt
 }
 
+func (p *Parser)parsingReturnStatement() *ast.ReturnStatement {
+    p.l.ReadNextToken()
+    stmt := &ast.ReturnStatement{
+        Value: p.parsingExpression(LOWEST),
+    }
+    return stmt
+}
+
 func (p *Parser)parsingDefParams() []token.Token {
     var params []token.Token
 
@@ -180,6 +190,22 @@ func (p *Parser)parsingExpression(precedence int) ast.Expression {
     }
 
     return left
+}
+
+func (p *Parser)parsingCallParams(precedence int) []ast.Expression {
+    var params []ast.Expression
+
+    for p.l.CurToken.TokenType != token.RPAREN {
+        param := p.parsingExpression(LOWEST)
+        params = append(params, param)
+        if p.l.CurToken.TokenType == token.COMMA {
+            p.l.ReadNextToken()
+        }
+    }
+
+    p.l.ReadNextToken()
+
+    return params
 }
 
 func (p *Parser) prefixFn() ast.Expression {
@@ -227,6 +253,11 @@ func (p *Parser) infixFn(expression ast.Expression) ast.Expression {
             Left: expression,
             Right: p.parsingExpression(getPrecedence("<")),
         }
+    case token.LPAREN:
+        return &ast.FunctionCallExpression{
+            Name: expression,
+            Params: p.parsingCallParams(getPrecedence("(")),
+        }
     }
 
     return nil
@@ -241,6 +272,8 @@ func (p *Parser)isWhiteLine() bool {
 
 func getPrecedence(literals string) int {
     switch literals {
+    case "(":
+        return CALL
     case "<":
         return COMPARISON
     case ">":
@@ -264,6 +297,7 @@ const (
     COMPARISON
     SUM
     PRODUCT
+    CALL
 )
 
 const (

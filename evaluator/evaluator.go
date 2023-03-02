@@ -77,6 +77,14 @@ func Eval(expression ast.Expression) object.Object {
     case *ast.NumberExpression:
         val, _ := strconv.Atoi(node.Value.Literals)
         return &object.NumberObject{Value: val}
+    case *ast.FunctionCallExpression:
+        funcObj := Eval(node.Name)
+
+        for i, expr := range node.Params {
+            env[funcObj.(*object.FunctionObject).Params[i]] = Eval(expr)
+        }
+
+        return evalFunctionCallExpression(funcObj.(*object.FunctionObject).Body)
     case *ast.ExpressionStatement:
         return Eval(node.Value)
     }
@@ -111,5 +119,17 @@ func execDefStatement(stmt *ast.DefStatement) {
     }
     funcObj.Params = params
     env[funcObj.Name] = funcObj
+}
+
+func evalFunctionCallExpression(stmts []ast.Statement) object.Object {
+    for _, stmt := range stmts {
+        switch node := stmt.(type) {
+        case *ast.ReturnStatement:
+            return Eval(node.Value)
+        default:
+            Exec([]ast.Statement{stmt})
+        }
+    }
+    return nil
 }
 

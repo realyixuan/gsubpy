@@ -101,3 +101,16 @@ type DefStatement struct {
 
 func (fs *DefStatement) getStatement() {}
 
+type ReturnStatement struct {
+    Value   Expression
+}
+
+func (rs *ReturnStatement) getStatement() {}
+
+type FunctionCallExpression struct {
+    Name        Expression
+    Params      []Expression
+}
+
+func (ce *FunctionCallExpression) getExpression() {}
+

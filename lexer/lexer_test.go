@@ -194,3 +194,33 @@ func TestDefStatement(t *testing.T) {
 
 }
 
+func TestReturnStatement(t *testing.T) {
+    testCases := []struct{
+        input           string
+        expectedTokens  []token.Token
+    } {
+        {
+            "return a + b",
+            []token.Token{
+                token.Token{TokenType: token.RETURN, Literals: "return"},
+                token.Token{TokenType: token.IDENTIFIER, Literals: "a"},
+                token.Token{TokenType: token.PLUS, Literals: "+"},
+                token.Token{TokenType: token.IDENTIFIER, Literals: "b"},
+            },
+        },
+    }
+
+
+    for _, testCase := range testCases {
+        l := New(testCase.input)
+        for _, tk := range testCase.expectedTokens {
+            if tk != l.CurToken {
+                t.Errorf("expected %s, got %s", tk, l.CurToken)
+            }
+            l.ReadNextToken()
+        }
+    }
+
+}
+
+

@@ -228,3 +228,32 @@ func TestFunctionDefStatement(t *testing.T) {
     }
 }
 
+func TestReturnStatement(t *testing.T) {
+    // should have no error
+    input := ""+
+    "def foo(a, b):\n" +
+    "    return a + b\n"
+    l := lexer.New(input)
+    p := parser.New(l)
+    stmts := p.Parsing()
+    Exec(stmts)
+    if obj, _ := env["foo"]; obj == nil {
+        t.Errorf("func 'foo' does not exists")
+    }
+}
+
+func TestFunctionCallStatement(t *testing.T) {
+    // should have no error
+    input := ""+
+    "def foo(a, b):\n" +
+    "    return a + b\n" +
+    "res = foo(1, 1)\n"
+    l := lexer.New(input)
+    p := parser.New(l)
+    stmts := p.Parsing()
+    Exec(stmts)
+    if obj, _ := env["res"]; obj.(*object.NumberObject).Value != 2 {
+        t.Errorf("expected %v, got %v", 2, obj.(*object.NumberObject).Value)
+    }
+}
+
