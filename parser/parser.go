@@ -183,9 +183,7 @@ func (p *Parser)parsingExpression(precedence int) ast.Expression {
     left := p.prefixFn()
     p.l.ReadNextToken()
 
-    infixPrecedence := getPrecedence(p.l.CurToken.Literals)
-
-    for p.l.CurToken.TokenType != token.LINEFEED && p.l.CurToken.TokenType != token.COLON && p.l.CurToken.TokenType != token.EOF && infixPrecedence > precedence {
+    for p.l.CurToken.TokenType != token.LINEFEED && p.l.CurToken.TokenType != token.COLON && p.l.CurToken.TokenType != token.EOF && getPrecedence(p.l.CurToken.Literals) > precedence {
         left = p.infixFn(left)
     }
 
@@ -195,7 +193,7 @@ func (p *Parser)parsingExpression(precedence int) ast.Expression {
 func (p *Parser)parsingCallParams(precedence int) []ast.Expression {
     var params []ast.Expression
 
-    for p.l.CurToken.TokenType != token.RPAREN {
+    for p.l.CurToken.TokenType != token.RPAREN && p.l.CurToken.TokenType != token.EOF{
         param := p.parsingExpression(LOWEST)
         params = append(params, param)
         if p.l.CurToken.TokenType == token.COMMA {

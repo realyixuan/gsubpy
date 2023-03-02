@@ -27,4 +27,3 @@ type FunctionObject struct {
 
 func (no *FunctionObject) isObject() {}
 
-

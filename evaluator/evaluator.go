@@ -1,6 +1,8 @@
 package evaluator
 
 import (
+    "fmt"
+
     "strconv"
     "gsubpy/ast"
     "gsubpy/object"
@@ -78,6 +80,11 @@ func Eval(expression ast.Expression) object.Object {
         val, _ := strconv.Atoi(node.Value.Literals)
         return &object.NumberObject{Value: val}
     case *ast.FunctionCallExpression:
+        if node.Name.(*ast.IdentifierExpression).Identifier.Literals == "print" {
+            builtinPrint(node.Params)
+            return nil
+        }
+
         funcObj := Eval(node.Name)
 
         for i, expr := range node.Params {
@@ -131,5 +138,15 @@ func evalFunctionCallExpression(stmts []ast.Statement) object.Object {
         }
     }
     return nil
+}
+
+// temporary solution
+func builtinPrint(expressions []ast.Expression) {
+    for _, expression := range expressions {
+        rv := Eval(expression)
+        fmt.Print(rv.(*object.NumberObject).Value)
+        fmt.Print(" ")
+    }
+    fmt.Println()
 }
 
