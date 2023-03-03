@@ -14,6 +14,7 @@ import (
 )
 
 func REPLRunning() {
+    env := evaluator.NewEnvironment()
     for {
         fmt.Print(">>> ")
         reader := bufio.NewReader(os.Stdin)
@@ -58,12 +59,12 @@ func REPLRunning() {
             // ? How to compare interfaces
             switch node := stmt.(type) {
             case *ast.ExpressionStatement:
-                obj := evaluator.Eval(node)
+                obj := evaluator.Eval(node, env)
                 if obj != nil {
                     fmt.Println(obj.(*object.NumberObject).Value)
                 }
             case ast.Statement:
-                evaluator.Exec(stmts)
+                evaluator.Exec(stmts, env)
             }
         }
     }

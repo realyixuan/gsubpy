@@ -24,9 +24,10 @@ func TestOneLineAssignStatement(t *testing.T) {
         l := lexer.New(testCase.input)
         p := parser.New(l)
         stmts := p.Parsing()
-        Exec(stmts)
+        env := NewEnvironment()
+        Exec(stmts, env)
         for target, expectedObj := range testCase.expected {
-            if resultedObj := env[target].(*object.NumberObject); *resultedObj != *expectedObj {
+            if resultedObj := env.Get(target).(*object.NumberObject); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
                     target, *expectedObj, target, *resultedObj)
             }
@@ -63,10 +64,11 @@ func TestMultiLineAssignStatement(t *testing.T) {
         l := lexer.New(testCase.input)
         p := parser.New(l)
         stmts := p.Parsing()
-        Exec(stmts)
+        env := NewEnvironment()
+        Exec(stmts, env)
         for varname, expectedObj := range testCase.expected {
-            res, ok := env[varname]
-            if !ok {
+            res := env.Get(varname)
+            if res == nil {
                 t.Errorf("no variable %v", varname)
             } else if resultedObj := res.(*object.NumberObject); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
@@ -111,10 +113,11 @@ func TestIfStatement(t *testing.T) {
         l := lexer.New(testCase.input)
         p := parser.New(l)
         stmts := p.Parsing()
-        Exec(stmts)
+        env := NewEnvironment()
+        Exec(stmts, env)
         for varname, expectedObj := range testCase.expected {
-            res, ok := env[varname]
-            if !ok {
+            res := env.Get(varname)
+            if res == nil {
                 t.Errorf("no variable %v", varname)
             } else if resultedObj := res.(*object.NumberObject); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
@@ -155,10 +158,11 @@ func TestWhileStatement(t *testing.T) {
         l := lexer.New(testCase.input)
         p := parser.New(l)
         stmts := p.Parsing()
-        Exec(stmts)
+        env := NewEnvironment()
+        Exec(stmts, env)
         for varname, expectedObj := range testCase.expected {
-            res, ok := env[varname]
-            if !ok {
+            res := env.Get(varname)
+            if res == nil {
                 t.Errorf("no variable %v", varname)
             } else if resultedObj := res.(*object.NumberObject); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
@@ -177,7 +181,8 @@ func TestExpressionStatement(t *testing.T) {
     l := lexer.New(input)
     p := parser.New(l)
     stmts := p.Parsing()
-    Exec(stmts)
+    env := NewEnvironment()
+    Exec(stmts, env)
 }
 
 func TestBlankLineStatement(t *testing.T) {
@@ -193,8 +198,9 @@ func TestBlankLineStatement(t *testing.T) {
     l := lexer.New(input)
     p := parser.New(l)
     stmts := p.Parsing()
-    Exec(stmts)
-    if obj, _ := env["b"]; obj.(*object.NumberObject).Value != 3 {
+    env := NewEnvironment()
+    Exec(stmts, env)
+    if obj := env.Get("b"); obj.(*object.NumberObject).Value != 3 {
         t.Errorf("expected %v, got %v", 3, obj.(*object.NumberObject).Value)
     }
 }
@@ -208,8 +214,9 @@ func TestEOFLineStatement(t *testing.T) {
     l := lexer.New(input)
     p := parser.New(l)
     stmts := p.Parsing()
-    Exec(stmts)
-    if obj, _ := env["b"]; obj.(*object.NumberObject).Value != 3 {
+    env := NewEnvironment()
+    Exec(stmts, env)
+    if obj := env.Get("b"); obj.(*object.NumberObject).Value != 3 {
         t.Errorf("expected %v, got %v", 3, obj.(*object.NumberObject).Value)
     }
 }
@@ -222,8 +229,9 @@ func TestFunctionDefStatement(t *testing.T) {
     l := lexer.New(input)
     p := parser.New(l)
     stmts := p.Parsing()
-    Exec(stmts)
-    if obj, _ := env["foo"]; obj == nil {
+    env := NewEnvironment()
+    Exec(stmts, env)
+    if obj := env.Get("foo"); obj == nil {
         t.Errorf("func 'foo' does not exists")
     }
 }
@@ -236,8 +244,9 @@ func TestReturnStatement(t *testing.T) {
     l := lexer.New(input)
     p := parser.New(l)
     stmts := p.Parsing()
-    Exec(stmts)
-    if obj, _ := env["foo"]; obj == nil {
+    env := NewEnvironment()
+    Exec(stmts, env)
+    if obj := env.Get("foo"); obj == nil {
         t.Errorf("func 'foo' does not exists")
     }
 }
@@ -251,8 +260,9 @@ func TestFunctionCallStatement(t *testing.T) {
     l := lexer.New(input)
     p := parser.New(l)
     stmts := p.Parsing()
-    Exec(stmts)
-    if obj, _ := env["res"]; obj.(*object.NumberObject).Value != 2 {
+    env := NewEnvironment()
+    Exec(stmts, env)
+    if obj := env.Get("res"); obj.(*object.NumberObject).Value != 2 {
         t.Errorf("expected %v, got %v", 2, obj.(*object.NumberObject).Value)
     }
 }

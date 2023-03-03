@@ -9,71 +9,110 @@ import (
     "gsubpy/token"
 )
 
-var env = map[string]object.Object{
-    "False": &object.BoolObject{Value: 0},
-    "True": &object.BoolObject{Value: 1},
+const (
+    TRUE = "True"
+    FALSE = "False"
+)
+
+type Environment struct {
+    store     map[string]object.Object
+    parent    *Environment
 }
 
-func Exec(stmts []ast.Statement) {
+func NewEnvironment() *Environment {
+    return &Environment{
+        store: map[string]object.Object{
+            TRUE: &object.BoolObject{Value: 0},
+            FALSE: &object.BoolObject{Value: 1},
+            },
+        parent: nil,
+    }
+}
+
+func (self *Environment) Set(key string, value object.Object) {
+    self.store[key] = value
+}
+
+func (self *Environment) Get(key string) object.Object {
+    // omit the condition of key not being existing
+    if self.parent == nil {
+        return self.store[key]
+    }
+
+    if obj, ok := self.store[key]; ok {
+        return obj
+    } else {
+        return self.parent.Get(key)
+    }
+}
+
+func (self *Environment) deriveEnv() *Environment {
+    return &Environment{
+        store: map[string]object.Object{},
+        parent: self,
+    }
+}
+
+func Exec(stmts []ast.Statement, env *Environment) {
     for _, stmt := range stmts {
         switch node := stmt.(type) {
         case *ast.AssignStatement:
-            execAssignStatement(node)
+            execAssignStatement(node, env)
         case *ast.IfStatement:
-            execIfStatement(node)
+            execIfStatement(node, env)
         case *ast.WhileStatement:
-            execWhileStatement(node)
+            execWhileStatement(node, env)
         case *ast.DefStatement:
-            execDefStatement(node)
+            execDefStatement(node, env)
         case *ast.ExpressionStatement:
-            Eval(node)
+            Eval(node, env)
         }
     }
 }
 
-func Eval(expression ast.Expression) object.Object {
+func Eval(expression ast.Expression, env *Environment) object.Object {
     switch node := expression.(type) {
     case *ast.IdentifierExpression:
-        return env[node.Identifier.Literals]
+        return env.Get(node.Identifier.Literals)
     case *ast.PlusExpression:
-        leftObj := Eval(node.Left)
-        rightObj := Eval(node.Right)
+        leftObj := Eval(node.Left, env)
+        rightObj := Eval(node.Right, env)
         return &object.NumberObject{
             Value: leftObj.(*object.NumberObject).Value + rightObj.(*object.NumberObject).Value,
             }
     case *ast.MinusExpression:
-        leftObj := Eval(node.Left)
-        rightObj := Eval(node.Right)
+        leftObj := Eval(node.Left, env)
+        rightObj := Eval(node.Right, env)
         return &object.NumberObject{
             Value: leftObj.(*object.NumberObject).Value - rightObj.(*object.NumberObject).Value,
             }
     case *ast.MulExpression:
-        leftObj := Eval(node.Left)
-        rightObj := Eval(node.Right)
+        leftObj := Eval(node.Left, env)
+        rightObj := Eval(node.Right, env)
         return &object.NumberObject{
             Value: leftObj.(*object.NumberObject).Value * rightObj.(*object.NumberObject).Value,
             }
     case *ast.DivideExpression:
-        leftObj := Eval(node.Left)
-        rightObj := Eval(node.Right)
+        leftObj := Eval(node.Left, env)
+        rightObj := Eval(node.Right, env)
         return &object.NumberObject{
             Value: leftObj.(*object.NumberObject).Value / rightObj.(*object.NumberObject).Value,
             }
     case *ast.ComparisonExpression:
-        leftObj := Eval(node.Left)
-        rightObj := Eval(node.Right)
+        leftObj := Eval(node.Left, env)
+        rightObj := Eval(node.Right, env)
         switch node.Operator.TokenType {
         case token.GT:
             if leftObj.(*object.NumberObject).Value > rightObj.(*object.NumberObject).Value {
-                return env["True"]
+                return env.Get(TRUE)
             } else {
-                return env["False"]
+                return env.Get(FALSE)
             }
         case token.LT:
             if leftObj.(*object.NumberObject).Value < rightObj.(*object.NumberObject).Value {
-                return env["True"]
+                return env.Get(TRUE)
             } else {
-                return env["False"]
+                return env.Get(FALSE)
             }
         }
     case *ast.NumberExpression:
@@ -81,40 +120,34 @@ func Eval(expression ast.Expression) object.Object {
         return &object.NumberObject{Value: val}
     case *ast.FunctionCallExpression:
         if node.Name.(*ast.IdentifierExpression).Identifier.Literals == "print" {
-            builtinPrint(node.Params)
+            builtinPrint(node.Params, env)
             return nil
         }
 
-        funcObj := Eval(node.Name)
-
-        for i, expr := range node.Params {
-            env[funcObj.(*object.FunctionObject).Params[i]] = Eval(expr)
-        }
-
-        return evalFunctionCallExpression(funcObj.(*object.FunctionObject).Body)
+        return evalFunctionCallExpression(node, env)
     case *ast.ExpressionStatement:
-        return Eval(node.Value)
+        return Eval(node.Value, env)
     }
     return nil    // XXX: temporary solution
 }
 
-func execAssignStatement(stmt *ast.AssignStatement) {
-    env[stmt.Identifier.Literals] = Eval(stmt.Value)
+func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
+    env.Set(stmt.Identifier.Literals, Eval(stmt.Value, env))
 }
 
-func execIfStatement(stmt *ast.IfStatement) {
-    if Eval(stmt.Condition) == env["True"] {
-        Exec(stmt.Body)
+func execIfStatement(stmt *ast.IfStatement, env *Environment) {
+    if Eval(stmt.Condition, env) == env.Get(TRUE) {
+        Exec(stmt.Body, env)
     }
 }
 
-func execWhileStatement(stmt *ast.WhileStatement) {
-    for Eval(stmt.Condition) == env["True"] {
-        Exec(stmt.Body)
+func execWhileStatement(stmt *ast.WhileStatement, env *Environment) {
+    for Eval(stmt.Condition, env) == env.Get(TRUE) {
+        Exec(stmt.Body, env)
     }
 }
 
-func execDefStatement(stmt *ast.DefStatement) {
+func execDefStatement(stmt *ast.DefStatement, env *Environment) {
     funcObj := &object.FunctionObject{
         Name: stmt.Name.Literals,
         Body: stmt.Body,
@@ -125,25 +158,33 @@ func execDefStatement(stmt *ast.DefStatement) {
         params = append(params, tok.Literals)
     }
     funcObj.Params = params
-    env[funcObj.Name] = funcObj
+    env.Set(funcObj.Name, funcObj)
 }
 
-func evalFunctionCallExpression(stmts []ast.Statement) object.Object {
-    for _, stmt := range stmts {
+func evalFunctionCallExpression(funcNode *ast.FunctionCallExpression, parentEnv *Environment) object.Object {
+    funcObj := Eval(funcNode.Name, parentEnv).(*object.FunctionObject)
+
+    env := parentEnv.deriveEnv()
+
+    for i, expr := range funcNode.Params {
+        env.Set(funcObj.Params[i], Eval(expr, parentEnv))
+    }
+
+    for _, stmt := range funcObj.Body {
         switch node := stmt.(type) {
         case *ast.ReturnStatement:
-            return Eval(node.Value)
+            return Eval(node.Value, env)
         default:
-            Exec([]ast.Statement{stmt})
+            Exec([]ast.Statement{stmt}, env)
         }
     }
     return nil
 }
 
 // temporary solution
-func builtinPrint(expressions []ast.Expression) {
+func builtinPrint(expressions []ast.Expression, env *Environment) {
     for _, expression := range expressions {
-        rv := Eval(expression)
+        rv := Eval(expression, env)
         fmt.Print(rv.(*object.NumberObject).Value)
         fmt.Print(" ")
     }
