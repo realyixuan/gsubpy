@@ -101,7 +101,7 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
     case *ast.ComparisonExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
-        switch node.Operator.TokenType {
+        switch node.Operator.Type {
         case token.GT:
             if leftObj.(*object.NumberObject).Value > rightObj.(*object.NumberObject).Value {
                 return env.Get(TRUE)

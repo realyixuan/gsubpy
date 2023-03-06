@@ -23,7 +23,7 @@ func (p *Parser)parsing(indents string) []ast.Statement {
     // return statements
     var stmts []ast.Statement
 
-    for p.l.CurToken.TokenType != token.EOF {
+    for p.l.CurToken.Type != token.EOF {
         if p.isWhiteLine() {
             p.l.ReadNextToken()
             continue
@@ -42,9 +42,9 @@ func (p *Parser)parsing(indents string) []ast.Statement {
 }
 
 func (p *Parser)parsingStatement() ast.Statement {
-    switch p.l.CurToken.TokenType {
+    switch p.l.CurToken.Type {
     case token.IDENTIFIER:
-        if p.l.PeekNextToken().TokenType == token.ASSIGN {
+        if p.l.PeekNextToken().Type == token.ASSIGN {
             return p.parsingAssignStatement()
         } else {
             return p.parsingExpressionStatement()
@@ -78,7 +78,7 @@ func (p *Parser)parsingIfStatement() *ast.IfStatement {
     p.l.ReadNextToken()
     ifStatement.Condition = p.parsingExpression(0)
 
-    if p.l.CurToken.TokenType == token.COLON {
+    if p.l.CurToken.Type == token.COLON {
         p.l.ReadNextToken()
         p.l.ReadNextToken()
     }
@@ -99,7 +99,7 @@ func (p *Parser)parsingWhileStatement() *ast.WhileStatement {
     p.l.ReadNextToken()
     stmt.Condition = p.parsingExpression(0)
 
-    if p.l.CurToken.TokenType == token.COLON {
+    if p.l.CurToken.Type == token.COLON {
         p.l.ReadNextToken()
         p.l.ReadNextToken()
     }
@@ -122,19 +122,19 @@ func (p *Parser)parsingDefStatement() *ast.DefStatement {
     }
 
     p.l.ReadNextToken()
-    if p.l.CurToken.TokenType != token.LPAREN {
+    if p.l.CurToken.Type != token.LPAREN {
         panic("wrong syntax")
     }
 
     p.l.ReadNextToken()
     stmt.Params = p.parsingDefParams()
 
-    if p.l.CurToken.TokenType != token.RPAREN {
+    if p.l.CurToken.Type != token.RPAREN {
         panic("wrong syntax")
     }
 
     p.l.ReadNextToken()
-    if p.l.CurToken.TokenType == token.COLON {
+    if p.l.CurToken.Type == token.COLON {
         p.l.ReadNextToken()
         p.l.ReadNextToken() // skip over '\n'
     }
@@ -159,10 +159,10 @@ func (p *Parser)parsingReturnStatement() *ast.ReturnStatement {
 func (p *Parser)parsingDefParams() []token.Token {
     var params []token.Token
 
-    for p.l.CurToken.TokenType != token.RPAREN {
+    for p.l.CurToken.Type != token.RPAREN {
         params = append(params, p.l.CurToken)
         p.l.ReadNextToken()
-        if p.l.CurToken.TokenType == token.COMMA {
+        if p.l.CurToken.Type == token.COMMA {
             p.l.ReadNextToken()
         }
     }
@@ -183,7 +183,7 @@ func (p *Parser)parsingExpression(precedence int) ast.Expression {
     left := p.prefixFn()
     p.l.ReadNextToken()
 
-    for p.l.CurToken.TokenType != token.LINEFEED && p.l.CurToken.TokenType != token.COLON && p.l.CurToken.TokenType != token.EOF && getPrecedence(p.l.CurToken.Literals) > precedence {
+    for p.l.CurToken.Type != token.LINEFEED && p.l.CurToken.Type != token.COLON && p.l.CurToken.Type != token.EOF && getPrecedence(p.l.CurToken.Literals) > precedence {
         left = p.infixFn(left)
     }
 
@@ -193,10 +193,10 @@ func (p *Parser)parsingExpression(precedence int) ast.Expression {
 func (p *Parser)parsingCallParams(precedence int) []ast.Expression {
     var params []ast.Expression
 
-    for p.l.CurToken.TokenType != token.RPAREN && p.l.CurToken.TokenType != token.EOF{
+    for p.l.CurToken.Type != token.RPAREN && p.l.CurToken.Type != token.EOF{
         param := p.parsingExpression(LOWEST)
         params = append(params, param)
-        if p.l.CurToken.TokenType == token.COMMA {
+        if p.l.CurToken.Type == token.COMMA {
             p.l.ReadNextToken()
         }
     }
@@ -207,18 +207,18 @@ func (p *Parser)parsingCallParams(precedence int) []ast.Expression {
 }
 
 func (p *Parser) prefixFn() ast.Expression {
-    if p.l.CurToken.TokenType == token.IDENTIFIER {
+    if p.l.CurToken.Type == token.IDENTIFIER {
         return &ast.IdentifierExpression{p.l.CurToken}
-    } else if p.l.CurToken.TokenType == token.NUMBER {
+    } else if p.l.CurToken.Type == token.NUMBER {
         return &ast.NumberExpression{p.l.CurToken}
     }
     return nil
 }
 
 func (p *Parser) infixFn(expression ast.Expression) ast.Expression {
-    curTokenType := p.l.CurToken.TokenType
+    curType := p.l.CurToken.Type
     p.l.ReadNextToken()
-    switch curTokenType {
+    switch curType {
     case token.PLUS:
         return &ast.PlusExpression{
             Left: expression,
@@ -262,7 +262,7 @@ func (p *Parser) infixFn(expression ast.Expression) ast.Expression {
 }
 
 func (p *Parser)isWhiteLine() bool {
-    if p.l.CurToken.TokenType != token.LINEFEED {
+    if p.l.CurToken.Type != token.LINEFEED {
         return false
     }
     return true

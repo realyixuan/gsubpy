@@ -40,7 +40,7 @@ var Keywords = map[string]tokenType {
 
 
 type Token struct {
-    TokenType   tokenType
+    Type   tokenType
     Literals    string
 }
 

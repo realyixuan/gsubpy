@@ -33,57 +33,57 @@ func (l *Lexer) ReadNextToken() {
 
     switch l.ch {
     case '=':
-        l.CurToken = token.Token{TokenType: token.ASSIGN, Literals: string(l.ch)}
+        l.CurToken = token.Token{Type: token.ASSIGN, Literals: string(l.ch)}
         l.readChar()
     case '+':
-        l.CurToken = token.Token{TokenType: token.PLUS, Literals: string(l.ch)}
+        l.CurToken = token.Token{Type: token.PLUS, Literals: string(l.ch)}
         l.readChar()
     case '-':
-        l.CurToken = token.Token{TokenType: token.MINUS, Literals: string(l.ch)}
+        l.CurToken = token.Token{Type: token.MINUS, Literals: string(l.ch)}
         l.readChar()
     case '*':
-        l.CurToken = token.Token{TokenType: token.MUL, Literals: string(l.ch)}
+        l.CurToken = token.Token{Type: token.MUL, Literals: string(l.ch)}
         l.readChar()
     case '/':
-        l.CurToken = token.Token{TokenType: token.DIVIDE, Literals: string(l.ch)}
+        l.CurToken = token.Token{Type: token.DIVIDE, Literals: string(l.ch)}
         l.readChar()
     case '>':
-        l.CurToken = token.Token{TokenType: token.GT, Literals: string(l.ch)}
+        l.CurToken = token.Token{Type: token.GT, Literals: string(l.ch)}
         l.readChar()
     case '<':
-        l.CurToken = token.Token{TokenType: token.LT, Literals: string(l.ch)}
+        l.CurToken = token.Token{Type: token.LT, Literals: string(l.ch)}
         l.readChar()
     case '(':
-        l.CurToken = token.Token{TokenType: token.LPAREN, Literals: string(l.ch)}
+        l.CurToken = token.Token{Type: token.LPAREN, Literals: string(l.ch)}
         l.readChar()
     case ')':
-        l.CurToken = token.Token{TokenType: token.RPAREN, Literals: string(l.ch)}
+        l.CurToken = token.Token{Type: token.RPAREN, Literals: string(l.ch)}
         l.readChar()
     case ',':
-        l.CurToken = token.Token{TokenType: token.COMMA, Literals: string(l.ch)}
+        l.CurToken = token.Token{Type: token.COMMA, Literals: string(l.ch)}
         l.readChar()
     case ':':
-        l.CurToken = token.Token{TokenType: token.COLON, Literals: string(l.ch)}
+        l.CurToken = token.Token{Type: token.COLON, Literals: string(l.ch)}
         l.readChar()
     case '\n':
-        l.CurToken = token.Token{TokenType: token.LINEFEED, Literals: string(l.ch)}
+        l.CurToken = token.Token{Type: token.LINEFEED, Literals: string(l.ch)}
         l.readChar()
         l.indentReady = true
     case '\x03':
-        l.CurToken = token.Token{TokenType: token.EOF}
+        l.CurToken = token.Token{Type: token.EOF}
     default:
         if isDigit(l.ch) {
             num := l.readNumber()
-            l.CurToken = token.Token{TokenType: token.NUMBER, Literals: num}
+            l.CurToken = token.Token{Type: token.NUMBER, Literals: num}
         } else if isLetter(l.ch) {
             identifier := l.readLetter()
             if tokType, ok := token.Keywords[identifier]; ok {
-                l.CurToken = token.Token{TokenType: tokType, Literals: identifier}
+                l.CurToken = token.Token{Type: tokType, Literals: identifier}
             } else {
-                l.CurToken = token.Token{TokenType: token.IDENTIFIER, Literals: identifier}
+                l.CurToken = token.Token{Type: token.IDENTIFIER, Literals: identifier}
             }
         } else {
-            l.CurToken = token.Token{TokenType: token.ILLEGAL}
+            l.CurToken = token.Token{Type: token.ILLEGAL}
             l.readChar()
         }
     }
