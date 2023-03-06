@@ -49,8 +49,6 @@ func (p *Parser)parsingStatement() ast.Statement {
         } else {
             return p.parsingExpressionStatement()
         }
-    case token.NUMBER:
-        return p.parsingExpressionStatement()
     case token.IF:
         return p.parsingIfStatement()
     case token.WHILE:
@@ -59,6 +57,8 @@ func (p *Parser)parsingStatement() ast.Statement {
         return p.parsingDefStatement()
     case token.RETURN:
         return p.parsingReturnStatement()
+    default:
+        return p.parsingExpressionStatement()
     }
     return nil
 }
@@ -228,6 +228,8 @@ func (p *Parser) prefixFn() ast.Expression {
         return &ast.IdentifierExpression{p.l.CurToken}
     } else if p.l.CurToken.Type == token.NUMBER {
         return &ast.NumberExpression{p.l.CurToken}
+    } else if p.l.CurToken.Type == token.STRING {
+        return &ast.StringExpression{p.l.CurToken}
     }
     return nil
 }

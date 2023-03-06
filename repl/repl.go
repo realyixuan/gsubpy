@@ -61,6 +61,12 @@ func REPLRunning() {
             case *ast.ExpressionStatement:
                 obj := evaluator.Eval(node, env)
                 if obj != nil {
+                    switch node := obj.(type) {
+                    case *object.NumberObject:
+                        fmt.Println(node.Value)
+                    case *object.StringObject:
+                        fmt.Println(node.Value)
+                    }
                     fmt.Println(obj.(*object.NumberObject).Value)
                 }
             case ast.Statement:

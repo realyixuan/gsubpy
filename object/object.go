@@ -19,6 +19,12 @@ type NumberObject struct {
 
 func (no *NumberObject) isObject() {}
 
+type StringObject struct {
+    Value   string
+}
+
+func (self *StringObject) isObject() {}
+
 type FunctionObject struct {
     Name    string
     Params  []string

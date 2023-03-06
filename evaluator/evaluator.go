@@ -118,6 +118,8 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
     case *ast.NumberExpression:
         val, _ := strconv.Atoi(node.Value.Literals)
         return &object.NumberObject{Value: val}
+    case *ast.StringExpression:
+        return &object.StringObject{Value: node.Value.Literals}
     case *ast.FunctionCallExpression:
         if node.Name.(*ast.IdentifierExpression).Identifier.Literals == "print" {
             builtinPrint(node.Params, env)
@@ -189,7 +191,12 @@ func evalFunctionCallExpression(funcNode *ast.FunctionCallExpression, parentEnv 
 func builtinPrint(expressions []ast.Expression, env *Environment) {
     for _, expression := range expressions {
         rv := Eval(expression, env)
-        fmt.Print(rv.(*object.NumberObject).Value)
+        switch node := rv.(type) {
+        case *object.NumberObject:
+            fmt.Print(node.Value)
+        case *object.StringObject:
+            fmt.Print(node.Value)
+        }
         fmt.Print(" ")
     }
     fmt.Println()

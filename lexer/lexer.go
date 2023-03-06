@@ -65,6 +65,10 @@ func (l *Lexer) ReadNextToken() {
     case ':':
         l.CurToken = token.Token{Type: token.COLON, Literals: string(l.ch)}
         l.readChar()
+    case '"', '\'':
+        l.CurToken = token.Token{Type: token.STRING}
+        l.CurToken.Literals = l.readString()
+        l.readChar()
     case '\n':
         l.CurToken = token.Token{Type: token.LINEFEED, Literals: string(l.ch)}
         l.readChar()
@@ -107,6 +111,22 @@ func (l *Lexer) skipWhitespace() {
         l.Indents = indentStr
         l.indentReady = false
     }
+}
+
+func (l *Lexer) readString() string {
+    var result string
+    stringMark := l.ch
+    l.readChar()
+    for l.ch != stringMark && l.ch != '\x03' {
+        result += string(l.ch)
+        l.readChar()
+    }
+
+    if l.ch != stringMark {
+        panic("string have wrong format")
+    }
+
+    return result
 }
 
 func (l *Lexer) readNumber() string {

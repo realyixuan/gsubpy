@@ -223,4 +223,39 @@ func TestReturnStatement(t *testing.T) {
 
 }
 
+func TestStringStatement(t *testing.T) {
+    testCases := []struct {
+        input   string
+        expectedTokens []token.Token
+    }{
+        {
+            `val = "abc,de"`,
+            []token.Token{
+                token.Token{Type: token.IDENTIFIER, Literals: "val"},
+                token.Token{Type: token.ASSIGN, Literals: "="},
+                token.Token{Type: token.STRING, Literals: "abc,de"},
+                token.Token{Type: token.EOF},
+            },
+        },
+        {
+            `val = 'abc,de'`,
+            []token.Token{
+                token.Token{Type: token.IDENTIFIER, Literals: "val"},
+                token.Token{Type: token.ASSIGN, Literals: "="},
+                token.Token{Type: token.STRING, Literals: "abc,de"},
+                token.Token{Type: token.EOF},
+            },
+        },
+    }
+
+    for _, testCase := range testCases {
+        l := New(testCase.input)
+        for _, tk := range testCase.expectedTokens {
+            if tk != l.CurToken {
+                t.Errorf("expected token %s, got token %s", tk, l.CurToken)
+            }
+            l.ReadNextToken()
+        }
+    }
+}
 

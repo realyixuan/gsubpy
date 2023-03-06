@@ -42,6 +42,12 @@ type NumberExpression struct {
 
 func (ne *NumberExpression) getExpression() {}
 
+type StringExpression struct {
+    Value   token.Token
+}
+
+func (se *StringExpression) getExpression() {}
+
 type PlusExpression struct {
     Left    Expression
     Right   Expression

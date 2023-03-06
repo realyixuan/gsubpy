@@ -18,6 +18,7 @@ const (
     IDENTIFIER  = "IDENTIFIER"
 
     NUMBER      = "NUMBER"
+    STRING      = "STRING"
 
     PLUS        = "PLUS"
     MINUS       = "MINUS"
