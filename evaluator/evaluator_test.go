@@ -127,6 +127,66 @@ func TestIfStatement(t *testing.T) {
     }
 }
 
+func TestIfElifElseStatement(t *testing.T) {
+    testCases := []struct {
+        input       string
+        expected    map[string]*object.NumberObject
+    }{
+        {
+            "a = 10\n" +
+            "b = 20\n" +
+            "if a > b:\n" +
+            "    res = 1\n" +
+            "elif a < b:\n" +
+            "    res = 2\n" +
+            "else:\n" +
+            "    res = 3\n",
+            map[string]*object.NumberObject{
+                "res": &object.NumberObject{Value: 2},
+            },
+        },
+        {
+            "a = 10\n" +
+            "b = 20\n" +
+            "if a > b:\n" +
+            "    res = 1\n" +
+            "else:\n" +
+            "    res = 2\n",
+            map[string]*object.NumberObject{
+                "res": &object.NumberObject{Value: 2},
+            },
+        },
+        {
+            "a = 10\n" +
+            "b = 20\n" +
+            "if a < b:\n" +
+            "    res = 1\n" +
+            "else:\n" +
+            "    res = 2\n",
+            map[string]*object.NumberObject{
+                "res": &object.NumberObject{Value: 1},
+            },
+        },
+    }
+
+    for _, testCase := range testCases {
+        l := lexer.New(testCase.input)
+        p := parser.New(l)
+        stmts := p.Parsing()
+        env := NewEnvironment()
+        Exec(stmts, env)
+        for varname, expectedObj := range testCase.expected {
+            res := env.Get(varname)
+            if res == nil {
+                t.Errorf("no variable %v", varname)
+            } else if resultedObj := res.(*object.NumberObject); *resultedObj != *expectedObj {
+                t.Errorf("expected (%s=%v), got (%s=%v)",
+                    varname, *expectedObj, varname, *resultedObj)
+            }
+        }
+    }
+}
+
 func TestWhileStatement(t *testing.T) {
     testCases := []struct {
         input       string

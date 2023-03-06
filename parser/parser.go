@@ -75,8 +75,13 @@ func (p *Parser)parsingIfStatement() *ast.IfStatement {
     curIndents := p.l.Indents
 
     ifStatement := &ast.IfStatement{}
-    p.l.ReadNextToken()
-    ifStatement.Condition = p.parsingExpression(0)
+    if p.l.CurToken.Type == token.ELSE {
+        ifStatement.Condition = nil
+        p.l.ReadNextToken()
+    } else {
+        p.l.ReadNextToken()
+        ifStatement.Condition = p.parsingExpression(0)
+    }
 
     if p.l.CurToken.Type == token.COLON {
         p.l.ReadNextToken()
@@ -89,7 +94,19 @@ func (p *Parser)parsingIfStatement() *ast.IfStatement {
     
     ifStatement.Body = p.parsing(p.l.Indents)
 
+    if isEQIndents(p.l.Indents, curIndents) {
+        ifStatement.Else = p.parsingElifOrElseStatement()
+    }
+
     return ifStatement
+}
+
+func (p *Parser)parsingElifOrElseStatement() *ast.IfStatement {
+    if p.l.CurToken.Type == token.ELIF || p.l.CurToken.Type == token.ELSE{
+        return p.parsingIfStatement()
+    }
+
+    return nil
 }
 
 func (p *Parser)parsingWhileStatement() *ast.WhileStatement {

@@ -8,6 +8,8 @@ const (
     LINEFEED    = "LINEFEED"
 
     IF          = "if"
+    ELIF        = "elif"
+    ELSE        = "else"
     WHILE       = "while"
     DEF         = "def"
     RETURN      = "return"
@@ -33,6 +35,8 @@ const (
 
 var Keywords = map[string]tokenType {
     "if":       IF,
+    "elif":     ELIF,
+    "else":     ELSE,
     "while":    WHILE,
     "def":      DEF,
     "return":   RETURN,

@@ -136,8 +136,12 @@ func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
 }
 
 func execIfStatement(stmt *ast.IfStatement, env *Environment) {
-    if Eval(stmt.Condition, env) == env.Get(TRUE) {
-        Exec(stmt.Body, env)
+    if stmt != nil {
+        if stmt.Condition == nil || Eval(stmt.Condition, env) == env.Get(TRUE) {
+            Exec(stmt.Body, env)
+        } else {
+            execIfStatement(stmt.Else, env)
+        }
     }
 }
 
