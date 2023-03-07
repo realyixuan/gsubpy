@@ -355,3 +355,38 @@ func TestStringAssignStatement(t *testing.T) {
     }
 }
 
+func TestStringPlusStatement(t *testing.T) {
+    testCases := []struct {
+        input       string
+        expected    map[string]*object.StringObject
+    }{
+        {
+            "a = 'abc'\n" +
+            "b = 'def'\n" +
+            "c = a + b\n",
+            map[string]*object.StringObject{
+                "c": &object.StringObject{Value: "abcdef"},
+            },
+        },
+    }
+
+    for _, testCase := range testCases {
+        env := testRunProgram(testCase.input)
+        for target, expectedObj := range testCase.expected {
+            if resultedObj := env.Get(target).(*object.StringObject); *resultedObj != *expectedObj {
+                t.Errorf("expected (%s=%v), got (%s=%v)",
+                    target, *expectedObj, target, *resultedObj)
+            }
+        }
+    }
+}
+
+func testRunProgram(input string) *Environment{
+    l := lexer.New(input)
+    p := parser.New(l)
+    stmts := p.Parsing()
+    env := NewEnvironment()
+    Exec(stmts, env)
+    return env
+}
+

@@ -4,26 +4,35 @@ import (
     "gsubpy/ast"
 )
 
+type ObjType string
+
+const (
+    STRING      = "string"
+    NUMBER      = "number"
+    BOOL        = "bool"
+    FUNCTION    = "function"
+)
+
 type Object interface {
-    isObject()
+    GetObjType() ObjType
 }
 
 type BoolObject struct {
     Value   int
 }
-func (bo *BoolObject) isObject() {}
+func (bo *BoolObject) GetObjType() ObjType {return BOOL}
 
 type NumberObject struct {
     Value   int
 }
 
-func (no *NumberObject) isObject() {}
+func (no *NumberObject) GetObjType() ObjType {return NUMBER}
 
 type StringObject struct {
     Value   string
 }
 
-func (self *StringObject) isObject() {}
+func (self *StringObject) GetObjType() ObjType {return STRING}
 
 type FunctionObject struct {
     Name    string
@@ -31,5 +40,5 @@ type FunctionObject struct {
     Body    []ast.Statement
 }
 
-func (no *FunctionObject) isObject() {}
+func (no *FunctionObject) GetObjType() ObjType {return FUNCTION}
 

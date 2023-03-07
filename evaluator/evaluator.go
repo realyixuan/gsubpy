@@ -77,9 +77,22 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
     case *ast.PlusExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
-        return &object.NumberObject{
-            Value: leftObj.(*object.NumberObject).Value + rightObj.(*object.NumberObject).Value,
-            }
+
+        if leftObj.GetObjType() != rightObj.GetObjType() {
+            panic("can't plus two different type")
+        }
+
+        switch leftObj.(type) {
+        case *object.NumberObject:
+            return &object.NumberObject{
+                Value: leftObj.(*object.NumberObject).Value + rightObj.(*object.NumberObject).Value,
+                }
+        case *object.StringObject:
+            return &object.StringObject{
+                Value: leftObj.(*object.StringObject).Value + rightObj.(*object.StringObject).Value,
+                }
+        }
+
     case *ast.MinusExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
