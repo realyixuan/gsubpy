@@ -133,6 +133,12 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
         return &object.NumberObject{Value: val}
     case *ast.StringExpression:
         return &object.StringObject{Value: node.Value.Literals}
+    case *ast.ListExpression:
+        listObj := &object.ListObject{}
+        for _, item := range node.Items {
+            listObj.Items = append(listObj.Items, Eval(item, env))
+        }
+        return listObj
     case *ast.FunctionCallExpression:
         if node.Name.(*ast.IdentifierExpression).Identifier.Literals == "print" {
             builtinPrint(node.Params, env)

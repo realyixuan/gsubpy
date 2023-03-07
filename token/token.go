@@ -30,6 +30,8 @@ const (
 
     LPAREN      = "("
     RPAREN      = ")"
+    LBRACKET    = "["
+    RBRACKET    = "]"
     COLON       = ":"
     COMMA       = ","
 )

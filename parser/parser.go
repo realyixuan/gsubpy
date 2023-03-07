@@ -223,6 +223,24 @@ func (p *Parser)parsingCallParams(precedence int) []ast.Expression {
     return params
 }
 
+func (p *Parser) parsingList() ast.Expression {
+    expr := &ast.ListExpression{}
+
+    p.l.ReadNextToken()
+    for p.l.CurToken.Type != token.EOF && p.l.CurToken.Type != token.RBRACKET {
+        expr.Items = append(expr.Items, p.parsingExpression(LOWEST))
+
+        if p.l.CurToken.Type == token.COMMA {
+            p.l.ReadNextToken()
+        }
+    }
+
+    p.l.ReadNextToken()
+
+    return expr
+
+}
+
 func (p *Parser) prefixFn() ast.Expression {
     if p.l.CurToken.Type == token.IDENTIFIER {
         return &ast.IdentifierExpression{p.l.CurToken}
@@ -230,6 +248,8 @@ func (p *Parser) prefixFn() ast.Expression {
         return &ast.NumberExpression{p.l.CurToken}
     } else if p.l.CurToken.Type == token.STRING {
         return &ast.StringExpression{p.l.CurToken}
+    } else if p.l.CurToken.Type == token.LBRACKET {
+        return p.parsingList()
     }
     return nil
 }

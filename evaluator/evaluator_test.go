@@ -381,6 +381,37 @@ func TestStringPlusStatement(t *testing.T) {
     }
 }
 
+func TestListStatement(t *testing.T) {
+    testCases := []struct {
+        input       string
+        expected    map[string]*object.ListObject
+    }{
+        {
+            "a = 'abc'\n" +
+            "c = [1, a, 'd']\n",
+            map[string]*object.ListObject{
+                "c": &object.ListObject{
+                        Items: []object.Object{
+                                &object.NumberObject{1},
+                                &object.StringObject{"abc"},
+                                &object.StringObject{"d"},
+                            },
+                    },
+            },
+        },
+    }
+
+    for _, testCase := range testCases {
+        env := testRunProgram(testCase.input)
+        for target, expectedObj := range testCase.expected {
+            if resObj := env.Get(target).(*object.ListObject); len(resObj.Items) != len(expectedObj.Items) {
+                t.Errorf("expected (%s=%v), got (%s=%v)",
+                    target, *expectedObj, target, *resObj)
+            }
+        }
+    }
+}
+
 func testRunProgram(input string) *Environment{
     l := lexer.New(input)
     p := parser.New(l)

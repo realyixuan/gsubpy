@@ -48,6 +48,12 @@ type StringExpression struct {
 
 func (se *StringExpression) getExpression() {}
 
+type ListExpression struct {
+    Items   []Expression
+}
+
+func (le *ListExpression) getExpression() {}
+
 type PlusExpression struct {
     Left    Expression
     Right   Expression

@@ -7,6 +7,7 @@ import (
 type ObjType string
 
 const (
+    LIST        = "list"
     STRING      = "string"
     NUMBER      = "number"
     BOOL        = "bool"
@@ -33,6 +34,12 @@ type StringObject struct {
 }
 
 func (self *StringObject) GetObjType() ObjType {return STRING}
+
+type ListObject struct {
+    Items   []Object
+}
+
+func (self *ListObject) GetObjType() ObjType {return LIST}
 
 type FunctionObject struct {
     Name    string
