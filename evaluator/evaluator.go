@@ -1,8 +1,6 @@
 package evaluator
 
 import (
-    "fmt"
-
     "strconv"
     "gsubpy/ast"
     "gsubpy/object"
@@ -14,18 +12,26 @@ const (
     FALSE = "False"
 )
 
+var __builtins__ = map[string]object.Object{
+    TRUE: &object.BoolObject{Value: 1},
+    FALSE: &object.BoolObject{Value: 0},
+    "print": &object.Print{},
+}
+
 type Environment struct {
     store     map[string]object.Object
     parent    *Environment
 }
 
 func NewEnvironment() *Environment {
-    return &Environment{
-        store: map[string]object.Object{
-            TRUE: &object.BoolObject{Value: 0},
-            FALSE: &object.BoolObject{Value: 1},
-            },
+    builtinsEnv := &Environment{
+        store: __builtins__,
         parent: nil,
+    }
+
+    return &Environment{
+        store: map[string]object.Object{},
+        parent: builtinsEnv,
     }
 }
 
@@ -140,11 +146,6 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
         }
         return listObj
     case *ast.FunctionCallExpression:
-        if node.Name.(*ast.IdentifierExpression).Identifier.Literals == "print" {
-            builtinPrint(node.Params, env)
-            return nil
-        }
-
         return evalFunctionCallExpression(node, env)
     case *ast.ExpressionStatement:
         return Eval(node.Value, env)
@@ -187,37 +188,33 @@ func execDefStatement(stmt *ast.DefStatement, env *Environment) {
 }
 
 func evalFunctionCallExpression(funcNode *ast.FunctionCallExpression, parentEnv *Environment) object.Object {
-    funcObj := Eval(funcNode.Name, parentEnv).(*object.FunctionObject)
+    funcObj := Eval(funcNode.Name, parentEnv)
 
-    env := parentEnv.deriveEnv()
+    switch obj := funcObj.(type) {
+    case *object.Print:
+        var paramObjs []object.Object
+        for _, param := range funcNode.Params {
+            paramObjs = append(paramObjs, Eval(param, parentEnv))
+        }
+        obj.Call(paramObjs)
+        return nil
+    default:
+        env := parentEnv.deriveEnv()
 
-    for i, expr := range funcNode.Params {
-        env.Set(funcObj.Params[i], Eval(expr, parentEnv))
-    }
+        for i, expr := range funcNode.Params {
+            env.Set(obj.(*object.FunctionObject).Params[i], Eval(expr, parentEnv))
+        }
 
-    for _, stmt := range funcObj.Body {
-        switch node := stmt.(type) {
-        case *ast.ReturnStatement:
-            return Eval(node.Value, env)
-        default:
-            Exec([]ast.Statement{stmt}, env)
+        for _, stmt := range obj.(*object.FunctionObject).Body {
+            switch node := stmt.(type) {
+            case *ast.ReturnStatement:
+                return Eval(node.Value, env)
+            default:
+                Exec([]ast.Statement{stmt}, env)
+            }
         }
     }
+
     return nil
-}
-
-// temporary solution
-func builtinPrint(expressions []ast.Expression, env *Environment) {
-    for _, expression := range expressions {
-        rv := Eval(expression, env)
-        switch node := rv.(type) {
-        case *object.NumberObject:
-            fmt.Print(node.Value)
-        case *object.StringObject:
-            fmt.Print(node.Value)
-        }
-        fmt.Print(" ")
-    }
-    fmt.Println()
 }
 

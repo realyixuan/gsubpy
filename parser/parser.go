@@ -37,6 +37,7 @@ func (p *Parser)parsing(indents string) []ast.Statement {
         stmt := p.parsingStatement()
         stmts = append(stmts, stmt)
     }
+
     return stmts
 
 }
@@ -210,7 +211,7 @@ func (p *Parser)parsingExpression(precedence int) ast.Expression {
 func (p *Parser)parsingCallParams(precedence int) []ast.Expression {
     var params []ast.Expression
 
-    for p.l.CurToken.Type != token.RPAREN && p.l.CurToken.Type != token.EOF{
+    for p.l.CurToken.Type != token.RPAREN && p.l.CurToken.Type != token.EOF {
         param := p.parsingExpression(LOWEST)
         params = append(params, param)
         if p.l.CurToken.Type == token.COMMA {
@@ -234,8 +235,6 @@ func (p *Parser) parsingList() ast.Expression {
             p.l.ReadNextToken()
         }
     }
-
-    p.l.ReadNextToken()
 
     return expr
 
