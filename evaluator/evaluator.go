@@ -7,14 +7,16 @@ import (
     "gsubpy/token"
 )
 
-const (
-    TRUE = "True"
-    FALSE = "False"
+var (
+    True = &object.BoolObject{Value: 1}
+    False = &object.BoolObject{Value: 0}
+    None = &object.NoneObject{Value: 0}
 )
 
 var __builtins__ = map[string]object.Object{
-    TRUE: &object.BoolObject{Value: 1},
-    FALSE: &object.BoolObject{Value: 0},
+    "True": True,
+    "False": False,
+    "None": None,
     "print": &object.Print{},
 }
 
@@ -59,7 +61,7 @@ func (self *Environment) deriveEnv() *Environment {
     }
 }
 
-func Exec(stmts []ast.Statement, env *Environment) {
+func Exec(stmts []ast.Statement, env *Environment) *object.NoneObject {
     for _, stmt := range stmts {
         switch node := stmt.(type) {
         case *ast.AssignStatement:
@@ -74,6 +76,8 @@ func Exec(stmts []ast.Statement, env *Environment) {
             Eval(node, env)
         }
     }
+
+    return None
 }
 
 func Eval(expression ast.Expression, env *Environment) object.Object {
@@ -123,15 +127,15 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
         switch node.Operator.Type {
         case token.GT:
             if leftObj.(*object.NumberObject).Value > rightObj.(*object.NumberObject).Value {
-                return env.Get(TRUE)
+                return True
             } else {
-                return env.Get(FALSE)
+                return False
             }
         case token.LT:
             if leftObj.(*object.NumberObject).Value < rightObj.(*object.NumberObject).Value {
-                return env.Get(TRUE)
+                return True
             } else {
-                return env.Get(FALSE)
+                return False
             }
         }
     case *ast.NumberExpression:
@@ -150,7 +154,7 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
     case *ast.ExpressionStatement:
         return Eval(node.Value, env)
     }
-    return nil    // XXX: temporary solution
+    return None
 }
 
 func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
@@ -159,7 +163,7 @@ func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
 
 func execIfStatement(stmt *ast.IfStatement, env *Environment) {
     if stmt != nil {
-        if stmt.Condition == nil || Eval(stmt.Condition, env) == env.Get(TRUE) {
+        if stmt.Condition == nil || Eval(stmt.Condition, env) == True {
             Exec(stmt.Body, env)
         } else {
             execIfStatement(stmt.Else, env)
@@ -168,7 +172,7 @@ func execIfStatement(stmt *ast.IfStatement, env *Environment) {
 }
 
 func execWhileStatement(stmt *ast.WhileStatement, env *Environment) {
-    for Eval(stmt.Condition, env) == env.Get(TRUE) {
+    for Eval(stmt.Condition, env) == True {
         Exec(stmt.Body, env)
     }
 }
@@ -197,7 +201,7 @@ func evalFunctionCallExpression(funcNode *ast.FunctionCallExpression, parentEnv 
             paramObjs = append(paramObjs, Eval(param, parentEnv))
         }
         obj.Call(paramObjs)
-        return nil
+        return None
     default:
         env := parentEnv.deriveEnv()
 
@@ -215,6 +219,6 @@ func evalFunctionCallExpression(funcNode *ast.FunctionCallExpression, parentEnv 
         }
     }
 
-    return nil
+    return None
 }
 

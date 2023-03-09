@@ -14,10 +14,19 @@ const (
     NUMBER
     BOOL
     FUNCTION
+    NONE
 )
 
 type Object interface {
     GetObjType() ObjType
+}
+
+type NoneObject struct {
+    Value   int
+}
+func (no *NoneObject) GetObjType() ObjType {return NONE}
+func (no NoneObject) String() string {
+    return "None"
 }
 
 type BoolObject struct {
