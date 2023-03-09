@@ -15,6 +15,7 @@ const (
     BOOL
     FUNCTION
     NONE
+    EXCEPTION
 )
 
 type Object interface {
@@ -98,4 +99,17 @@ func (p *Print) Call(objs []Object) {
     }
     fmt.Println()
 }
+
+type Exception interface {
+    Object
+    ErrorMsg() string
+}
+
+type ExceptionObject struct {
+    Msg string
+}
+
+func (eo *ExceptionObject) GetObjType() ObjType {return EXCEPTION}
+func (eo *ExceptionObject) ErrorMsg() string {return eo.Msg}
+func (eo *ExceptionObject) String() string {return "Exception"}
 

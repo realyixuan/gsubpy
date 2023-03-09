@@ -2,6 +2,7 @@ package lexer
 
 import (
     "gsubpy/token"
+    "gsubpy/object"
 )
 
 /*
@@ -93,6 +94,8 @@ func (l *Lexer) ReadNextToken() {
                 l.CurToken = token.Token{Type: token.IDENTIFIER, Literals: identifier}
             }
         } else {
+            panic(&object.ExceptionObject{"syntaxException: syntax error"})
+
             l.CurToken = token.Token{Type: token.ILLEGAL}
             l.readChar()
         }

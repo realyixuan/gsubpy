@@ -4,6 +4,7 @@ import (
     "gsubpy/ast"
     "gsubpy/lexer"
     "gsubpy/token"
+    "gsubpy/object"
 )
 
 type Parser struct {
@@ -32,7 +33,7 @@ func (p *Parser)parsing(indents string) []ast.Statement {
             // precisely speaking, whether p.l.Indents == indents or p.l.Indents < indents
             // but there now isn't error handling
             // so omit the error
-            break
+            panic(&object.ExceptionObject{"IndentError: wrong Indents"})
         }
         stmt := p.parsingStatement()
         stmts = append(stmts, stmt)
@@ -90,7 +91,7 @@ func (p *Parser)parsingIfStatement() *ast.IfStatement {
     }
 
     if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
-        panic("wrong indents")
+        panic(&object.ExceptionObject{"IndentError: wrong Indents"})
     }
     
     ifStatement.Body = p.parsing(p.l.Indents)
@@ -123,7 +124,7 @@ func (p *Parser)parsingWhileStatement() *ast.WhileStatement {
     }
 
     if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
-        panic("wrong indents")
+        panic(&object.ExceptionObject{"IndentError: wrong Indents"})
     }
     
     stmt.Body = p.parsing(p.l.Indents)
@@ -141,14 +142,14 @@ func (p *Parser)parsingDefStatement() *ast.DefStatement {
 
     p.l.ReadNextToken()
     if p.l.CurToken.Type != token.LPAREN {
-        panic("wrong syntax")
+        panic(&object.ExceptionObject{"SyntaxError: wrong syntax"})
     }
 
     p.l.ReadNextToken()
     stmt.Params = p.parsingDefParams()
 
     if p.l.CurToken.Type != token.RPAREN {
-        panic("wrong syntax")
+        panic(&object.ExceptionObject{"SyntaxError: wrong syntax"})
     }
 
     p.l.ReadNextToken()
@@ -158,7 +159,7 @@ func (p *Parser)parsingDefStatement() *ast.DefStatement {
     }
 
     if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
-        panic("wrong indents")
+        panic(&object.ExceptionObject{"IndentError: wrong Indents"})
     }
     
     stmt.Body = p.parsing(p.l.Indents)
