@@ -63,8 +63,8 @@ func TestTabSpaceIndentParsing(t *testing.T) {
     "a = 1\n" + 
     "if 2 > 1:\n" + 
     "\t if 3 > 2:\n" + 
-    "\t\t a = 4\n" + 
-    "\t\t b = 4\n" + 
+    "\t \t a = 4\n" + 
+    "\t \t b = 4\n" + 
     "a = 5\n"
 
     p := New(lexer.New(input))

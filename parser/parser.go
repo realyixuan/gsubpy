@@ -29,12 +29,17 @@ func (p *Parser)parsing(indents string) []ast.Statement {
             p.l.ReadNextToken()
             continue
         }
-        if !isEQIndents(indents, p.l.Indents) {
-            // precisely speaking, whether p.l.Indents == indents or p.l.Indents < indents
-            // but there now isn't error handling
-            // so omit the error
-            panic(&object.ExceptionObject{"IndentError: wrong Indents"})
+
+        // In same block code, all statements should have same
+        // indents, and having shorter indents MAY BE also legitimate,
+        // perhaps it belongs to upper block, or not. In either case,
+        // don't have to care here, in the level.
+        if isGTIndents(indents, p.l.Indents) {
+            break
+        } else if isLTIndents(indents, p.l.Indents) {
+            panic(&object.ExceptionObject{"IndentError: wrong indents"})
         }
+
         stmt := p.parsingStatement()
         stmts = append(stmts, stmt)
     }
@@ -90,7 +95,7 @@ func (p *Parser)parsingIfStatement() *ast.IfStatement {
         p.l.ReadNextToken()
     }
 
-    if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
+    if !isGTIndents(p.l.Indents, curIndents) {
         panic(&object.ExceptionObject{"IndentError: wrong Indents"})
     }
     
