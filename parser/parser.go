@@ -7,12 +7,37 @@ import (
     "gsubpy/object"
 )
 
+type (
+    prefPrefixFn func() ast.Expression
+    prefInfixFn func(ast.Expression) ast.Expression
+)
+
 type Parser struct {
-    l       *lexer.Lexer
+    l           *lexer.Lexer
+    prefixFns   map[token.TokenType]prefPrefixFn
+    infixFns    map[token.TokenType]prefInfixFn
 }
 
 func New(l *lexer.Lexer) *Parser {
-    p := &Parser{l: l}
+    p := &Parser{
+        l:          l,
+        prefixFns:  make(map[token.TokenType]prefPrefixFn),
+        infixFns:   make(map[token.TokenType]prefInfixFn),
+    }
+
+    p.registerPrefixFn(token.IDENTIFIER, p.getIDENTIFIERPrefix)
+    p.registerPrefixFn(token.NUMBER, p.getNUMBERPrefix)
+    p.registerPrefixFn(token.STRING, p.getSTRINGPrefix)
+    p.registerPrefixFn(token.LBRACKET, p.getLBRACKETPrefix)
+
+    p.registerInfixFn(token.PLUS, p.getPLUSInfix)
+    p.registerInfixFn(token.MINUS, p.getMINUSInfix)
+    p.registerInfixFn(token.MUL, p.getMULInfix)
+    p.registerInfixFn(token.DIVIDE, p.getDIVIDEInfix)
+    p.registerInfixFn(token.GT, p.getGTInfix)
+    p.registerInfixFn(token.LT, p.getLTInfix)
+    p.registerInfixFn(token.LPAREN, p.getLPARENInfix)
+
     return p
 }
 
@@ -204,11 +229,17 @@ func (p *Parser)parsingAssignStatement() *ast.AssignStatement {
 }
 
 func (p *Parser)parsingExpression(precedence int) ast.Expression {
-    left := p.prefixFn()
+    prefixFn := p.getPrefixFn()
+    left := prefixFn()
+
     p.l.ReadNextToken()
 
-    for p.l.CurToken.Type != token.LINEFEED && p.l.CurToken.Type != token.COLON && p.l.CurToken.Type != token.EOF && getPrecedence(p.l.CurToken.Literals) > precedence {
-        left = p.infixFn(left)
+    for p.l.CurToken.Type != token.LINEFEED && p.l.CurToken.Type != token.COLON && p.l.CurToken.Type != token.EOF && getPrecedence(p.l.CurToken.Type) > precedence {
+        infixFn := p.getInfixFn()
+
+        p.l.ReadNextToken()
+
+        left = infixFn(left)
     }
 
     return left
@@ -230,7 +261,59 @@ func (p *Parser)parsingCallParams(precedence int) []ast.Expression {
     return params
 }
 
-func (p *Parser) parsingList() ast.Expression {
+func (p *Parser)isWhiteLine() bool {
+    if p.l.CurToken.Type != token.LINEFEED {
+        return false
+    }
+    return true
+}
+
+func (p *Parser) getPrefixFn() prefPrefixFn {
+    prefixFn := p.prefixFns[p.l.CurToken.Type] 
+    return prefixFn
+}
+
+func (p *Parser) getInfixFn() prefInfixFn {
+    infixFn := p.infixFns[p.l.CurToken.Type] 
+    return infixFn
+}
+
+func getPrecedence(tok token.TokenType) int {
+    switch tok {
+    case token.LPAREN:
+        return CALL
+    case token.LT:
+        return COMPARISON
+    case token.GT:
+        return COMPARISON
+    case token.PLUS:
+        return SUM
+    case token.MINUS:
+        return SUM
+    case token.MUL:
+        return PRODUCT
+    case token.DIVIDE:
+        return PRODUCT
+    default:
+        return LOWEST
+    }
+
+}
+
+func (p *Parser) getIDENTIFIERPrefix() ast.Expression {
+    return &ast.IdentifierExpression{p.l.CurToken}
+    
+}
+
+func (p *Parser) getNUMBERPrefix() ast.Expression {
+    return &ast.NumberExpression{p.l.CurToken}
+}
+
+func (p *Parser) getSTRINGPrefix() ast.Expression {
+    return &ast.StringExpression{p.l.CurToken}
+}
+
+func (p *Parser) getLBRACKETPrefix() ast.Expression {
     expr := &ast.ListExpression{}
 
     p.l.ReadNextToken()
@@ -243,95 +326,65 @@ func (p *Parser) parsingList() ast.Expression {
     }
 
     return expr
-
 }
 
-func (p *Parser) prefixFn() ast.Expression {
-    if p.l.CurToken.Type == token.IDENTIFIER {
-        return &ast.IdentifierExpression{p.l.CurToken}
-    } else if p.l.CurToken.Type == token.NUMBER {
-        return &ast.NumberExpression{p.l.CurToken}
-    } else if p.l.CurToken.Type == token.STRING {
-        return &ast.StringExpression{p.l.CurToken}
-    } else if p.l.CurToken.Type == token.LBRACKET {
-        return p.parsingList()
-    }
-    return nil
+func (p *Parser) registerPrefixFn(tok token.TokenType, fn prefPrefixFn) {
+    p.prefixFns[tok] = fn
 }
 
-func (p *Parser) infixFn(expression ast.Expression) ast.Expression {
-    curType := p.l.CurToken.Type
-    p.l.ReadNextToken()
-    switch curType {
-    case token.PLUS:
-        return &ast.PlusExpression{
-            Left: expression,
-            Right: p.parsingExpression(getPrecedence("+")),
-        }
-    case token.MINUS:
-        return &ast.MinusExpression{
-            Left: expression,
-            Right: p.parsingExpression(getPrecedence("-")),
-        }
-    case token.MUL:
-        return &ast.MulExpression{
-            Left: expression,
-            Right: p.parsingExpression(getPrecedence("*")),
-        }
-    case token.DIVIDE:
-        return &ast.DivideExpression{
-            Left: expression,
-            Right: p.parsingExpression(getPrecedence("/")),
-        }
-    case token.GT:
-        return &ast.ComparisonExpression{
-            Operator: token.Token{token.GT, ">"},
-            Left: expression,
-            Right: p.parsingExpression(getPrecedence(">")),
-        }
-    case token.LT:
-        return &ast.ComparisonExpression{
-            Operator: token.Token{token.LT, "<"},
-            Left: expression,
-            Right: p.parsingExpression(getPrecedence("<")),
-        }
-    case token.LPAREN:
-        return &ast.FunctionCallExpression{
-            Name: expression,
-            Params: p.parsingCallParams(getPrecedence("(")),
-        }
+func (p *Parser) getPLUSInfix(left ast.Expression) ast.Expression {
+    return &ast.PlusExpression{
+        Left: left,
+        Right: p.parsingExpression(getPrecedence(token.PLUS)),
     }
-
-    return nil
 }
 
-func (p *Parser)isWhiteLine() bool {
-    if p.l.CurToken.Type != token.LINEFEED {
-        return false
+func (p *Parser) getMINUSInfix(left ast.Expression) ast.Expression {
+    return &ast.MinusExpression{
+        Left: left,
+        Right: p.parsingExpression(getPrecedence(token.MINUS)),
     }
-    return true
 }
 
-func getPrecedence(literals string) int {
-    switch literals {
-    case "(":
-        return CALL
-    case "<":
-        return COMPARISON
-    case ">":
-        return COMPARISON
-    case "+":
-        return SUM
-    case "-":
-        return SUM
-    case "*":
-        return PRODUCT
-    case "/":
-        return PRODUCT
-    default:
-        return LOWEST
+func (p *Parser) getMULInfix(left ast.Expression) ast.Expression {
+    return &ast.MulExpression{
+        Left: left,
+        Right: p.parsingExpression(getPrecedence(token.MUL)),
     }
+}
 
+func (p *Parser) getDIVIDEInfix(left ast.Expression) ast.Expression {
+    return &ast.DivideExpression{
+        Left: left,
+        Right: p.parsingExpression(getPrecedence(token.DIVIDE)),
+    }
+}
+
+func (p *Parser) getGTInfix(left ast.Expression) ast.Expression {
+    return &ast.ComparisonExpression{
+        Operator: token.Token{token.GT, ">"},
+        Left: left,
+        Right: p.parsingExpression(getPrecedence(token.GT)),
+    }
+}
+
+func (p *Parser) getLTInfix(left ast.Expression) ast.Expression {
+    return &ast.ComparisonExpression{
+        Operator: token.Token{token.LT, "<"},
+        Left: left,
+        Right: p.parsingExpression(getPrecedence(token.LT)),
+    }
+}
+
+func (p *Parser) getLPARENInfix(left ast.Expression) ast.Expression {
+    return &ast.FunctionCallExpression{
+        Name: left,
+        Params: p.parsingCallParams(getPrecedence(token.LPAREN)),
+    }
+}
+
+func (p *Parser) registerInfixFn(tok token.TokenType, fn prefInfixFn) {
+    p.infixFns[tok] = fn
 }
 
 const (

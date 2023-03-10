@@ -1,6 +1,6 @@
 package token
 
-type tokenType string
+type TokenType string
 
 const (
     EOF         = "EOF"
@@ -36,7 +36,7 @@ const (
     COMMA       = ","
 )
 
-var Keywords = map[string]tokenType {
+var Keywords = map[string]TokenType {
     "if":       IF,
     "elif":     ELIF,
     "else":     ELSE,
@@ -47,7 +47,7 @@ var Keywords = map[string]tokenType {
 
 
 type Token struct {
-    Type   tokenType
+    Type   TokenType
     Literals    string
 }
 
