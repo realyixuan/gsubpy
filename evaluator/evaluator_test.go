@@ -412,6 +412,34 @@ func TestListStatement(t *testing.T) {
     }
 }
 
+func TestZeroDivisionError(t *testing.T) {
+    defer func() {
+        if r := recover(); r != nil {
+            expr := r.(*object.ExceptionObject)
+            if expr.Msg != "ZeroDivisionError: division by zero" {
+                t.Errorf("expected 'ZeroDivisionError' got %v", expr.Msg)
+            }
+        }
+    } ()
+
+    testRunProgram("1 / 0")
+    
+}
+
+func TestTypeError(t *testing.T) {
+    defer func() {
+        if r := recover(); r != nil {
+            expr := r.(*object.ExceptionObject)
+            if expr.Msg != "TypeError: two different types" {
+                t.Errorf("expected 'TypeError' got %v", expr.Msg)
+            }
+        }
+    } ()
+
+    testRunProgram("'a' + 1")
+    
+}
+
 func testRunProgram(input string) *Environment{
     l := lexer.New(input)
     p := parser.New(l)

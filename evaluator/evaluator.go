@@ -89,7 +89,7 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
         rightObj := Eval(node.Right, env)
 
         if leftObj.GetObjType() != rightObj.GetObjType() {
-            panic("can't plus two different type")
+            panic(&object.ExceptionObject{"TypeError: two different types"})
         }
 
         switch leftObj.(type) {
@@ -118,6 +118,11 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
     case *ast.DivideExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
+
+        if rightObj.(*object.NumberObject).Value == 0 {
+            panic(&object.ExceptionObject{"ZeroDivisionError: division by zero"})
+        }
+
         return &object.NumberObject{
             Value: leftObj.(*object.NumberObject).Value / rightObj.(*object.NumberObject).Value,
             }
