@@ -74,7 +74,7 @@ func (p *Parser)parsing(indents string) []ast.Statement {
         // In same block code, all statements should have same
         // indents, and having shorter indents MAY BE also legitimate,
         // perhaps it belongs to upper block, or not. In either case,
-        // don't have to care here, in the level.
+        // don't have to care here, in this level.
         if isGTIndents(indents, p.l.Indents) {
             break
         } else if isLTIndents(indents, p.l.Indents) {
@@ -90,34 +90,11 @@ func (p *Parser)parsing(indents string) []ast.Statement {
 }
 
 func (p *Parser)parsingStatement() ast.Statement {
-    // get corresponding statement parser, otherwise return nil
     stmtParsingFn := p.getStmtParsingFn()
     if stmtParsingFn == nil {
         panic(&object.ExceptionObject{"SyntaxError: ..."})
     }
-    // then call it to return statement
     return stmtParsingFn()
-
-
-    // switch p.l.CurToken.Type {
-    // case token.IDENTIFIER:
-    //     if p.l.PeekNextToken().Type == token.ASSIGN {
-    //         return p.parsingAssignStatement()
-    //     } else {
-    //         return p.parsingExpressionStatement()
-    //     }
-    // case token.IF:
-    //     return p.parsingIfStatement()
-    // case token.WHILE:
-    //     return p.parsingWhileStatement()
-    // case token.DEF:
-    //     return p.parsingDefStatement()
-    // case token.RETURN:
-    //     return p.parsingReturnStatement()
-    // default:
-    //     return p.parsingExpressionStatement()
-    // }
-    // return nil
 }
 
 func (p *Parser) registerStatementParsingFn(tokenType token.TokenType, fn statementParsingFn) {
