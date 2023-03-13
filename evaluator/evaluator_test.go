@@ -95,18 +95,18 @@ func TestIfStatement(t *testing.T) {
                 "b": &object.NumberObject{Value: 20},
             },
         },
-        // {
-        //     "a = 10\n" +
-        //     "b = 20\n" +
-        //     "if a < b:\n" +
-        //     "    a = a * 10\n" +
-        //     "    b = b * 10\n" +
-        //     "a = a + 10\n",
-        //     map[string]*object.NumberObject{
-        //         "a": &object.NumberObject{Value: 110},
-        //         "b": &object.NumberObject{Value: 200},
-        //     },
-        // },
+        {
+            "a = 10\n" +
+            "b = 20\n" +
+            "if a < b:\n" +
+            "    a = a * 10\n" +
+            "    b = b * 10\n" +
+            "a = a + 10\n",
+            map[string]*object.NumberObject{
+                "a": &object.NumberObject{Value: 110},
+                "b": &object.NumberObject{Value: 200},
+            },
+        },
     }
 
     for _, testCase := range testCases {
