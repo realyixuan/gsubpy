@@ -85,7 +85,7 @@ func (de *DivideExpression) getExpression() {}
 type IfStatement struct {
     Condition   Expression
     Body        []Statement
-    Else        *IfStatement
+    Else        Statement
 }
 
 func (ie *IfStatement) getStatement() {}

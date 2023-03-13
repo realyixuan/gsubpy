@@ -166,12 +166,13 @@ func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
     env.Set(stmt.Identifier.Literals, Eval(stmt.Value, env))
 }
 
-func execIfStatement(stmt *ast.IfStatement, env *Environment) {
+func execIfStatement(stmt ast.Statement, env *Environment) {
     if stmt != nil {
-        if stmt.Condition == nil || Eval(stmt.Condition, env) == True {
-            Exec(stmt.Body, env)
+        ifstmt := stmt.(*ast.IfStatement)
+        if ifstmt.Condition == nil || Eval(ifstmt.Condition, env) == True {
+            Exec(ifstmt.Body, env)
         } else {
-            execIfStatement(stmt.Else, env)
+            execIfStatement(ifstmt.Else, env)
         }
     }
 }

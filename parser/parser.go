@@ -10,21 +10,37 @@ import (
 type (
     prefPrefixFn func() ast.Expression
     prefInfixFn func(ast.Expression) ast.Expression
+    statementParsingFn func() ast.Statement
 )
 
 type Parser struct {
-    l           *lexer.Lexer
-    prefixFns   map[token.TokenType]prefPrefixFn
-    infixFns    map[token.TokenType]prefInfixFn
+    l                       *lexer.Lexer
+    prefixFns               map[token.TokenType]prefPrefixFn
+    infixFns                map[token.TokenType]prefInfixFn
+    statementParsingFns     map[token.TokenType]statementParsingFn
 }
 
 func New(l *lexer.Lexer) *Parser {
     p := &Parser{
-        l:          l,
-        prefixFns:  make(map[token.TokenType]prefPrefixFn),
-        infixFns:   make(map[token.TokenType]prefInfixFn),
+        l:                      l,
+        prefixFns:              make(map[token.TokenType]prefPrefixFn),
+        infixFns:               make(map[token.TokenType]prefInfixFn),
+        statementParsingFns:    make(map[token.TokenType]statementParsingFn),
     }
 
+    // register statement-parsing function
+    p.registerStatementParsingFn(token.ASSIGN, p.parsingAssignStatement)
+    p.registerStatementParsingFn(token.IF, p.parsingIfStatement)
+    p.registerStatementParsingFn(token.WHILE, p.parsingWhileStatement)
+    p.registerStatementParsingFn(token.DEF, p.parsingDefStatement)
+    p.registerStatementParsingFn(token.RETURN, p.parsingReturnStatement)
+
+    // a trick, if the a statement doesn't belong to any one above, then
+    // it default to the expression-statement, using token IDENTIFIER to 
+    // denote it.
+    p.registerStatementParsingFn(token.IDENTIFIER, p.parsingExpressionStatement)
+
+    // register expression-parsing function
     p.registerPrefixFn(token.IDENTIFIER, p.getIDENTIFIERPrefix)
     p.registerPrefixFn(token.NUMBER, p.getNUMBERPrefix)
     p.registerPrefixFn(token.STRING, p.getSTRINGPrefix)
@@ -74,28 +90,54 @@ func (p *Parser)parsing(indents string) []ast.Statement {
 }
 
 func (p *Parser)parsingStatement() ast.Statement {
-    switch p.l.CurToken.Type {
-    case token.IDENTIFIER:
-        if p.l.PeekNextToken().Type == token.ASSIGN {
-            return p.parsingAssignStatement()
-        } else {
-            return p.parsingExpressionStatement()
-        }
-    case token.IF:
-        return p.parsingIfStatement()
-    case token.WHILE:
-        return p.parsingWhileStatement()
-    case token.DEF:
-        return p.parsingDefStatement()
-    case token.RETURN:
-        return p.parsingReturnStatement()
-    default:
-        return p.parsingExpressionStatement()
+    // get corresponding statement parser, otherwise return nil
+    stmtParsingFn := p.getStmtParsingFn()
+    if stmtParsingFn == nil {
+        panic(&object.ExceptionObject{"SyntaxError: ..."})
     }
-    return nil
+    // then call it to return statement
+    return stmtParsingFn()
+
+
+    // switch p.l.CurToken.Type {
+    // case token.IDENTIFIER:
+    //     if p.l.PeekNextToken().Type == token.ASSIGN {
+    //         return p.parsingAssignStatement()
+    //     } else {
+    //         return p.parsingExpressionStatement()
+    //     }
+    // case token.IF:
+    //     return p.parsingIfStatement()
+    // case token.WHILE:
+    //     return p.parsingWhileStatement()
+    // case token.DEF:
+    //     return p.parsingDefStatement()
+    // case token.RETURN:
+    //     return p.parsingReturnStatement()
+    // default:
+    //     return p.parsingExpressionStatement()
+    // }
+    // return nil
 }
 
-func (p *Parser)parsingExpressionStatement() *ast.ExpressionStatement {
+func (p *Parser) registerStatementParsingFn(tokenType token.TokenType, fn statementParsingFn) {
+    p.statementParsingFns[tokenType] = fn
+}
+
+func (p *Parser) getStmtParsingFn() statementParsingFn {
+    // Because there is no keyword to identify the assignment statement
+    // so have to make a judgement for it
+    if p.l.CurToken.Type == token.IDENTIFIER && p.l.PeekNextToken().Type == token.ASSIGN {
+        return p.statementParsingFns[token.ASSIGN]
+    } else if _, ok := p.statementParsingFns[p.l.CurToken.Type]; ok {
+        return p.statementParsingFns[p.l.CurToken.Type]
+    } else {
+        return p.statementParsingFns[token.IDENTIFIER]
+    }
+}
+
+
+func (p *Parser)parsingExpressionStatement() ast.Statement {
     val := p.parsingExpression(0)
     p.l.ReadNextToken()
     return &ast.ExpressionStatement{
@@ -103,7 +145,7 @@ func (p *Parser)parsingExpressionStatement() *ast.ExpressionStatement {
     }
 }
 
-func (p *Parser)parsingIfStatement() *ast.IfStatement {
+func (p *Parser)parsingIfStatement() ast.Statement {
     curIndents := p.l.Indents
 
     ifStatement := &ast.IfStatement{}
@@ -133,7 +175,7 @@ func (p *Parser)parsingIfStatement() *ast.IfStatement {
     return ifStatement
 }
 
-func (p *Parser)parsingElifOrElseStatement() *ast.IfStatement {
+func (p *Parser)parsingElifOrElseStatement() ast.Statement {
     if p.l.CurToken.Type == token.ELIF || p.l.CurToken.Type == token.ELSE{
         return p.parsingIfStatement()
     }
@@ -141,7 +183,7 @@ func (p *Parser)parsingElifOrElseStatement() *ast.IfStatement {
     return nil
 }
 
-func (p *Parser)parsingWhileStatement() *ast.WhileStatement {
+func (p *Parser)parsingWhileStatement() ast.Statement {
     curIndents := p.l.Indents
 
     stmt := &ast.WhileStatement{}
@@ -162,7 +204,7 @@ func (p *Parser)parsingWhileStatement() *ast.WhileStatement {
     return stmt
 }
 
-func (p *Parser)parsingDefStatement() *ast.DefStatement {
+func (p *Parser)parsingDefStatement() ast.Statement {
     curIndents := p.l.Indents
 
     p.l.ReadNextToken()
@@ -197,7 +239,7 @@ func (p *Parser)parsingDefStatement() *ast.DefStatement {
     return stmt
 }
 
-func (p *Parser)parsingReturnStatement() *ast.ReturnStatement {
+func (p *Parser)parsingReturnStatement() ast.Statement {
     p.l.ReadNextToken()
     stmt := &ast.ReturnStatement{
         Value: p.parsingExpression(LOWEST),
@@ -219,7 +261,7 @@ func (p *Parser)parsingDefParams() []token.Token {
     return params
 }
 
-func (p *Parser)parsingAssignStatement() *ast.AssignStatement {
+func (p *Parser)parsingAssignStatement() ast.Statement {
     assignment := ast.AssignStatement{Identifier: p.l.CurToken}
     p.l.ReadNextToken()
     p.l.ReadNextToken()
@@ -234,7 +276,11 @@ func (p *Parser)parsingExpression(precedence int) ast.Expression {
 
     p.l.ReadNextToken()
 
-    for p.l.CurToken.Type != token.LINEFEED && p.l.CurToken.Type != token.COLON && p.l.CurToken.Type != token.EOF && getPrecedence(p.l.CurToken.Type) > precedence {
+    // get the corresponding precedence of Token, and 
+    // if it doesn't be in definition, like EOF, COLON, and others
+    // that means the ending of the expression, it
+    // will return LOWEST precedence
+    for getPrecedence(p.l.CurToken.Type) > precedence {
         infixFn := p.getInfixFn()
 
         p.l.ReadNextToken()

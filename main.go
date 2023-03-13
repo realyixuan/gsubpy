@@ -18,6 +18,8 @@ func main() {
             switch exception := r.(type) {
             case object.Exception:
                 fmt.Println(exception.ErrorMsg())
+            default:
+                fmt.Println("interpreter error:", exception)
             }
         }
     }()
