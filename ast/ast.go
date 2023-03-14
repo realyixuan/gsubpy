@@ -54,6 +54,13 @@ type ListExpression struct {
 
 func (le *ListExpression) getExpression() {}
 
+type DictExpression struct {
+    Keys   []Expression
+    Vals   []Expression
+}
+
+func (de *DictExpression) getExpression() {}
+
 type PlusExpression struct {
     Left    Expression
     Right   Expression

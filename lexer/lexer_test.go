@@ -291,3 +291,39 @@ func TestList(t *testing.T) {
     }
 }
 
+func TestDict(t *testing.T) {
+    testCases := []struct {
+        input   string
+        expectedTokens []token.Token
+    }{
+        {
+            `{'a': 1, '10': 10, var: "abc"}`,
+            []token.Token{
+                token.Token{Type: token.LBRACE, Literals: "{"},
+                token.Token{Type: token.STRING, Literals: "a"},
+                token.Token{Type: token.COLON, Literals: ":"},
+                token.Token{Type: token.NUMBER, Literals: "1"},
+                token.Token{Type: token.COMMA, Literals: ","},
+                token.Token{Type: token.STRING, Literals: "10"},
+                token.Token{Type: token.COLON, Literals: ":"},
+                token.Token{Type: token.NUMBER, Literals: "10"},
+                token.Token{Type: token.COMMA, Literals: ","},
+                token.Token{Type: token.IDENTIFIER, Literals: "var"},
+                token.Token{Type: token.COLON, Literals: ":"},
+                token.Token{Type: token.STRING, Literals: "abc"},
+                token.Token{Type: token.RBRACE, Literals: "}"},
+            },
+        },
+    }
+
+    for _, testCase := range testCases {
+        l := New(testCase.input)
+        for _, tk := range testCase.expectedTokens {
+            if tk != l.CurToken {
+                t.Errorf("expected token %s, got token %s", tk, l.CurToken)
+            }
+            l.ReadNextToken()
+        }
+    }
+}
+

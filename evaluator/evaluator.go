@@ -154,6 +154,15 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
             listObj.Items = append(listObj.Items, Eval(item, env))
         }
         return listObj
+    case *ast.DictExpression:
+        dictObj := &object.DictObject{
+            Map: map[object.Object]object.Object{},
+        }
+        for i := 0; i < len(node.Keys); i++ {
+            k, v := node.Keys[i], node.Vals[i]
+            dictObj.Map[Eval(k, env)] = Eval(v, env)
+        }
+        return dictObj
     case *ast.FunctionCallExpression:
         return evalFunctionCallExpression(node, env)
     case *ast.ExpressionStatement:

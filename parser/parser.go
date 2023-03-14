@@ -45,6 +45,7 @@ func New(l *lexer.Lexer) *Parser {
     p.registerPrefixFn(token.NUMBER, p.getNUMBERPrefix)
     p.registerPrefixFn(token.STRING, p.getSTRINGPrefix)
     p.registerPrefixFn(token.LBRACKET, p.getLBRACKETPrefix)
+    p.registerPrefixFn(token.LBRACE, p.getLBRACEPrefix)
 
     p.registerInfixFn(token.PLUS, p.getPLUSInfix)
     p.registerInfixFn(token.MINUS, p.getMINUSInfix)
@@ -342,6 +343,28 @@ func (p *Parser) getLBRACKETPrefix() ast.Expression {
     p.l.ReadNextToken()
     for p.l.CurToken.Type != token.EOF && p.l.CurToken.Type != token.RBRACKET {
         expr.Items = append(expr.Items, p.parsingExpression(LOWEST))
+
+        if p.l.CurToken.Type == token.COMMA {
+            p.l.ReadNextToken()
+        }
+    }
+
+    return expr
+}
+
+func (p *Parser) getLBRACEPrefix() ast.Expression {
+    expr := &ast.DictExpression{}
+
+    p.l.ReadNextToken()
+    for p.l.CurToken.Type != token.EOF && p.l.CurToken.Type != token.RBRACE {
+        expr.Keys = append(expr.Keys, p.parsingExpression(LOWEST))
+
+        if p.l.CurToken.Type != token.COLON {
+            panic(&object.ExceptionObject{"SyntaxError: there is a syntax error in dict"})
+        }
+        p.l.ReadNextToken()
+
+        expr.Vals = append(expr.Vals, p.parsingExpression(LOWEST))
 
         if p.l.CurToken.Type == token.COMMA {
             p.l.ReadNextToken()

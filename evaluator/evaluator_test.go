@@ -412,6 +412,35 @@ func TestListStatement(t *testing.T) {
     }
 }
 
+func TestDictStatement(t *testing.T) {
+    testCases := []struct {
+        input       string
+        expected    map[string]*object.DictObject
+    }{
+        {
+            "a = 'abc'\n" +
+            "d = {a: 'abc'}\n",
+            map[string]*object.DictObject{
+                "d": &object.DictObject{
+                        Map: map[object.Object]object.Object{
+                                &object.StringObject{"abc"}: &object.StringObject{"d"},
+                            },
+                    },
+            },
+        },
+    }
+
+    for _, testCase := range testCases {
+        env := testRunProgram(testCase.input)
+        for target, expectedObj := range testCase.expected {
+            if resObj := env.Get(target).(*object.DictObject); len(resObj.Map) != len(expectedObj.Map) {
+                t.Errorf("expected (%s=%v), got (%s=%v)",
+                    target, *expectedObj, target, *resObj)
+            }
+        }
+    }
+}
+
 func TestZeroDivisionError(t *testing.T) {
     defer func() {
         if r := recover(); r != nil {

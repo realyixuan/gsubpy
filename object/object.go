@@ -10,6 +10,7 @@ type ObjType int
 
 const (
     LIST ObjType = iota
+    DICT
     STRING
     NUMBER
     BOOL
@@ -74,6 +75,40 @@ func (self ListObject) String() string {
     s += "]"
     return s
 }
+
+type DictObject struct {
+    /*
+        FIX: if key is the pointer of Objects, 
+        then there must be some issues, such as 
+        that a string even can't match the key of
+        another equivalent string Object
+        like:
+        if d['a'] = 1
+        then call it again, d['a'] will raise key-not-exist error
+
+    */
+
+    Map   map[Object]Object 
+                            
+}
+
+func (do *DictObject) GetObjType() ObjType {return DICT}
+func (do *DictObject) String() string {
+    var s string
+    s += "{"
+    var i = 0
+    for k, v := range do.Map {
+        s += fmt.Sprintf("%v:%v", k, v)
+        if i == len(do.Map) - 1 {
+            break
+        }
+        s += ", "
+        i++
+    }
+    s += "}"
+    return s
+}
+
 
 type FunctionObject struct {
     Name    string
