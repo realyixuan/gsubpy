@@ -296,6 +296,21 @@ func TestFunctionDefStatement(t *testing.T) {
     }
 }
 
+func TestClassStatement(t *testing.T) {
+    // should have no error
+    input := ""+
+    "class Foo:\n" +
+    "   a = 1\n"
+    l := lexer.New(input)
+    p := parser.New(l)
+    stmts := p.Parsing()
+    env := NewEnvironment()
+    Exec(stmts, env)
+    if obj := env.Get("Foo"); obj == nil {
+        t.Errorf("class 'Foo' does not exists")
+    }
+}
+
 func TestReturnStatement(t *testing.T) {
     // should have no error
     input := ""+

@@ -133,3 +133,10 @@ type FunctionCallExpression struct {
 
 func (ce *FunctionCallExpression) getExpression() {}
 
+type ClassStatement struct {
+    Name    token.Token
+    Body    []Statement
+}
+
+func (cs *ClassStatement) getStatement() {}
+

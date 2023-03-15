@@ -61,6 +61,10 @@ func (self *Environment) deriveEnv() *Environment {
     }
 }
 
+func (e *Environment) pairs() map[string]object.Object {
+    return e.store
+}
+
 func Exec(stmts []ast.Statement, env *Environment) *object.NoneObject {
     for _, stmt := range stmts {
         switch node := stmt.(type) {
@@ -72,6 +76,8 @@ func Exec(stmts []ast.Statement, env *Environment) *object.NoneObject {
             execWhileStatement(node, env)
         case *ast.DefStatement:
             execDefStatement(node, env)
+        case *ast.ClassStatement:
+            execClassStatement(node, env)
         case *ast.ExpressionStatement:
             Eval(node, env)
         }
@@ -204,6 +210,22 @@ func execDefStatement(stmt *ast.DefStatement, env *Environment) {
     }
     funcObj.Params = params
     env.Set(funcObj.Name, funcObj)
+}
+
+func execClassStatement(node *ast.ClassStatement, env *Environment) {
+    clsEnv := env.deriveEnv()
+    clsObj := &object.ClassObject{
+        Name: node.Name.Literals,
+        Dict: map[string]object.Object{},
+    }
+
+    Exec(node.Body, clsEnv)
+
+    for k, v := range clsEnv.pairs() {
+        clsObj.Dict[k] = v
+    }
+
+    env.Set(clsObj.Name, clsObj)
 }
 
 func evalFunctionCallExpression(funcNode *ast.FunctionCallExpression, parentEnv *Environment) object.Object {

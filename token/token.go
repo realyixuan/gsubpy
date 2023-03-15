@@ -13,6 +13,7 @@ const (
     WHILE       = "while"
     DEF         = "def"
     RETURN      = "return"
+    CLASS       = "class"
 
     ASSIGN      = "ASSIGN"
     IDENTIFIER  = "IDENTIFIER"
@@ -45,6 +46,7 @@ var Keywords = map[string]TokenType {
     "while":    WHILE,
     "def":      DEF,
     "return":   RETURN,
+    "class":    CLASS,
 }
 
 

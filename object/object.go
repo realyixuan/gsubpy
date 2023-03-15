@@ -1,3 +1,18 @@
+/*
+In inheritance:
+class Base:
+    def __str__(self):
+        return "<%s object at %s>" % (type(self), id(self))
+
+class SubClass: pass
+
+with composition not inheritance, there are some issues for
+reuse behaviours
+
+*/
+
+
+
 package object
 
 import (
@@ -17,11 +32,17 @@ const (
     FUNCTION
     NONE
     EXCEPTION
+    CLASS
 )
 
 type Object interface {
     GetObjType() ObjType
 }
+
+// type PyObject struct {
+// }
+// func (po *PyObject) __str__() {
+// }
 
 type NoneObject struct {
     Value   int
@@ -119,6 +140,16 @@ type FunctionObject struct {
 func (fo *FunctionObject) GetObjType() ObjType {return FUNCTION}
 func (fo FunctionObject) String() string {
     return fmt.Sprintf("<function %s at %p>", fo.Name, &fo)
+}
+
+type ClassObject struct {
+    Name    string
+    Dict    map[string]Object
+}
+
+func (co *ClassObject) GetObjType() ObjType {return CLASS}
+func (co *ClassObject) String() string {
+    return fmt.Sprintf("<class %s at %p>", co.Name, co)
 }
 
 // temporary

@@ -33,6 +33,7 @@ func New(l *lexer.Lexer) *Parser {
     p.registerStatementParsingFn(token.IF, p.parsingIfStatement)
     p.registerStatementParsingFn(token.WHILE, p.parsingWhileStatement)
     p.registerStatementParsingFn(token.DEF, p.parsingDefStatement)
+    p.registerStatementParsingFn(token.CLASS, p.parsingClassStatement)
     p.registerStatementParsingFn(token.RETURN, p.parsingReturnStatement)
 
     // a trick, if the a statement doesn't belong to any one above, then
@@ -213,6 +214,37 @@ func (p *Parser)parsingDefStatement() ast.Statement {
     }
     
     stmt.Body = p.parsing(p.l.Indents)
+
+    return stmt
+}
+
+func (p *Parser)parsingClassStatement() ast.Statement {
+    classIndents := p.l.Indents
+
+    p.l.ReadNextToken()
+    stmt := &ast.ClassStatement{
+        Name: p.l.CurToken,
+    }
+
+    p.l.ReadNextToken()
+    if p.l.CurToken.Type != token.COLON {
+        panic(&object.ExceptionObject{"SyntaxError: class define wrong syntax"})
+    }
+
+    p.l.ReadNextToken()
+    p.l.ReadNextToken() // skip over '\n'
+
+    internalIndents := p.l.Indents
+    
+    if !isGTIndents(internalIndents, classIndents) {
+        panic(&object.ExceptionObject{"IndentError: in class wrong Indents"})
+    }
+
+    for isEQIndents(internalIndents, p.l.Indents) {
+        for _, st := range p.parsing(internalIndents) {
+            stmt.Body = append(stmt.Body, st)
+        }
+    }
 
     return stmt
 }

@@ -327,3 +327,29 @@ func TestDict(t *testing.T) {
     }
 }
 
+func TestClass(t *testing.T) {
+    testCases := []struct {
+        input   string
+        expectedTokens []token.Token
+    }{
+        {
+            "class Foo:",
+            []token.Token{
+                token.Token{Type: token.CLASS, Literals: "class"},
+                token.Token{Type: token.IDENTIFIER, Literals: "Foo"},
+                token.Token{Type: token.COLON, Literals: ":"},
+            },
+        },
+    }
+
+    for _, testCase := range testCases {
+        l := New(testCase.input)
+        for _, tk := range testCase.expectedTokens {
+            if tk != l.CurToken {
+                t.Errorf("expected token %s, got token %s", tk, l.CurToken)
+            }
+            l.ReadNextToken()
+        }
+    }
+}
+
