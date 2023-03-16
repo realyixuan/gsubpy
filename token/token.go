@@ -37,6 +37,7 @@ const (
     RBRACE      = "}"
     COLON       = ":"
     COMMA       = ","
+    DOT       = "."
 )
 
 var Keywords = map[string]TokenType {

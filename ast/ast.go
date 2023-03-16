@@ -17,7 +17,7 @@ type Program struct {
 }
 
 type AssignStatement struct {
-    Identifier  token.Token
+    Target      Expression
     Value       Expression
 }
 
@@ -139,4 +139,11 @@ type ClassStatement struct {
 }
 
 func (cs *ClassStatement) getStatement() {}
+
+type AttributeExpression struct {
+    Expr    Expression
+    Attr    token.Token
+}
+
+func (de *AttributeExpression) getExpression() {}
 

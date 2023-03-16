@@ -353,3 +353,31 @@ func TestClass(t *testing.T) {
     }
 }
 
+func TestDot(t *testing.T) {
+    testCases := []struct {
+        input   string
+        expectedTokens []token.Token
+    }{
+        {
+            "a.b.c",
+            []token.Token{
+                token.Token{Type: token.IDENTIFIER, Literals: "a"},
+                token.Token{Type: token.DOT, Literals: "."},
+                token.Token{Type: token.IDENTIFIER, Literals: "b"},
+                token.Token{Type: token.DOT, Literals: "."},
+                token.Token{Type: token.IDENTIFIER, Literals: "c"},
+            },
+        },
+    }
+
+    for _, testCase := range testCases {
+        l := New(testCase.input)
+        for _, tk := range testCase.expectedTokens {
+            if tk != l.CurToken {
+                t.Errorf("expected token %s, got token %s", tk, l.CurToken)
+            }
+            l.ReadNextToken()
+        }
+    }
+}
+

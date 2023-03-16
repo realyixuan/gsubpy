@@ -91,7 +91,7 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
         rightObj := Eval(node.Right, env)
 
         if leftObj.GetObjType() != rightObj.GetObjType() {
-            panic(&object.ExceptionObject{"TypeError: two different types"})
+            panic(&object.ExceptionObject{Msg: "TypeError: two different types"})
         }
 
         switch leftObj.(type) {
@@ -122,7 +122,7 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
         rightObj := Eval(node.Right, env)
 
         if rightObj.(*object.NumberObject).Value == 0 {
-            panic(&object.ExceptionObject{"ZeroDivisionError: division by zero"})
+            panic(&object.ExceptionObject{Msg: "ZeroDivisionError: division by zero"})
         }
 
         return &object.NumberObject{
@@ -167,6 +167,9 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
         return dictObj
     case *ast.FunctionCallExpression:
         return evalFunctionCallExpression(node, env)
+    case *ast.AttributeExpression:
+        inst := Eval(node.Expr, env)
+        return inst.Py__getattribute__(node.Attr.Literals)
     case *ast.ExpressionStatement:
         return Eval(node.Value, env)
     }
@@ -174,7 +177,14 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
 }
 
 func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
-    env.Set(stmt.Identifier.Literals, Eval(stmt.Value, env))
+    switch attr := stmt.Target.(type) {
+    case *ast.AttributeExpression:
+        instObj := Eval(attr.Expr, env)
+        valObj := Eval(stmt.Value, env)
+        instObj.Py__setattr__(attr.Attr.Literals, valObj)
+    case *ast.IdentifierExpression:
+        env.Set(attr.Identifier.Literals, Eval(stmt.Value, env))
+    }
 }
 
 func execIfStatement(stmt ast.Statement, env *Environment) {

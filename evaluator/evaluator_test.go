@@ -311,6 +311,30 @@ func TestClassStatement(t *testing.T) {
     }
 }
 
+func TestDotGetExpression(t *testing.T) {
+    input := ""+
+    "class Foo:\n" +
+    "   a = 1\n" +
+    "res = Foo.a"
+    env := testRunProgram(input)
+
+    if obj := env.Get("res"); obj.(*object.NumberObject).Value != 1 {
+        t.Errorf("res should be %d, got %v", 1, obj.(*object.NumberObject).Value)
+    }
+}
+
+func TestDotSetExpression(t *testing.T) {
+    input := ""+
+    "class Foo:\n" +
+    "   a = 1\n" +
+    "Foo.a = 2\n" +
+    "res = Foo.a"
+    env := testRunProgram(input)
+    if obj := env.Get("res"); obj.(*object.NumberObject).Value != 2 {
+        t.Errorf("res should be %d, got %v", 2, obj.(*object.NumberObject).Value)
+    }
+}
+
 func TestReturnStatement(t *testing.T) {
     // should have no error
     input := ""+
@@ -407,9 +431,9 @@ func TestListStatement(t *testing.T) {
             map[string]*object.ListObject{
                 "c": &object.ListObject{
                         Items: []object.Object{
-                                &object.NumberObject{1},
-                                &object.StringObject{"abc"},
-                                &object.StringObject{"d"},
+                                &object.NumberObject{Value: 1},
+                                &object.StringObject{Value: "abc"},
+                                &object.StringObject{Value: "d"},
                             },
                     },
             },
@@ -438,7 +462,7 @@ func TestDictStatement(t *testing.T) {
             map[string]*object.DictObject{
                 "d": &object.DictObject{
                         Map: map[object.Object]object.Object{
-                                &object.StringObject{"abc"}: &object.StringObject{"d"},
+                                &object.StringObject{Value: "abc"}: &object.StringObject{Value: "d"},
                             },
                     },
             },

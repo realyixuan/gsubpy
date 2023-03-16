@@ -37,6 +37,8 @@ const (
 
 type Object interface {
     GetObjType() ObjType
+    Py__getattribute__(string) Object
+    Py__setattr__(string, Object)
 }
 
 // type PyObject struct {
@@ -44,7 +46,15 @@ type Object interface {
 // func (po *PyObject) __str__() {
 // }
 
+type PyObject struct {
+}
+
+func (o *PyObject) GetObjType() ObjType {return NONE}
+func (o *PyObject) Py__getattribute__(attr string) Object {return o}
+func (o *PyObject) Py__setattr__(attr string, valObj Object) {}
+
 type NoneObject struct {
+    PyObject
     Value   int
 }
 func (no *NoneObject) GetObjType() ObjType {return NONE}
@@ -53,6 +63,7 @@ func (no NoneObject) String() string {
 }
 
 type BoolObject struct {
+    PyObject
     Value   int
 }
 func (bo *BoolObject) GetObjType() ObjType {return BOOL}
@@ -65,6 +76,7 @@ func (bo BoolObject) String() string {
 }
 
 type NumberObject struct {
+    PyObject
     Value   int
 }
 
@@ -72,6 +84,7 @@ func (no *NumberObject) GetObjType() ObjType {return NUMBER}
 func (no NumberObject) String() string {return fmt.Sprint(no.Value)}
 
 type StringObject struct {
+    PyObject
     Value   string
 }
 
@@ -79,6 +92,7 @@ func (self *StringObject) GetObjType() ObjType {return STRING}
 func (self StringObject) String() string {return "'" + self.Value + "'"}
 
 type ListObject struct {
+    PyObject
     Items   []Object
 }
 
@@ -109,6 +123,7 @@ type DictObject struct {
 
     */
 
+    PyObject
     Map   map[Object]Object 
                             
 }
@@ -132,6 +147,7 @@ func (do *DictObject) String() string {
 
 
 type FunctionObject struct {
+    PyObject
     Name    string
     Params  []string
     Body    []ast.Statement
@@ -143,17 +159,23 @@ func (fo FunctionObject) String() string {
 }
 
 type ClassObject struct {
+    PyObject
     Name    string
     Dict    map[string]Object
 }
 
 func (co *ClassObject) GetObjType() ObjType {return CLASS}
+func (co *ClassObject) Py__getattribute__(attr string) Object {return co.Dict[attr]}
+func (co *ClassObject) Py__setattr__(attr string, val Object) {
+    co.Dict[attr] = val
+}
 func (co *ClassObject) String() string {
     return fmt.Sprintf("<class %s at %p>", co.Name, co)
 }
 
 // temporary
 type Print struct {
+    PyObject
 }
 
 func (p *Print) GetObjType() ObjType {return FUNCTION}
@@ -172,6 +194,7 @@ type Exception interface {
 }
 
 type ExceptionObject struct {
+    PyObject
     Msg string
 }
 

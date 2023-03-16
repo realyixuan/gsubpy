@@ -48,6 +48,7 @@ func New(l *lexer.Lexer) *Parser {
     p.registerPrefixFn(token.LBRACKET, p.getLBRACKETPrefix)
     p.registerPrefixFn(token.LBRACE, p.getLBRACEPrefix)
 
+    p.registerInfixFn(token.DOT, p.getDOTInfix)
     p.registerInfixFn(token.PLUS, p.getPLUSInfix)
     p.registerInfixFn(token.MINUS, p.getMINUSInfix)
     p.registerInfixFn(token.MUL, p.getMULInfix)
@@ -80,7 +81,7 @@ func (p *Parser)parsing(indents string) []ast.Statement {
         if isGTIndents(indents, p.l.Indents) {
             break
         } else if isLTIndents(indents, p.l.Indents) {
-            panic(&object.ExceptionObject{"IndentError: wrong indents"})
+            panic(&object.ExceptionObject{Msg: "IndentError: wrong indents"})
         }
 
         stmt := p.parsingStatement()
@@ -94,7 +95,7 @@ func (p *Parser)parsing(indents string) []ast.Statement {
 func (p *Parser)parsingStatement() ast.Statement {
     stmtParsingFn := p.getStmtParsingFn()
     if stmtParsingFn == nil {
-        panic(&object.ExceptionObject{"SyntaxError: ..."})
+        panic(&object.ExceptionObject{Msg: "SyntaxError: ..."})
     }
     return stmtParsingFn()
 }
@@ -106,10 +107,12 @@ func (p *Parser) registerStatementParsingFn(tokenType token.TokenType, fn statem
 func (p *Parser) getStmtParsingFn() statementParsingFn {
     // Because there is no keyword to identify the assignment statement
     // so have to make a judgement for it
-    if p.l.CurToken.Type == token.IDENTIFIER && p.l.PeekNextToken().Type == token.ASSIGN {
-        return p.statementParsingFns[token.ASSIGN]
-    } else if _, ok := p.statementParsingFns[p.l.CurToken.Type]; ok {
+    if _, ok := token.Keywords[p.l.CurToken.Literals]; ok {
         return p.statementParsingFns[p.l.CurToken.Type]
+    }
+
+    if p.isAttributeAssign() {
+        return p.statementParsingFns[token.ASSIGN]
     } else {
         return p.statementParsingFns[token.IDENTIFIER]
     }
@@ -142,7 +145,7 @@ func (p *Parser)parsingIfStatement() ast.Statement {
     }
 
     if !isGTIndents(p.l.Indents, curIndents) {
-        panic(&object.ExceptionObject{"IndentError: wrong Indents"})
+        panic(&object.ExceptionObject{Msg: "IndentError: wrong Indents"})
     }
     
     ifStatement.Body = p.parsing(p.l.Indents)
@@ -175,7 +178,7 @@ func (p *Parser)parsingWhileStatement() ast.Statement {
     }
 
     if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
-        panic(&object.ExceptionObject{"IndentError: wrong Indents"})
+        panic(&object.ExceptionObject{Msg: "IndentError: wrong Indents"})
     }
     
     stmt.Body = p.parsing(p.l.Indents)
@@ -193,14 +196,14 @@ func (p *Parser)parsingDefStatement() ast.Statement {
 
     p.l.ReadNextToken()
     if p.l.CurToken.Type != token.LPAREN {
-        panic(&object.ExceptionObject{"SyntaxError: wrong syntax"})
+        panic(&object.ExceptionObject{Msg: "SyntaxError: wrong syntax"})
     }
 
     p.l.ReadNextToken()
     stmt.Params = p.parsingDefParams()
 
     if p.l.CurToken.Type != token.RPAREN {
-        panic(&object.ExceptionObject{"SyntaxError: wrong syntax"})
+        panic(&object.ExceptionObject{Msg: "SyntaxError: wrong syntax"})
     }
 
     p.l.ReadNextToken()
@@ -210,7 +213,7 @@ func (p *Parser)parsingDefStatement() ast.Statement {
     }
 
     if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
-        panic(&object.ExceptionObject{"IndentError: wrong Indents"})
+        panic(&object.ExceptionObject{Msg: "IndentError: wrong Indents"})
     }
     
     stmt.Body = p.parsing(p.l.Indents)
@@ -228,7 +231,7 @@ func (p *Parser)parsingClassStatement() ast.Statement {
 
     p.l.ReadNextToken()
     if p.l.CurToken.Type != token.COLON {
-        panic(&object.ExceptionObject{"SyntaxError: class define wrong syntax"})
+        panic(&object.ExceptionObject{Msg: "SyntaxError: class define wrong syntax"})
     }
 
     p.l.ReadNextToken()
@@ -237,7 +240,7 @@ func (p *Parser)parsingClassStatement() ast.Statement {
     internalIndents := p.l.Indents
     
     if !isGTIndents(internalIndents, classIndents) {
-        panic(&object.ExceptionObject{"IndentError: in class wrong Indents"})
+        panic(&object.ExceptionObject{Msg: "IndentError: in class wrong Indents"})
     }
 
     for isEQIndents(internalIndents, p.l.Indents) {
@@ -272,8 +275,9 @@ func (p *Parser)parsingDefParams() []token.Token {
 }
 
 func (p *Parser)parsingAssignStatement() ast.Statement {
-    assignment := ast.AssignStatement{Identifier: p.l.CurToken}
-    p.l.ReadNextToken()
+    assignment := ast.AssignStatement{
+        Target: p.getAttrOrIdentExpr(),
+    }
     p.l.ReadNextToken()
     assignment.Value = p.parsingExpression(0)
     p.l.ReadNextToken()
@@ -336,6 +340,8 @@ func (p *Parser) getInfixFn() prefInfixFn {
 
 func getPrecedence(tok token.TokenType) int {
     switch tok {
+    case token.DOT:
+        return ATTR
     case token.LPAREN:
         return CALL
     case token.LT:
@@ -358,7 +364,37 @@ func getPrecedence(tok token.TokenType) int {
 
 func (p *Parser) getIDENTIFIERPrefix() ast.Expression {
     return &ast.IdentifierExpression{p.l.CurToken}
-    
+}
+
+func (p *Parser) isAttributeAssign() bool {
+    cl := *p.l
+    cl.ReadNextToken()
+
+    for cl.CurToken.Type == token.DOT {
+        cl.ReadNextToken()
+        cl.ReadNextToken() // skip over 'identifier', no error check
+    }
+
+    if cl.CurToken.Type != token.ASSIGN {
+        return false
+    } else {
+        return true
+    }
+
+}
+
+func (p *Parser) getAttrOrIdentExpr() ast.Expression {
+    var attrExpr ast.Expression = &ast.IdentifierExpression{Identifier: p.l.CurToken}
+    p.l.ReadNextToken()
+    for p.l.CurToken.Type == token.DOT {
+        p.l.ReadNextToken()
+        attrExpr = &ast.AttributeExpression{
+            Expr: attrExpr,
+            Attr: p.l.CurToken,
+        }
+        p.l.ReadNextToken()
+    }
+    return attrExpr
 }
 
 func (p *Parser) getNUMBERPrefix() ast.Expression {
@@ -392,7 +428,7 @@ func (p *Parser) getLBRACEPrefix() ast.Expression {
         expr.Keys = append(expr.Keys, p.parsingExpression(LOWEST))
 
         if p.l.CurToken.Type != token.COLON {
-            panic(&object.ExceptionObject{"SyntaxError: there is a syntax error in dict"})
+            panic(&object.ExceptionObject{Msg: "SyntaxError: there is a syntax error in dict"})
         }
         p.l.ReadNextToken()
 
@@ -415,6 +451,15 @@ func (p *Parser) getPLUSInfix(left ast.Expression) ast.Expression {
         Left: left,
         Right: p.parsingExpression(getPrecedence(token.PLUS)),
     }
+}
+
+func (p *Parser) getDOTInfix(left ast.Expression) ast.Expression {
+    expr := &ast.AttributeExpression{Expr: left}
+
+    expr.Attr = p.l.CurToken
+    p.l.ReadNextToken()
+
+    return expr
 }
 
 func (p *Parser) getMINUSInfix(left ast.Expression) ast.Expression {
@@ -471,6 +516,7 @@ const (
     SUM
     PRODUCT
     CALL
+    ATTR
 )
 
 const (
