@@ -4,7 +4,26 @@ class Base:
     def __str__(self):
         return "<%s object at %s>" % (type(self), id(self))
 
-class SubClass: pass
+class SubClass(Base): pass
+
+                            inherit
+                    type <------------ metaclass
+                    | ^                   |
+                    | |                   |
+        instantiate | |inherit            v
+                    | |                  ...
+                    v |     inherit
+                   object <----------------------------------- class
+                      ^ ^                                        |
+                       \ \    inherit                            | inst 
+                        \ ---------------------------- int       v
+                      .  \ inherit                      |     instance
+                      .   --------------- function      |
+                      .                      |          | inst
+                      .                 inst |          v
+                                             |        number instance
+                                             v
+                                         func instance
 
 with composition not inheritance, there are some issues for
 reuse behaviours
@@ -39,6 +58,7 @@ type Object interface {
     GetObjType() ObjType
     Py__getattribute__(string) Object
     Py__setattr__(string, Object)
+    Py__init__(Object)
 }
 
 // type PyObject struct {
@@ -52,6 +72,7 @@ type PyObject struct {
 func (o *PyObject) GetObjType() ObjType {return NONE}
 func (o *PyObject) Py__getattribute__(attr string) Object {return o}
 func (o *PyObject) Py__setattr__(attr string, valObj Object) {}
+func (o *PyObject) Py__init__(Object) {}
 
 type NoneObject struct {
     PyObject
@@ -160,17 +181,71 @@ func (fo FunctionObject) String() string {
 
 type ClassObject struct {
     PyObject
-    Name    string
-    Dict    map[string]Object
+    Name          string
+    Py__dict__    map[string]Object
 }
 
 func (co *ClassObject) GetObjType() ObjType {return CLASS}
-func (co *ClassObject) Py__getattribute__(attr string) Object {return co.Dict[attr]}
+func (co *ClassObject) Py__getattribute__(attr string) Object {return co.Py__dict__[attr]}
 func (co *ClassObject) Py__setattr__(attr string, val Object) {
-    co.Dict[attr] = val
+    co.Py__dict__[attr] = val
 }
+func (co *ClassObject) Py__new__() Object {
+    return &InstanceObject{
+        Py__class__: co,
+        Py__dict__: map[string]Object{},
+    }
+}
+// func (co *ClassObject) Py__call__() Object {
+//     instObj = co.Py__new__()
+// }
+// func (co *ClassObject) Call() Object {
+//     return co.Py__call__()
+// }
+
 func (co *ClassObject) String() string {
     return fmt.Sprintf("<class %s at %p>", co.Name, co)
+}
+
+type BoundMethod struct {
+    PyObject
+    Func        *FunctionObject
+    Inst        *InstanceObject
+} 
+func (bm *BoundMethod) String() string {
+    return fmt.Sprintf("<bound method %s.%s object at %p>",
+        bm.Inst.Py__class__.Name, bm.Func.Name, bm)
+}
+
+type InstanceObject struct {
+    PyObject
+    Py__class__ *ClassObject
+    Py__dict__ map[string]Object
+}
+
+func (io *InstanceObject) Py__getattribute__(attr string) Object {
+    targetObj, ok := io.Py__dict__[attr]
+    if ok {
+        return targetObj 
+    }
+
+    switch targetObj := io.Py__class__.Py__getattribute__(attr).(type) {
+    case *FunctionObject:
+        return &BoundMethod{
+            Func: targetObj,
+            Inst: io,
+            }
+    default:
+        // not supposed to be nil
+        return targetObj
+    }
+}
+func (io *InstanceObject) Py__setattr__(attr string, val Object) {
+    io.Py__dict__[attr] = val
+}
+
+func (io *InstanceObject) String() string {
+    return fmt.Sprintf("<%v objects at %p>", io.Py__class__.Name, io)
 }
 
 // temporary

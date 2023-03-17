@@ -15,11 +15,11 @@ func main() {
     defer func() {
         if r := recover(); r != nil {
             // get interface out from interface ?
-            switch exception := r.(type) {
+            switch e := r.(type) {
             case object.Exception:
-                fmt.Println(exception.ErrorMsg())
+                fmt.Println(e.ErrorMsg())
             default:
-                fmt.Println("interpreter error:", exception)
+                panic(e)
             }
         }
     }()

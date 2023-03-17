@@ -17,6 +17,7 @@ const (
 
     ASSIGN      = "ASSIGN"
     IDENTIFIER  = "IDENTIFIER"
+    UNDERSCORE  = "_"
 
     NUMBER      = "NUMBER"
     STRING      = "STRING"
@@ -37,7 +38,7 @@ const (
     RBRACE      = "}"
     COLON       = ":"
     COMMA       = ","
-    DOT       = "."
+    DOT         = "."
 )
 
 var Keywords = map[string]TokenType {

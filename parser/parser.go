@@ -500,7 +500,7 @@ func (p *Parser) getLTInfix(left ast.Expression) ast.Expression {
 }
 
 func (p *Parser) getLPARENInfix(left ast.Expression) ast.Expression {
-    return &ast.FunctionCallExpression{
+    return &ast.CallExpression{
         Name: left,
         Params: p.parsingCallParams(getPrecedence(token.LPAREN)),
     }

@@ -165,8 +165,8 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
             dictObj.Map[Eval(k, env)] = Eval(v, env)
         }
         return dictObj
-    case *ast.FunctionCallExpression:
-        return evalFunctionCallExpression(node, env)
+    case *ast.CallExpression:
+        return evalCallExpression(node, env)
     case *ast.AttributeExpression:
         inst := Eval(node.Expr, env)
         return inst.Py__getattribute__(node.Attr.Literals)
@@ -224,40 +224,80 @@ func execClassStatement(node *ast.ClassStatement, env *Environment) {
 
     clsObj := &object.ClassObject{
         Name: node.Name.Literals,
-        Dict: clsEnv.store,
+        Py__dict__: clsEnv.store,
     }
 
     env.Set(clsObj.Name, clsObj)
 }
 
-func evalFunctionCallExpression(funcNode *ast.FunctionCallExpression, parentEnv *Environment) object.Object {
-    funcObj := Eval(funcNode.Name, parentEnv)
+func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) object.Object {
+    callObj := Eval(callNode.Name, parentEnv)
 
-    switch obj := funcObj.(type) {
+    switch obj := callObj.(type) {
     case *object.Print:
         var paramObjs []object.Object
-        for _, param := range funcNode.Params {
+        for _, param := range callNode.Params {
             paramObjs = append(paramObjs, Eval(param, parentEnv))
         }
         obj.Call(paramObjs)
         return None
-    default:
-        env := parentEnv.deriveEnv()
-
-        for i, expr := range funcNode.Params {
-            env.Set(obj.(*object.FunctionObject).Params[i], Eval(expr, parentEnv))
+    case *object.ClassObject:
+        args := []object.Object{}
+        for _, param := range callNode.Params {
+            args = append(args, Eval(param, parentEnv))
         }
 
-        for _, stmt := range obj.(*object.FunctionObject).Body {
-            switch node := stmt.(type) {
-            case *ast.ReturnStatement:
-                return Eval(node.Value, env)
-            default:
-                Exec([]ast.Statement{stmt}, env)
-            }
+        return evalClassCallExpr(obj, args, parentEnv.deriveEnv())
+    case *object.BoundMethod:
+        args := []object.Object{}
+        for _, param := range callNode.Params {
+            args = append(args, Eval(param, parentEnv))
+        }
+
+        args = append([]object.Object{obj.Inst}, args...)
+
+        return evalFuncCallExpr(obj.Func, args, parentEnv.deriveEnv())
+    case *object.FunctionObject:
+        args := []object.Object{}
+        for _, param := range callNode.Params {
+            args = append(args, Eval(param, parentEnv))
+        }
+
+        return evalFuncCallExpr(obj, args, parentEnv.deriveEnv())
+    }
+
+    return None
+}
+
+func evalFuncCallExpr(funcObj *object.FunctionObject, args []object.Object, env *Environment) object.Object {
+    for i, _ := range funcObj.Params {
+        env.Set(funcObj.Params[i], args[i])
+    }
+
+    for _, stmt := range funcObj.Body {
+        switch node := stmt.(type) {
+        case *ast.ReturnStatement:
+            return Eval(node.Value, env)
+        default:
+            Exec([]ast.Statement{stmt}, env)
         }
     }
 
     return None
+}
+
+func evalClassCallExpr(clsObj *object.ClassObject, args []object.Object, env *Environment) object.Object {
+    instObj := clsObj.Py__new__()
+
+    __init__ := clsObj.Py__getattribute__("__init__")
+    if __init__ == nil {
+        return instObj
+    }
+
+    args = append([]object.Object{instObj}, args...)
+
+    evalFuncCallExpr(__init__.(*object.FunctionObject), args, env)
+
+    return instObj
 }
 

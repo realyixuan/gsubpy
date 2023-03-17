@@ -21,11 +21,7 @@ func TestOneLineAssignStatement(t *testing.T) {
     }
 
     for _, testCase := range testCases {
-        l := lexer.New(testCase.input)
-        p := parser.New(l)
-        stmts := p.Parsing()
-        env := NewEnvironment()
-        Exec(stmts, env)
+        env := testRunProgram(testCase.input)
         for target, expectedObj := range testCase.expected {
             if resultedObj := env.Get(target).(*object.NumberObject); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
@@ -61,11 +57,7 @@ func TestMultiLineAssignStatement(t *testing.T) {
     }
 
     for _, testCase := range testCases {
-        l := lexer.New(testCase.input)
-        p := parser.New(l)
-        stmts := p.Parsing()
-        env := NewEnvironment()
-        Exec(stmts, env)
+        env := testRunProgram(testCase.input)
         for varname, expectedObj := range testCase.expected {
             res := env.Get(varname)
             if res == nil {
@@ -110,11 +102,7 @@ func TestIfStatement(t *testing.T) {
     }
 
     for _, testCase := range testCases {
-        l := lexer.New(testCase.input)
-        p := parser.New(l)
-        stmts := p.Parsing()
-        env := NewEnvironment()
-        Exec(stmts, env)
+        env := testRunProgram(testCase.input)
         for varname, expectedObj := range testCase.expected {
             res := env.Get(varname)
             if res == nil {
@@ -170,11 +158,7 @@ func TestIfElifElseStatement(t *testing.T) {
     }
 
     for _, testCase := range testCases {
-        l := lexer.New(testCase.input)
-        p := parser.New(l)
-        stmts := p.Parsing()
-        env := NewEnvironment()
-        Exec(stmts, env)
+        env := testRunProgram(testCase.input)
         for varname, expectedObj := range testCase.expected {
             res := env.Get(varname)
             if res == nil {
@@ -215,11 +199,7 @@ func TestWhileStatement(t *testing.T) {
     }
 
     for _, testCase := range testCases {
-        l := lexer.New(testCase.input)
-        p := parser.New(l)
-        stmts := p.Parsing()
-        env := NewEnvironment()
-        Exec(stmts, env)
+        env := testRunProgram(testCase.input)
         for varname, expectedObj := range testCase.expected {
             res := env.Get(varname)
             if res == nil {
@@ -238,11 +218,7 @@ func TestExpressionStatement(t *testing.T) {
     "a = 1 + 1\n" + 
     "1 + 1\n" +
     "a + 1\n"
-    l := lexer.New(input)
-    p := parser.New(l)
-    stmts := p.Parsing()
-    env := NewEnvironment()
-    Exec(stmts, env)
+    testRunProgram(input)
 }
 
 func TestBlankLineStatement(t *testing.T) {
@@ -255,11 +231,7 @@ func TestBlankLineStatement(t *testing.T) {
     "     \n" +
     "a + 1\n" +
     "b = a + 1\n"
-    l := lexer.New(input)
-    p := parser.New(l)
-    stmts := p.Parsing()
-    env := NewEnvironment()
-    Exec(stmts, env)
+    env := testRunProgram(input)
     if obj := env.Get("b"); obj.(*object.NumberObject).Value != 3 {
         t.Errorf("expected %v, got %v", 3, obj.(*object.NumberObject).Value)
     }
@@ -271,11 +243,7 @@ func TestEOFLineStatement(t *testing.T) {
     "a = 1 + 1\n" +
     "a + 1\n" +
     "b = a + 1"
-    l := lexer.New(input)
-    p := parser.New(l)
-    stmts := p.Parsing()
-    env := NewEnvironment()
-    Exec(stmts, env)
+    env := testRunProgram(input)
     if obj := env.Get("b"); obj.(*object.NumberObject).Value != 3 {
         t.Errorf("expected %v, got %v", 3, obj.(*object.NumberObject).Value)
     }
@@ -286,11 +254,7 @@ func TestFunctionDefStatement(t *testing.T) {
     input := ""+
     "def foo(a, b):\n" +
     "    c = a + b\n"
-    l := lexer.New(input)
-    p := parser.New(l)
-    stmts := p.Parsing()
-    env := NewEnvironment()
-    Exec(stmts, env)
+    env := testRunProgram(input)
     if obj := env.Get("foo"); obj == nil {
         t.Errorf("func 'foo' does not exists")
     }
@@ -301,13 +265,29 @@ func TestClassStatement(t *testing.T) {
     input := ""+
     "class Foo:\n" +
     "   a = 1\n"
-    l := lexer.New(input)
-    p := parser.New(l)
-    stmts := p.Parsing()
-    env := NewEnvironment()
-    Exec(stmts, env)
+    env := testRunProgram(input)
     if obj := env.Get("Foo"); obj == nil {
         t.Errorf("class 'Foo' does not exists")
+    }
+}
+
+func TestInstanceMethod(t *testing.T) {
+    // should have no error
+    input := `
+class Foo:
+    c = 3
+    def __init__(self):
+        self.a = 1
+        self.b = 2
+    def sum(self):
+        return self.a + self.b + self.c
+
+foo = Foo()
+res = foo.sum()
+    `
+    env := testRunProgram(input)
+    if obj := env.Get("res"); obj.(*object.NumberObject).Value != 6 {
+        t.Errorf("instance method wrong: expected 6, got %v", obj.(*object.NumberObject).Value)
     }
 }
 
@@ -340,11 +320,7 @@ func TestReturnStatement(t *testing.T) {
     input := ""+
     "def foo(a, b):\n" +
     "    return a + b\n"
-    l := lexer.New(input)
-    p := parser.New(l)
-    stmts := p.Parsing()
-    env := NewEnvironment()
-    Exec(stmts, env)
+    env := testRunProgram(input)
     if obj := env.Get("foo"); obj == nil {
         t.Errorf("func 'foo' does not exists")
     }
@@ -356,11 +332,7 @@ func TestFunctionCallStatement(t *testing.T) {
     "def foo(a, b):\n" +
     "    return a + b\n" +
     "res = foo(1, 1)\n"
-    l := lexer.New(input)
-    p := parser.New(l)
-    stmts := p.Parsing()
-    env := NewEnvironment()
-    Exec(stmts, env)
+    env := testRunProgram(input)
     if obj := env.Get("res"); obj.(*object.NumberObject).Value != 2 {
         t.Errorf("expected %v, got %v", 2, obj.(*object.NumberObject).Value)
     }
@@ -380,11 +352,7 @@ func TestStringAssignStatement(t *testing.T) {
     }
 
     for _, testCase := range testCases {
-        l := lexer.New(testCase.input)
-        p := parser.New(l)
-        stmts := p.Parsing()
-        env := NewEnvironment()
-        Exec(stmts, env)
+        env := testRunProgram(testCase.input)
         for target, expectedObj := range testCase.expected {
             if resultedObj := env.Get(target).(*object.StringObject); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",

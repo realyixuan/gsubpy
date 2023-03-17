@@ -126,12 +126,12 @@ type ReturnStatement struct {
 
 func (rs *ReturnStatement) getStatement() {}
 
-type FunctionCallExpression struct {
+type CallExpression struct {
     Name        Expression
     Params      []Expression
 }
 
-func (ce *FunctionCallExpression) getExpression() {}
+func (ce *CallExpression) getExpression() {}
 
 type ClassStatement struct {
     Name    token.Token
