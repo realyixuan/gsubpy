@@ -229,7 +229,19 @@ func (p *Parser)parsingClassStatement() ast.Statement {
         Name: p.l.CurToken,
     }
 
-    p.l.ReadNextToken()
+    // inheritance
+    if p.l.ReadNextToken(); p.l.CurToken.Type == token.LPAREN {
+        p.l.ReadNextToken()
+
+        // supposed to be identifier token
+        stmt.Parent = p.l.CurToken
+
+        if p.l.ReadNextToken(); p.l.CurToken.Type != token.RPAREN {
+            panic(&object.ExceptionObject{Msg: "SyntaxError: class define wrong syntax"})
+        }
+        p.l.ReadNextToken()
+    }
+
     if p.l.CurToken.Type != token.COLON {
         panic(&object.ExceptionObject{Msg: "SyntaxError: class define wrong syntax"})
     }

@@ -7,6 +7,9 @@ import (
     "gsubpy/token"
 )
 
+// simplest way for now
+var context object.Object
+
 var (
     True = &object.BoolObject{Value: 1}
     False = &object.BoolObject{Value: 0}
@@ -18,6 +21,9 @@ var __builtins__ = map[string]object.Object{
     "False": False,
     "None": None,
     "print": &object.Print{},
+    "super": &object.BuiltinClass{
+        Name: "super",
+        },
 }
 
 type Environment struct {
@@ -225,6 +231,7 @@ func execClassStatement(node *ast.ClassStatement, env *Environment) {
     clsObj := &object.ClassObject{
         Name: node.Name.Literals,
         Py__dict__: clsEnv.store,
+        Py__base__: env.Get(node.Parent.Literals),
     }
 
     env.Set(clsObj.Name, clsObj)
@@ -264,9 +271,16 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) ob
         }
 
         return evalFuncCallExpr(obj, args, parentEnv.deriveEnv())
+    case *object.BuiltinClass:
+        if obj.Name == "super" {
+            return &object.SuperInstance{Py__self__: context.(*object.InstanceObject)}
+        }
     }
 
     return None
+}
+
+func evalSuperCallExpr() {
 }
 
 func evalFuncCallExpr(funcObj *object.FunctionObject, args []object.Object, env *Environment) object.Object {
@@ -296,7 +310,9 @@ func evalClassCallExpr(clsObj *object.ClassObject, args []object.Object, env *En
 
     args = append([]object.Object{instObj}, args...)
 
+    context = instObj
     evalFuncCallExpr(__init__.(*object.FunctionObject), args, env)
+    context = nil
 
     return instObj
 }

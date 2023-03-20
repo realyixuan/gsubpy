@@ -291,6 +291,51 @@ res = foo.sum()
     }
 }
 
+func TestClassInheritanceForClass(t *testing.T) {
+    // should have no error
+    input := `
+class Base:
+    x = 10
+class Foo(Base):
+    factor = 30
+
+foo = Foo()
+res1 = Foo.x 
+res2 = foo.x
+    `
+    env := testRunProgram(input)
+    if obj := env.Get("res1"); obj.(*object.NumberObject).Value != 10 {
+        t.Errorf("instance method wrong: expected 10, got %v", obj.(*object.NumberObject).Value)
+    }
+    if obj := env.Get("res2"); obj.(*object.NumberObject).Value != 10 {
+        t.Errorf("instance method wrong: expected 10, got %v", obj.(*object.NumberObject).Value)
+    }
+}
+
+func TestClassInheritanceForInstance(t *testing.T) {
+    input := `
+class Base:
+    def __init__(self, a):
+        self.a = a
+
+class Foo(Base):
+    def __init__(self, a, b):
+        self.b = b
+        super().__init__(a)
+
+foo = Foo(1, 2)
+res1 = foo.a
+res2 = foo.b
+    `
+    env := testRunProgram(input)
+    if obj := env.Get("res1"); obj.(*object.NumberObject).Value != 1 {
+        t.Errorf("instance attr wrong: expected 1, got %v", obj.(*object.NumberObject).Value)
+    }
+    if obj := env.Get("res2"); obj.(*object.NumberObject).Value != 2 {
+        t.Errorf("instance attr wrong: expected 2, got %v", obj.(*object.NumberObject).Value)
+    }
+}
+
 func TestDotGetExpression(t *testing.T) {
     input := ""+
     "class Foo:\n" +

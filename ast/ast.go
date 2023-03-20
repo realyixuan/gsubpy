@@ -136,6 +136,7 @@ func (ce *CallExpression) getExpression() {}
 type ClassStatement struct {
     Name    token.Token
     Body    []Statement
+    Parent  token.Token
 }
 
 func (cs *ClassStatement) getStatement() {}

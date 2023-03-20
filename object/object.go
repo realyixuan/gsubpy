@@ -175,18 +175,31 @@ type FunctionObject struct {
 }
 
 func (fo *FunctionObject) GetObjType() ObjType {return FUNCTION}
-func (fo FunctionObject) String() string {
-    return fmt.Sprintf("<function %s at %p>", fo.Name, &fo)
+func (fo *FunctionObject) String() string {
+    return fmt.Sprintf("<function %s at %p>", fo.Name, fo)
 }
 
 type ClassObject struct {
     PyObject
     Name          string
+    Py__base__    Object
     Py__dict__    map[string]Object
 }
 
 func (co *ClassObject) GetObjType() ObjType {return CLASS}
-func (co *ClassObject) Py__getattribute__(attr string) Object {return co.Py__dict__[attr]}
+func (co *ClassObject) Py__getattribute__(attr string) Object {
+    // FIXME: defualt to object
+    val := co.Py__dict__[attr]
+    if val != nil {
+        return val
+    }
+
+    if co.Py__base__ == nil {
+        return nil
+    }
+
+    return co.Py__base__.Py__getattribute__(attr)
+}
 func (co *ClassObject) Py__setattr__(attr string, val Object) {
     co.Py__dict__[attr] = val
 }
@@ -231,6 +244,7 @@ func (io *InstanceObject) Py__getattribute__(attr string) Object {
 
     switch targetObj := io.Py__class__.Py__getattribute__(attr).(type) {
     case *FunctionObject:
+        // FIXME: here supposed to be return the identical method everytime
         return &BoundMethod{
             Func: targetObj,
             Inst: io,
@@ -276,4 +290,33 @@ type ExceptionObject struct {
 func (eo *ExceptionObject) GetObjType() ObjType {return EXCEPTION}
 func (eo *ExceptionObject) ErrorMsg() string {return eo.Msg}
 func (eo *ExceptionObject) String() string {return "Exception"}
+
+type BuiltinClass struct {
+    PyObject
+    Name string
+}
+
+func (bc *BuiltinClass) String() string {
+    return bc.Name
+}
+
+type SuperInstance struct {
+    PyObject
+    Py__self__ *InstanceObject
+}
+
+func (si *SuperInstance) Py__getattribute__(attr string) Object {
+    switch targetObj := si.Py__self__.Py__class__.Py__base__.Py__getattribute__(attr).(type) {
+    case *FunctionObject:
+        return &BoundMethod{
+            Func: targetObj,
+            Inst: si.Py__self__,
+            }
+    }
+    return nil
+}
+
+func (si *SuperInstance) String() string {
+    return "<unknown now>"
+}
 
