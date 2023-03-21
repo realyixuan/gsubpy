@@ -59,6 +59,7 @@ type Object interface {
     Py__getattribute__(string) Object
     Py__setattr__(string, Object)
     Py__init__(Object)
+    Py__new__(*PyClass) *PyInstance
 }
 
 // type PyObject struct {
@@ -72,7 +73,26 @@ type PyObject struct {
 func (o *PyObject) GetObjType() ObjType {return NONE}
 func (o *PyObject) Py__getattribute__(attr string) Object {return o}
 func (o *PyObject) Py__setattr__(attr string, valObj Object) {}
+func (o *PyObject) Py__new__(cls *PyClass) *PyInstance {
+    return &PyInstance{
+        Py__class__: cls,
+        Py__dict__: map[string]Object{},
+        }
+}
 func (o *PyObject) Py__init__(Object) {}
+
+var Pyobject = &PyObject{}
+
+type Pytype struct {
+    PyObject
+}
+func (t *Pytype) Py__new__(mcs *Pytype, name string, base *PyClass, attrs map[string]Object) *PyClass {
+    return &PyClass{
+        Name: name,
+        Py__base__: base,
+        Py__dict__: attrs,
+        }
+}
 
 type NoneObject struct {
     PyObject
@@ -179,34 +199,39 @@ func (fo *FunctionObject) String() string {
     return fmt.Sprintf("<function %s at %p>", fo.Name, fo)
 }
 
-type ClassObject struct {
+type PyClass struct {
     PyObject
     Name          string
-    Py__base__    Object
+    Py__base__    *PyClass
     Py__dict__    map[string]Object
 }
 
-func (co *ClassObject) GetObjType() ObjType {return CLASS}
-func (co *ClassObject) Py__getattribute__(attr string) Object {
+func (pc *PyClass) GetObjType() ObjType {return CLASS}
+func (pc *PyClass) Py__getattribute__(attr string) Object {
     // FIXME: defualt to object
-    val := co.Py__dict__[attr]
+    fmt.Println(attr, pc.Py__dict__)
+    val := pc.Py__dict__[attr]
     if val != nil {
         return val
     }
 
-    if co.Py__base__ == nil {
+    if pc.Py__base__ == nil {
         return nil
     }
 
-    return co.Py__base__.Py__getattribute__(attr)
+    return pc.Py__base__.Py__getattribute__(attr)
 }
-func (co *ClassObject) Py__setattr__(attr string, val Object) {
-    co.Py__dict__[attr] = val
+func (pc *PyClass) Py__setattr__(attr string, val Object) {
+    pc.Py__dict__[attr] = val
 }
-func (co *ClassObject) Py__new__() Object {
-    return &InstanceObject{
-        Py__class__: co,
-        Py__dict__: map[string]Object{},
+func (pc *PyClass) Py__new__(cls *PyClass) *PyInstance {
+    // FIXME: unify PyObject and Pyclass
+    // Maybe add a new interface: class-interface
+    
+    if pc.Py__base__ == nil {
+        return Pyobject.Py__new__(cls)
+    } else {
+        return pc.Py__base__.Py__new__(cls)
     }
 }
 // func (co *ClassObject) Py__call__() Object {
@@ -216,50 +241,50 @@ func (co *ClassObject) Py__new__() Object {
 //     return co.Py__call__()
 // }
 
-func (co *ClassObject) String() string {
-    return fmt.Sprintf("<class %s at %p>", co.Name, co)
+func (pc *PyClass) String() string {
+    return fmt.Sprintf("<class %s at %p>", pc.Name, pc)
 }
 
 type BoundMethod struct {
     PyObject
     Func        *FunctionObject
-    Inst        *InstanceObject
+    Inst        *PyInstance
 } 
 func (bm *BoundMethod) String() string {
     return fmt.Sprintf("<bound method %s.%s object at %p>",
         bm.Inst.Py__class__.Name, bm.Func.Name, bm)
 }
 
-type InstanceObject struct {
+type PyInstance struct {
     PyObject
-    Py__class__ *ClassObject
+    Py__class__ *PyClass
     Py__dict__ map[string]Object
 }
 
-func (io *InstanceObject) Py__getattribute__(attr string) Object {
-    targetObj, ok := io.Py__dict__[attr]
+func (pi *PyInstance) Py__getattribute__(attr string) Object {
+    targetObj, ok := pi.Py__dict__[attr]
     if ok {
         return targetObj 
     }
 
-    switch targetObj := io.Py__class__.Py__getattribute__(attr).(type) {
+    switch targetObj := pi.Py__class__.Py__getattribute__(attr).(type) {
     case *FunctionObject:
         // FIXME: here supposed to be return the identical method everytime
         return &BoundMethod{
             Func: targetObj,
-            Inst: io,
+            Inst: pi,
             }
     default:
         // not supposed to be nil
         return targetObj
     }
 }
-func (io *InstanceObject) Py__setattr__(attr string, val Object) {
-    io.Py__dict__[attr] = val
+func (pi *PyInstance) Py__setattr__(attr string, val Object) {
+    pi.Py__dict__[attr] = val
 }
 
-func (io *InstanceObject) String() string {
-    return fmt.Sprintf("<%v objects at %p>", io.Py__class__.Name, io)
+func (pi *PyInstance) String() string {
+    return fmt.Sprintf("<%v objects at %p>", pi.Py__class__.Name, pi)
 }
 
 // temporary
@@ -302,7 +327,7 @@ func (bc *BuiltinClass) String() string {
 
 type SuperInstance struct {
     PyObject
-    Py__self__ *InstanceObject
+    Py__self__ *PyInstance
 }
 
 func (si *SuperInstance) Py__getattribute__(attr string) Object {

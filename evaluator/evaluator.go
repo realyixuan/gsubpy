@@ -17,6 +17,7 @@ var (
 )
 
 var __builtins__ = map[string]object.Object{
+    "object": object.Pyobject,
     "True": True,
     "False": False,
     "None": None,
@@ -228,10 +229,15 @@ func execClassStatement(node *ast.ClassStatement, env *Environment) {
     clsEnv := env.deriveEnv()
     Exec(node.Body, clsEnv)
 
-    clsObj := &object.ClassObject{
+    clsObj := &object.PyClass{
         Name: node.Name.Literals,
         Py__dict__: clsEnv.store,
-        Py__base__: env.Get(node.Parent.Literals),
+    }
+
+    if env.Get(node.Parent.Literals) != nil {
+        // FIXME: there would be issue if inherit object
+        clsObj.Py__base__ = env.Get(node.Parent.Literals).(*object.PyClass)
+        
     }
 
     env.Set(clsObj.Name, clsObj)
@@ -248,7 +254,7 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) ob
         }
         obj.Call(paramObjs)
         return None
-    case *object.ClassObject:
+    case *object.PyClass:
         args := []object.Object{}
         for _, param := range callNode.Params {
             args = append(args, Eval(param, parentEnv))
@@ -273,7 +279,7 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) ob
         return evalFuncCallExpr(obj, args, parentEnv.deriveEnv())
     case *object.BuiltinClass:
         if obj.Name == "super" {
-            return &object.SuperInstance{Py__self__: context.(*object.InstanceObject)}
+            return &object.SuperInstance{Py__self__: context.(*object.PyInstance)}
         }
     }
 
@@ -300,8 +306,8 @@ func evalFuncCallExpr(funcObj *object.FunctionObject, args []object.Object, env 
     return None
 }
 
-func evalClassCallExpr(clsObj *object.ClassObject, args []object.Object, env *Environment) object.Object {
-    instObj := clsObj.Py__new__()
+func evalClassCallExpr(clsObj *object.PyClass, args []object.Object, env *Environment) object.Object {
+    instObj := clsObj.Py__new__(clsObj)
 
     __init__ := clsObj.Py__getattribute__("__init__")
     if __init__ == nil {
