@@ -280,6 +280,8 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) ob
     case *object.BuiltinClass:
         if obj.Name == "super" {
             return &object.SuperInstance{Py__self__: context.(*object.PyInstance)}
+        } else if obj.Name == "object__new__" {
+            return object.Pyobject.Py__new__(Eval(callNode.Params[0], parentEnv).(*object.PyClass))
         }
     }
 
@@ -307,7 +309,14 @@ func evalFuncCallExpr(funcObj *object.FunctionObject, args []object.Object, env 
 }
 
 func evalClassCallExpr(clsObj *object.PyClass, args []object.Object, env *Environment) object.Object {
-    instObj := clsObj.Py__new__(clsObj)
+    // TODO: by now, super() in __new__ is invalid
+    __new__ := clsObj.Py__getattribute__("__new__")
+    var instObj *object.PyInstance
+    if __new__ != nil {
+        instObj = evalFuncCallExpr(__new__.(*object.FunctionObject), []object.Object{clsObj}, env).(*object.PyInstance)
+    } else {
+        instObj = clsObj.Py__new__(clsObj)
+    }
 
     __init__ := clsObj.Py__getattribute__("__init__")
     if __init__ == nil {

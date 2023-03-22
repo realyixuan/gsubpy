@@ -71,7 +71,15 @@ type PyObject struct {
 }
 
 func (o *PyObject) GetObjType() ObjType {return NONE}
-func (o *PyObject) Py__getattribute__(attr string) Object {return o}
+func (o *PyObject) Py__getattribute__(attr string) Object {
+    if attr == "__new__" {
+        // XXX: design builtin
+        return &BuiltinClass{
+            Name: "object__new__",
+            }
+    }
+    return nil
+}
 func (o *PyObject) Py__setattr__(attr string, valObj Object) {}
 func (o *PyObject) Py__new__(cls *PyClass) *PyInstance {
     return &PyInstance{
@@ -209,7 +217,6 @@ type PyClass struct {
 func (pc *PyClass) GetObjType() ObjType {return CLASS}
 func (pc *PyClass) Py__getattribute__(attr string) Object {
     // FIXME: defualt to object
-    fmt.Println(attr, pc.Py__dict__)
     val := pc.Py__dict__[attr]
     if val != nil {
         return val
@@ -227,7 +234,7 @@ func (pc *PyClass) Py__setattr__(attr string, val Object) {
 func (pc *PyClass) Py__new__(cls *PyClass) *PyInstance {
     // FIXME: unify PyObject and Pyclass
     // Maybe add a new interface: class-interface
-    
+
     if pc.Py__base__ == nil {
         return Pyobject.Py__new__(cls)
     } else {
