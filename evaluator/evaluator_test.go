@@ -353,6 +353,37 @@ res = Foo(1).a
     }
 }
 
+func TestInheritanceWithoutObject(t *testing.T) {
+    input := `
+class Foo:
+    def __new__(cls):
+        return object.__new__(cls)
+        
+    def __init__(self, a):
+        self.a = a
+
+res = Foo(1).a
+    `
+    env := testRunProgram(input)
+    if obj := env.Get("res"); obj.(*object.NumberObject).Value != 1 {
+        t.Errorf("instance attr wrong: expected 1, got %v", obj.(*object.NumberObject).Value)
+    }
+}
+
+func TestInheritanceWithObject(t *testing.T) {
+    input := `
+class Foo(object):
+    def __init__(self, a):
+        self.a = a
+
+res = Foo(1).a
+    `
+    env := testRunProgram(input)
+    if obj := env.Get("res"); obj.(*object.NumberObject).Value != 1 {
+        t.Errorf("instance attr wrong: expected 1, got %v", obj.(*object.NumberObject).Value)
+    }
+}
+
 func TestDotGetExpression(t *testing.T) {
     input := ""+
     "class Foo:\n" +
