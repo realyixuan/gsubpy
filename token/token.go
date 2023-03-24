@@ -19,7 +19,7 @@ const (
     IDENTIFIER  = "IDENTIFIER"
     UNDERSCORE  = "_"
 
-    NUMBER      = "NUMBER"
+    INTEGER      = "INTEGER"
     STRING      = "STRING"
 
     PLUS        = "PLUS"

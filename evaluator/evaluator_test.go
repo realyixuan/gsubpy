@@ -10,12 +10,12 @@ import (
 func TestOneLineAssignStatement(t *testing.T) {
     testCases := []struct {
         input       string
-        expected    map[string]*object.NumberObject
+        expected    map[string]*object.IntegerInst
     }{
         {
             `val = 10 + 20 * 10 / 2 - 50`,
-            map[string]*object.NumberObject{
-                "val": &object.NumberObject{Value: 60},
+            map[string]*object.IntegerInst{
+                "val": &object.IntegerInst{Value: 60},
             },
         },
     }
@@ -23,7 +23,7 @@ func TestOneLineAssignStatement(t *testing.T) {
     for _, testCase := range testCases {
         env := testRunProgram(testCase.input)
         for target, expectedObj := range testCase.expected {
-            if resultedObj := env.Get(target).(*object.NumberObject); *resultedObj != *expectedObj {
+            if resultedObj := env.Get(target).(*object.IntegerInst); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
                     target, *expectedObj, target, *resultedObj)
             }
@@ -34,24 +34,24 @@ func TestOneLineAssignStatement(t *testing.T) {
 func TestMultiLineAssignStatement(t *testing.T) {
     testCases := []struct {
         input       string
-        expected    map[string]*object.NumberObject
+        expected    map[string]*object.IntegerInst
     }{
         {
             "vala = 1\n" +
             "valb = 2\n",
-            map[string]*object.NumberObject{
-                "vala": &object.NumberObject{Value: 1},
-                "valb": &object.NumberObject{Value: 2},
+            map[string]*object.IntegerInst{
+                "vala": &object.IntegerInst{Value: 1},
+                "valb": &object.IntegerInst{Value: 2},
             },
         },
         {
             "a = 1\n" +
             "b = 2\n" +
             "c = a + b\n",
-            map[string]*object.NumberObject{
-                "a": &object.NumberObject{Value: 1},
-                "b": &object.NumberObject{Value: 2},
-                "c": &object.NumberObject{Value: 3},
+            map[string]*object.IntegerInst{
+                "a": &object.IntegerInst{Value: 1},
+                "b": &object.IntegerInst{Value: 2},
+                "c": &object.IntegerInst{Value: 3},
             },
         },
     }
@@ -62,7 +62,7 @@ func TestMultiLineAssignStatement(t *testing.T) {
             res := env.Get(varname)
             if res == nil {
                 t.Errorf("no variable %v", varname)
-            } else if resultedObj := res.(*object.NumberObject); *resultedObj != *expectedObj {
+            } else if resultedObj := res.(*object.IntegerInst); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
                     varname, *expectedObj, varname, *resultedObj)
             }
@@ -73,7 +73,7 @@ func TestMultiLineAssignStatement(t *testing.T) {
 func TestIfStatement(t *testing.T) {
     testCases := []struct {
         input       string
-        expected    map[string]*object.NumberObject
+        expected    map[string]*object.IntegerInst
     }{
         {
             "a = 10\n" +
@@ -82,9 +82,9 @@ func TestIfStatement(t *testing.T) {
             "    a = a * 10\n" +
             "    b = b * 10\n" +
             "a = a + 10\n",
-            map[string]*object.NumberObject{
-                "a": &object.NumberObject{Value: 20},
-                "b": &object.NumberObject{Value: 20},
+            map[string]*object.IntegerInst{
+                "a": &object.IntegerInst{Value: 20},
+                "b": &object.IntegerInst{Value: 20},
             },
         },
         {
@@ -94,9 +94,9 @@ func TestIfStatement(t *testing.T) {
             "    a = a * 10\n" +
             "    b = b * 10\n" +
             "a = a + 10\n",
-            map[string]*object.NumberObject{
-                "a": &object.NumberObject{Value: 110},
-                "b": &object.NumberObject{Value: 200},
+            map[string]*object.IntegerInst{
+                "a": &object.IntegerInst{Value: 110},
+                "b": &object.IntegerInst{Value: 200},
             },
         },
     }
@@ -107,7 +107,7 @@ func TestIfStatement(t *testing.T) {
             res := env.Get(varname)
             if res == nil {
                 t.Errorf("no variable %v", varname)
-            } else if resultedObj := res.(*object.NumberObject); *resultedObj != *expectedObj {
+            } else if resultedObj := res.(*object.IntegerInst); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
                     varname, *expectedObj, varname, *resultedObj)
             }
@@ -118,7 +118,7 @@ func TestIfStatement(t *testing.T) {
 func TestIfElifElseStatement(t *testing.T) {
     testCases := []struct {
         input       string
-        expected    map[string]*object.NumberObject
+        expected    map[string]*object.IntegerInst
     }{
         {
             "a = 10\n" +
@@ -129,8 +129,8 @@ func TestIfElifElseStatement(t *testing.T) {
             "    res = 2\n" +
             "else:\n" +
             "    res = 3\n",
-            map[string]*object.NumberObject{
-                "res": &object.NumberObject{Value: 2},
+            map[string]*object.IntegerInst{
+                "res": &object.IntegerInst{Value: 2},
             },
         },
         {
@@ -140,8 +140,8 @@ func TestIfElifElseStatement(t *testing.T) {
             "    res = 1\n" +
             "else:\n" +
             "    res = 2\n",
-            map[string]*object.NumberObject{
-                "res": &object.NumberObject{Value: 2},
+            map[string]*object.IntegerInst{
+                "res": &object.IntegerInst{Value: 2},
             },
         },
         {
@@ -151,8 +151,8 @@ func TestIfElifElseStatement(t *testing.T) {
             "    res = 1\n" +
             "else:\n" +
             "    res = 2\n",
-            map[string]*object.NumberObject{
-                "res": &object.NumberObject{Value: 1},
+            map[string]*object.IntegerInst{
+                "res": &object.IntegerInst{Value: 1},
             },
         },
     }
@@ -163,7 +163,7 @@ func TestIfElifElseStatement(t *testing.T) {
             res := env.Get(varname)
             if res == nil {
                 t.Errorf("no variable %v", varname)
-            } else if resultedObj := res.(*object.NumberObject); *resultedObj != *expectedObj {
+            } else if resultedObj := res.(*object.IntegerInst); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
                     varname, *expectedObj, varname, *resultedObj)
             }
@@ -174,7 +174,7 @@ func TestIfElifElseStatement(t *testing.T) {
 func TestWhileStatement(t *testing.T) {
     testCases := []struct {
         input       string
-        expected    map[string]*object.NumberObject
+        expected    map[string]*object.IntegerInst
     }{
         {
             "i = 0\n" +
@@ -182,8 +182,8 @@ func TestWhileStatement(t *testing.T) {
             "while i < 10:\n" +
             "    total = total + i\n" +
             "    i = i + 1\n",
-            map[string]*object.NumberObject{
-                "total": &object.NumberObject{Value: 45},
+            map[string]*object.IntegerInst{
+                "total": &object.IntegerInst{Value: 45},
             },
         },
         {
@@ -192,8 +192,8 @@ func TestWhileStatement(t *testing.T) {
             "while i > 10:\n" +
             "    total = total + i\n" +
             "    i = i + 1\n",
-            map[string]*object.NumberObject{
-                "total": &object.NumberObject{Value: 0},
+            map[string]*object.IntegerInst{
+                "total": &object.IntegerInst{Value: 0},
             },
         },
     }
@@ -204,7 +204,7 @@ func TestWhileStatement(t *testing.T) {
             res := env.Get(varname)
             if res == nil {
                 t.Errorf("no variable %v", varname)
-            } else if resultedObj := res.(*object.NumberObject); *resultedObj != *expectedObj {
+            } else if resultedObj := res.(*object.IntegerInst); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
                     varname, *expectedObj, varname, *resultedObj)
             }
@@ -232,8 +232,8 @@ func TestBlankLineStatement(t *testing.T) {
     "a + 1\n" +
     "b = a + 1\n"
     env := testRunProgram(input)
-    if obj := env.Get("b"); obj.(*object.NumberObject).Value != 3 {
-        t.Errorf("expected %v, got %v", 3, obj.(*object.NumberObject).Value)
+    if obj := env.Get("b"); obj.(*object.IntegerInst).Value != 3 {
+        t.Errorf("expected %v, got %v", 3, obj.(*object.IntegerInst).Value)
     }
 }
 
@@ -244,8 +244,8 @@ func TestEOFLineStatement(t *testing.T) {
     "a + 1\n" +
     "b = a + 1"
     env := testRunProgram(input)
-    if obj := env.Get("b"); obj.(*object.NumberObject).Value != 3 {
-        t.Errorf("expected %v, got %v", 3, obj.(*object.NumberObject).Value)
+    if obj := env.Get("b"); obj.(*object.IntegerInst).Value != 3 {
+        t.Errorf("expected %v, got %v", 3, obj.(*object.IntegerInst).Value)
     }
 }
 
@@ -286,8 +286,8 @@ foo = Foo()
 res = foo.sum()
     `
     env := testRunProgram(input)
-    if obj := env.Get("res"); obj.(*object.NumberObject).Value != 6 {
-        t.Errorf("instance method wrong: expected 6, got %v", obj.(*object.NumberObject).Value)
+    if obj := env.Get("res"); obj.(*object.IntegerInst).Value != 6 {
+        t.Errorf("instance method wrong: expected 6, got %v", obj.(*object.IntegerInst).Value)
     }
 }
 
@@ -304,11 +304,11 @@ res1 = Foo.x
 res2 = foo.x
     `
     env := testRunProgram(input)
-    if obj := env.Get("res1"); obj.(*object.NumberObject).Value != 10 {
-        t.Errorf("instance method wrong: expected 10, got %v", obj.(*object.NumberObject).Value)
+    if obj := env.Get("res1"); obj.(*object.IntegerInst).Value != 10 {
+        t.Errorf("instance method wrong: expected 10, got %v", obj.(*object.IntegerInst).Value)
     }
-    if obj := env.Get("res2"); obj.(*object.NumberObject).Value != 10 {
-        t.Errorf("instance method wrong: expected 10, got %v", obj.(*object.NumberObject).Value)
+    if obj := env.Get("res2"); obj.(*object.IntegerInst).Value != 10 {
+        t.Errorf("instance method wrong: expected 10, got %v", obj.(*object.IntegerInst).Value)
     }
 }
 
@@ -328,11 +328,11 @@ res1 = foo.a
 res2 = foo.b
     `
     env := testRunProgram(input)
-    if obj := env.Get("res1"); obj.(*object.NumberObject).Value != 1 {
-        t.Errorf("instance attr wrong: expected 1, got %v", obj.(*object.NumberObject).Value)
+    if obj := env.Get("res1"); obj.(*object.IntegerInst).Value != 1 {
+        t.Errorf("instance attr wrong: expected 1, got %v", obj.(*object.IntegerInst).Value)
     }
-    if obj := env.Get("res2"); obj.(*object.NumberObject).Value != 2 {
-        t.Errorf("instance attr wrong: expected 2, got %v", obj.(*object.NumberObject).Value)
+    if obj := env.Get("res2"); obj.(*object.IntegerInst).Value != 2 {
+        t.Errorf("instance attr wrong: expected 2, got %v", obj.(*object.IntegerInst).Value)
     }
 }
 
@@ -348,8 +348,8 @@ class Foo:
 res = Foo(1).a
     `
     env := testRunProgram(input)
-    if obj := env.Get("res"); obj.(*object.NumberObject).Value != 1 {
-        t.Errorf("instance attr wrong: expected 1, got %v", obj.(*object.NumberObject).Value)
+    if obj := env.Get("res"); obj.(*object.IntegerInst).Value != 1 {
+        t.Errorf("instance attr wrong: expected 1, got %v", obj.(*object.IntegerInst).Value)
     }
 }
 
@@ -365,8 +365,8 @@ class Foo:
 res = Foo(1).a
     `
     env := testRunProgram(input)
-    if obj := env.Get("res"); obj.(*object.NumberObject).Value != 1 {
-        t.Errorf("instance attr wrong: expected 1, got %v", obj.(*object.NumberObject).Value)
+    if obj := env.Get("res"); obj.(*object.IntegerInst).Value != 1 {
+        t.Errorf("instance attr wrong: expected 1, got %v", obj.(*object.IntegerInst).Value)
     }
 }
 
@@ -379,8 +379,8 @@ class Foo(object):
 res = Foo(1).a
     `
     env := testRunProgram(input)
-    if obj := env.Get("res"); obj.(*object.NumberObject).Value != 1 {
-        t.Errorf("instance attr wrong: expected 1, got %v", obj.(*object.NumberObject).Value)
+    if obj := env.Get("res"); obj.(*object.IntegerInst).Value != 1 {
+        t.Errorf("instance attr wrong: expected 1, got %v", obj.(*object.IntegerInst).Value)
     }
 }
 
@@ -391,8 +391,8 @@ func TestDotGetExpression(t *testing.T) {
     "res = Foo.a"
     env := testRunProgram(input)
 
-    if obj := env.Get("res"); obj.(*object.NumberObject).Value != 1 {
-        t.Errorf("res should be %d, got %v", 1, obj.(*object.NumberObject).Value)
+    if obj := env.Get("res"); obj.(*object.IntegerInst).Value != 1 {
+        t.Errorf("res should be %d, got %v", 1, obj.(*object.IntegerInst).Value)
     }
 }
 
@@ -403,8 +403,8 @@ func TestDotSetExpression(t *testing.T) {
     "Foo.a = 2\n" +
     "res = Foo.a"
     env := testRunProgram(input)
-    if obj := env.Get("res"); obj.(*object.NumberObject).Value != 2 {
-        t.Errorf("res should be %d, got %v", 2, obj.(*object.NumberObject).Value)
+    if obj := env.Get("res"); obj.(*object.IntegerInst).Value != 2 {
+        t.Errorf("res should be %d, got %v", 2, obj.(*object.IntegerInst).Value)
     }
 }
 
@@ -426,20 +426,20 @@ func TestFunctionCallStatement(t *testing.T) {
     "    return a + b\n" +
     "res = foo(1, 1)\n"
     env := testRunProgram(input)
-    if obj := env.Get("res"); obj.(*object.NumberObject).Value != 2 {
-        t.Errorf("expected %v, got %v", 2, obj.(*object.NumberObject).Value)
+    if obj := env.Get("res"); obj.(*object.IntegerInst).Value != 2 {
+        t.Errorf("expected %v, got %v", 2, obj.(*object.IntegerInst).Value)
     }
 }
 
 func TestStringAssignStatement(t *testing.T) {
     testCases := []struct {
         input       string
-        expected    map[string]*object.StringObject
+        expected    map[string]*object.StringInst
     }{
         {
             `val = "abc"`,
-            map[string]*object.StringObject{
-                "val": &object.StringObject{Value: "abc"},
+            map[string]*object.StringInst{
+                "val": &object.StringInst{Value: "abc"},
             },
         },
     }
@@ -447,7 +447,7 @@ func TestStringAssignStatement(t *testing.T) {
     for _, testCase := range testCases {
         env := testRunProgram(testCase.input)
         for target, expectedObj := range testCase.expected {
-            if resultedObj := env.Get(target).(*object.StringObject); *resultedObj != *expectedObj {
+            if resultedObj := env.Get(target).(*object.StringInst); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
                     target, *expectedObj, target, *resultedObj)
             }
@@ -458,14 +458,14 @@ func TestStringAssignStatement(t *testing.T) {
 func TestStringPlusStatement(t *testing.T) {
     testCases := []struct {
         input       string
-        expected    map[string]*object.StringObject
+        expected    map[string]*object.StringInst
     }{
         {
             "a = 'abc'\n" +
             "b = 'def'\n" +
             "c = a + b\n",
-            map[string]*object.StringObject{
-                "c": &object.StringObject{Value: "abcdef"},
+            map[string]*object.StringInst{
+                "c": &object.StringInst{Value: "abcdef"},
             },
         },
     }
@@ -473,7 +473,7 @@ func TestStringPlusStatement(t *testing.T) {
     for _, testCase := range testCases {
         env := testRunProgram(testCase.input)
         for target, expectedObj := range testCase.expected {
-            if resultedObj := env.Get(target).(*object.StringObject); *resultedObj != *expectedObj {
+            if resultedObj := env.Get(target).(*object.StringInst); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
                     target, *expectedObj, target, *resultedObj)
             }
@@ -484,17 +484,17 @@ func TestStringPlusStatement(t *testing.T) {
 func TestListStatement(t *testing.T) {
     testCases := []struct {
         input       string
-        expected    map[string]*object.ListObject
+        expected    map[string]*object.ListInst
     }{
         {
             "a = 'abc'\n" +
             "c = [1, a, 'd']\n",
-            map[string]*object.ListObject{
-                "c": &object.ListObject{
+            map[string]*object.ListInst{
+                "c": &object.ListInst{
                         Items: []object.Object{
-                                &object.NumberObject{Value: 1},
-                                &object.StringObject{Value: "abc"},
-                                &object.StringObject{Value: "d"},
+                                &object.IntegerInst{Value: 1},
+                                &object.StringInst{Value: "abc"},
+                                &object.StringInst{Value: "d"},
                             },
                     },
             },
@@ -504,7 +504,7 @@ func TestListStatement(t *testing.T) {
     for _, testCase := range testCases {
         env := testRunProgram(testCase.input)
         for target, expectedObj := range testCase.expected {
-            if resObj := env.Get(target).(*object.ListObject); len(resObj.Items) != len(expectedObj.Items) {
+            if resObj := env.Get(target).(*object.ListInst); len(resObj.Items) != len(expectedObj.Items) {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
                     target, *expectedObj, target, *resObj)
             }
@@ -515,15 +515,15 @@ func TestListStatement(t *testing.T) {
 func TestDictStatement(t *testing.T) {
     testCases := []struct {
         input       string
-        expected    map[string]*object.DictObject
+        expected    map[string]*object.DictInst
     }{
         {
             "a = 'abc'\n" +
             "d = {a: 'abc'}\n",
-            map[string]*object.DictObject{
-                "d": &object.DictObject{
+            map[string]*object.DictInst{
+                "d": &object.DictInst{
                         Map: map[object.Object]object.Object{
-                                &object.StringObject{Value: "abc"}: &object.StringObject{Value: "d"},
+                                &object.StringInst{Value: "abc"}: &object.StringInst{Value: "d"},
                             },
                     },
             },
@@ -533,7 +533,7 @@ func TestDictStatement(t *testing.T) {
     for _, testCase := range testCases {
         env := testRunProgram(testCase.input)
         for target, expectedObj := range testCase.expected {
-            if resObj := env.Get(target).(*object.DictObject); len(resObj.Map) != len(expectedObj.Map) {
+            if resObj := env.Get(target).(*object.DictInst); len(resObj.Map) != len(expectedObj.Map) {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
                     target, *expectedObj, target, *resObj)
             }
@@ -544,7 +544,7 @@ func TestDictStatement(t *testing.T) {
 func TestZeroDivisionError(t *testing.T) {
     defer func() {
         if r := recover(); r != nil {
-            expr := r.(*object.ExceptionObject)
+            expr := r.(*object.ExceptionInst)
             if expr.Msg != "ZeroDivisionError: division by zero" {
                 t.Errorf("expected 'ZeroDivisionError' got %v", expr.Msg)
             }
@@ -558,7 +558,7 @@ func TestZeroDivisionError(t *testing.T) {
 func TestTypeError(t *testing.T) {
     defer func() {
         if r := recover(); r != nil {
-            expr := r.(*object.ExceptionObject)
+            expr := r.(*object.ExceptionInst)
             if expr.Msg != "TypeError: two different types" {
                 t.Errorf("expected 'TypeError' got %v", expr.Msg)
             }

@@ -40,22 +40,26 @@ import (
     "gsubpy/ast"
 )
 
-type ObjType int
+type Type int
 
 const (
-    LIST ObjType = iota
+    LIST Type = iota
     DICT
     STRING
-    NUMBER
+    INTEGER
     BOOL
     FUNCTION
     NONE
     EXCEPTION
     CLASS
+    INSTANCE
+    SUPER
+    METHOD
+    TYPE
 )
 
 type Object interface {
-    GetObjType() ObjType
+    Type() Type
     Py__getattribute__(string) Object
     Py__setattr__(string, Object)
     Py__repr__() string
@@ -63,8 +67,8 @@ type Object interface {
 
 type Class interface {
     Object
-    Py__init__(Object)
-    Py__new__(Class) *PyInstance
+    Py__init__(*PyInst)
+    Py__new__(Class) *PyInst
     Py__name__() string
     Py__base__() Class
 }
@@ -80,20 +84,23 @@ type BuiltinFunction interface {
 }
 
 type BuiltinObjectNew struct {
-    ObjectClass
-    Func    func(Class) *PyInstance
+    Func    func(Class) *PyInst
 }
+func (b *BuiltinObjectNew) Type() Type {return METHOD}
 func (b *BuiltinObjectNew) Py__call__() Object {return nil}
-func (b *BuiltinObjectNew) isBuiltinFunction() {}
-func (b *BuiltinObjectNew) Call(cls Class) *PyInstance {
+func (b *BuiltinObjectNew) isBuiltinFunction() {}   // TODO: builtin type interface rename
+func (b *BuiltinObjectNew) Call(cls Class) *PyInst {
     return b.Func(cls)
 }
+func (b *BuiltinObjectNew) Py__getattribute__(string) Object {return nil}
+func (b *BuiltinObjectNew) Py__setattr__(string, Object) {}
+func (b *BuiltinObjectNew) Py__repr__() string {return "<builtin __new__>"}
 
 type ObjectClass struct {
 }
 
 func (o *ObjectClass) Py__repr__() string {return "object"}
-func (o *ObjectClass) GetObjType() ObjType {return NONE}
+func (o *ObjectClass) Type() Type {return NONE}
 func (o *ObjectClass) Py__getattribute__(attr string) Object {
     if attr == "__new__" {
         return &BuiltinObjectNew{
@@ -103,21 +110,21 @@ func (o *ObjectClass) Py__getattribute__(attr string) Object {
     return nil
 }
 func (o *ObjectClass) Py__setattr__(attr string, valObj Object) {}
-func (o *ObjectClass) Py__new__(cls Class) *PyInstance {
-    return &PyInstance{
+func (o *ObjectClass) Py__new__(cls Class) *PyInst {
+    return &PyInst{
         Py__class__: cls,
         Py__dict__: map[string]Object{},
         }
 }
-func (o *ObjectClass) Py__init__(Object) {}
+func (o *ObjectClass) Py__init__(*PyInst) {}
 func (o *ObjectClass) Py__name__() string {return "object"}
 func (o *ObjectClass) Py__base__() Class {return nil}
 
 var PyObject = &ObjectClass{}
 
 type Pytype struct {
-    ObjectClass
 }
+func (t *Pytype) Type() Type {return TYPE}
 func (t *Pytype) Py__repr__() string {return "type"}
 func (t *Pytype) Py__new__(mcs *Pytype, name string, base *PyClass, attrs map[string]Object) *PyClass {
     return &PyClass{
@@ -126,59 +133,61 @@ func (t *Pytype) Py__new__(mcs *Pytype, name string, base *PyClass, attrs map[st
         Dict: attrs,
         }
 }
+func (t *Pytype) Py__getattribute__(string) Object {return nil}
+func (t *Pytype) Py__setattr__(string, Object) {}
 
-type NoneObject struct {
-    ObjectClass
+type NoneInst struct {
     Value   int
 }
-func (no *NoneObject) Py__repr__() string {return "None"}
-func (no *NoneObject) GetObjType() ObjType {return NONE}
-func (no NoneObject) String() string {
-    return "None"
-}
+func (ni *NoneInst) Py__repr__() string {return "None"}
+func (ni *NoneInst) Type() Type {return NONE}
+func (ni *NoneInst) Py__getattribute__(string) Object {return nil}
+func (ni *NoneInst) Py__setattr__(string, Object) {}
 
-type BoolObject struct {
-    ObjectClass
+type BoolInst struct {
     Value   int
 }
-func (bo *BoolObject) GetObjType() ObjType {return BOOL}
-func (bo *BoolObject) Py__repr__() string {
-    if bo.Value == 1 {
+func (bi *BoolInst) Type() Type {return BOOL}
+func (bi *BoolInst) Py__repr__() string {
+    if bi.Value == 1 {
         return "True"
     } else {
         return "False"
     }
 }
+func (bi *BoolInst) Py__getattribute__(string) Object {return nil}
+func (bi *BoolInst) Py__setattr__(string, Object) {}
 
-type NumberObject struct {
-    ObjectClass
+type IntegerInst struct {
     Value   int
 }
 
-func (no *NumberObject) GetObjType() ObjType {return NUMBER}
-func (no *NumberObject) Py__repr__() string {return fmt.Sprint(no.Value)}
+func (ni *IntegerInst) Type() Type {return INTEGER}
+func (ni *IntegerInst) Py__repr__() string {return fmt.Sprint(ni.Value)}
+func (ni *IntegerInst) Py__getattribute__(string) Object {return nil}
+func (ni *IntegerInst) Py__setattr__(string, Object) {}
 
-type StringObject struct {
-    ObjectClass
+type StringInst struct {
     Value   string
 }
 
-func (self *StringObject) GetObjType() ObjType {return STRING}
-func (self *StringObject) Py__repr__() string {return "'" + self.Value + "'"}
+func (si *StringInst) Type() Type {return STRING}
+func (si *StringInst) Py__repr__() string {return "'" + si.Value + "'"}
+func (si *StringInst) Py__getattribute__(string) Object {return nil}
+func (si *StringInst) Py__setattr__(string, Object) {}
 
-type ListObject struct {
-    ObjectClass
+type ListInst struct {
     Items   []Object
 }
 
-func (self *ListObject) GetObjType() ObjType {return LIST}
-func (self *ListObject) Py__repr__() string {
+func (li *ListInst) Type() Type {return LIST}
+func (li *ListInst) Py__repr__() string {
     var s string
     s += "["
-    if len(self.Items) > 0 {
-        s += fmt.Sprintf("%v", self.Items[0])
+    if len(li.Items) > 0 {
+        s += fmt.Sprintf("%v", li.Items[0])
     }
-    for _, item := range self.Items[1:] {
+    for _, item := range li.Items[1:] {
         s += ", "
         s += fmt.Sprintf("%v", item)
     }
@@ -186,7 +195,10 @@ func (self *ListObject) Py__repr__() string {
     return s
 }
 
-type DictObject struct {
+func (li *ListInst) Py__getattribute__(string) Object {return nil}
+func (li *ListInst) Py__setattr__(string, Object) {}
+
+type DictInst struct {
     /*
         FIX: if key is the pointer of Objects, 
         then there must be some issues, such as 
@@ -198,19 +210,18 @@ type DictObject struct {
 
     */
 
-    ObjectClass
     Map   map[Object]Object 
                             
 }
 
-func (do *DictObject) GetObjType() ObjType {return DICT}
-func (do *DictObject) Py__repr__() string {
+func (di *DictInst) Type() Type {return DICT}
+func (di *DictInst) Py__repr__() string {
     var s string
     s += "{"
     var i = 0
-    for k, v := range do.Map {
+    for k, v := range di.Map {
         s += fmt.Sprintf("%v:%v", k, v)
-        if i == len(do.Map) - 1 {
+        if i == len(di.Map) - 1 {
             break
         }
         s += ", "
@@ -220,31 +231,35 @@ func (do *DictObject) Py__repr__() string {
     return s
 }
 
+func (di *DictInst) Py__getattribute__(string) Object {return nil}
+func (di *DictInst) Py__setattr__(string, Object) {}
 
-type FunctionObject struct {
-    ObjectClass
+// TODO: rename instance
+type FunctionInst struct {
     Name    string
     Params  []string
     Body    []ast.Statement
 }
 
-func (fo *FunctionObject) GetObjType() ObjType {return FUNCTION}
+func (fi *FunctionInst) Type() Type {return FUNCTION}
 
-func (fo *FunctionObject) Py__call__() Object {return nil}
+func (fi *FunctionInst) Py__call__() Object {return nil}
 
-func (fo *FunctionObject) Py__repr__() string {
-    return fmt.Sprintf("<function %s at %p>", fo.Name, fo)
+func (fi *FunctionInst) Py__repr__() string {
+    return fmt.Sprintf("<function %s at %p>", fi.Name, fi)
 }
+func (fi *FunctionInst) Py__getattribute__(string) Object {return nil}
+func (fi *FunctionInst) Py__setattr__(string, Object) {}
 
 type PyClass struct {
-    ObjectClass
     Name          string
     Base          Class
     Dict    map[string]Object
 }
 
+func (pc *PyClass) Py__init__(*PyInst) {}
 func (pc *PyClass) Py__name__() string {return pc.Name}
-func (pc *PyClass) GetObjType() ObjType {return CLASS}
+func (pc *PyClass) Type() Type {return CLASS}
 func (pc *PyClass) Py__getattribute__(attr string) Object {
     // FIXME: defualt to object
     val := pc.Dict[attr]
@@ -261,7 +276,7 @@ func (pc *PyClass) Py__getattribute__(attr string) Object {
 func (pc *PyClass) Py__setattr__(attr string, val Object) {
     pc.Dict[attr] = val
 }
-func (pc *PyClass) Py__new__(cls Class) *PyInstance {
+func (pc *PyClass) Py__new__(cls Class) *PyInst {
     // FIXME: haven't execute customized __new__
     return pc.Base.Py__new__(cls)
 }
@@ -275,30 +290,32 @@ func (pc *PyClass) Py__repr__() string {
 }
 
 type BoundMethod struct {
-    ObjectClass
-    Func        *FunctionObject
-    Inst        *PyInstance
+    Func        *FunctionInst
+    Inst        *PyInst
 } 
 func (bm *BoundMethod) Py__repr__() string {
     return fmt.Sprintf("<bound method %s.%s object at %p>",
         bm.Inst.Py__class__.Py__name__(), bm.Func.Name, bm)
 }
 func (bm *BoundMethod) Py__call__() Object {return nil}
+func (bm *BoundMethod) Type() Type {return METHOD}
+func (bm *BoundMethod) Py__getattribute__(string) Object {return nil}
+func (bm *BoundMethod) Py__setattr__(string, Object) {}
 
-type PyInstance struct {
-    ObjectClass
+type PyInst struct {
     Py__class__ Class
     Py__dict__ map[string]Object
 }
 
-func (pi *PyInstance) Py__getattribute__(attr string) Object {
+func (pi *PyInst) Type() Type {return INSTANCE}
+func (pi *PyInst) Py__getattribute__(attr string) Object {
     targetObj, ok := pi.Py__dict__[attr]
     if ok {
         return targetObj 
     }
 
     switch targetObj := pi.Py__class__.Py__getattribute__(attr).(type) {
-    case *FunctionObject:
+    case *FunctionInst:
         // FIXME: here supposed to be return the identical method everytime
         return &BoundMethod{
             Func: targetObj,
@@ -309,20 +326,20 @@ func (pi *PyInstance) Py__getattribute__(attr string) Object {
         return targetObj
     }
 }
-func (pi *PyInstance) Py__setattr__(attr string, val Object) {
+func (pi *PyInst) Py__setattr__(attr string, val Object) {
     pi.Py__dict__[attr] = val
 }
 
-func (pi *PyInstance) Py__repr__() string {
+func (pi *PyInst) Py__repr__() string {
     return fmt.Sprintf("<%v objects at %p>", pi.Py__class__.Py__name__(), pi)
 }
 
-// temporary
+// TODO: temporary
 type Print struct {
     ObjectClass
 }
 
-func (p *Print) GetObjType() ObjType {return FUNCTION}
+func (p *Print) Type() Type {return FUNCTION}
 func (p *Print) Py__repr__() string {return "print"}
 func (p *Print) Call(objs []Object) {
     for _, obj := range objs {
@@ -337,15 +354,16 @@ type Exception interface {
     ErrorMsg() string
 }
 
-type ExceptionObject struct {
-    ObjectClass
+type ExceptionInst struct {
     Msg string
 }
 
-func (eo *ExceptionObject) GetObjType() ObjType {return EXCEPTION}
-func (eo *ExceptionObject) ErrorMsg() string {return eo.Msg}
-func (eo *ExceptionObject) String() string {return "Exception"}
-func (eo *ExceptionObject) Py__repr__() string {return "Exception"}
+func (ei *ExceptionInst) Type() Type {return EXCEPTION}
+func (ei *ExceptionInst) ErrorMsg() string {return ei.Msg}
+func (ei *ExceptionInst) String() string {return "Exception"}
+func (ei *ExceptionInst) Py__repr__() string {return "Exception"}
+func (ei *ExceptionInst) Py__getattribute__(string) Object {return nil}
+func (ei *ExceptionInst) Py__setattr__(string, Object) {}
 
 type BuiltinClass struct {
     ObjectClass
@@ -356,14 +374,13 @@ func (bc *BuiltinClass) String() string {
     return bc.Name
 }
 
-type SuperInstance struct {
-    ObjectClass
-    Py__self__ *PyInstance
+type SuperInst struct {
+    Py__self__ *PyInst
 }
 
-func (si *SuperInstance) Py__getattribute__(attr string) Object {
+func (si *SuperInst) Py__getattribute__(attr string) Object {
     switch targetObj := si.Py__self__.Py__class__.Py__base__().Py__getattribute__(attr).(type) {
-    case *FunctionObject:
+    case *FunctionInst:
         return &BoundMethod{
             Func: targetObj,
             Inst: si.Py__self__,
@@ -372,7 +389,9 @@ func (si *SuperInstance) Py__getattribute__(attr string) Object {
     return nil
 }
 
-func (si *SuperInstance) Py__repr__() string {
-    return "<unknown now>"
+func (si *SuperInst) Py__repr__() string {
+    return "<super object>"
 }
+func (si *SuperInst) Type() Type {return SUPER}
+func (si *SuperInst) Py__setattr__(string, Object) {}
 

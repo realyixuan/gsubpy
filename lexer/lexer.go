@@ -94,7 +94,7 @@ func (l *Lexer) ReadNextToken() {
     default:
         if isDigit(l.ch) {
             num := l.readNumber()
-            l.CurToken = token.Token{Type: token.NUMBER, Literals: num}
+            l.CurToken = token.Token{Type: token.INTEGER, Literals: num}
         } else if isLetter(l.ch) {
             identifier := l.readLetter()
             if tokType, ok := token.Keywords[identifier]; ok {
@@ -103,7 +103,7 @@ func (l *Lexer) ReadNextToken() {
                 l.CurToken = token.Token{Type: token.IDENTIFIER, Literals: identifier}
             }
         } else {
-            panic(&object.ExceptionObject{Msg: "syntaxException: syntax error"})
+            panic(&object.ExceptionInst{Msg: "syntaxException: syntax error"})
 
             l.CurToken = token.Token{Type: token.ILLEGAL}
             l.readChar()

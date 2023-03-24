@@ -11,9 +11,9 @@ import (
 var context object.Object
 
 var (
-    True = &object.BoolObject{Value: 1}
-    False = &object.BoolObject{Value: 0}
-    None = &object.NoneObject{Value: 0}
+    True = &object.BoolInst{Value: 1}
+    False = &object.BoolInst{Value: 0}
+    None = &object.NoneInst{Value: 0}
 )
 
 var __builtins__ = map[string]object.Object{
@@ -68,7 +68,7 @@ func (self *Environment) deriveEnv() *Environment {
     }
 }
 
-func Exec(stmts []ast.Statement, env *Environment) *object.NoneObject {
+func Exec(stmts []ast.Statement, env *Environment) *object.NoneInst {
     for _, stmt := range stmts {
         switch node := stmt.(type) {
         case *ast.AssignStatement:
@@ -97,56 +97,56 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
 
-        if leftObj.GetObjType() != rightObj.GetObjType() {
-            panic(&object.ExceptionObject{Msg: "TypeError: two different types"})
+        if leftObj.Type() != rightObj.Type() {
+            panic(&object.ExceptionInst{Msg: "TypeError: two different types"})
         }
 
         switch leftObj.(type) {
-        case *object.NumberObject:
-            return &object.NumberObject{
-                Value: leftObj.(*object.NumberObject).Value + rightObj.(*object.NumberObject).Value,
+        case *object.IntegerInst:
+            return &object.IntegerInst{
+                Value: leftObj.(*object.IntegerInst).Value + rightObj.(*object.IntegerInst).Value,
                 }
-        case *object.StringObject:
-            return &object.StringObject{
-                Value: leftObj.(*object.StringObject).Value + rightObj.(*object.StringObject).Value,
+        case *object.StringInst:
+            return &object.StringInst{
+                Value: leftObj.(*object.StringInst).Value + rightObj.(*object.StringInst).Value,
                 }
         }
 
     case *ast.MinusExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
-        return &object.NumberObject{
-            Value: leftObj.(*object.NumberObject).Value - rightObj.(*object.NumberObject).Value,
+        return &object.IntegerInst{
+            Value: leftObj.(*object.IntegerInst).Value - rightObj.(*object.IntegerInst).Value,
             }
     case *ast.MulExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
-        return &object.NumberObject{
-            Value: leftObj.(*object.NumberObject).Value * rightObj.(*object.NumberObject).Value,
+        return &object.IntegerInst{
+            Value: leftObj.(*object.IntegerInst).Value * rightObj.(*object.IntegerInst).Value,
             }
     case *ast.DivideExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
 
-        if rightObj.(*object.NumberObject).Value == 0 {
-            panic(&object.ExceptionObject{Msg: "ZeroDivisionError: division by zero"})
+        if rightObj.(*object.IntegerInst).Value == 0 {
+            panic(&object.ExceptionInst{Msg: "ZeroDivisionError: division by zero"})
         }
 
-        return &object.NumberObject{
-            Value: leftObj.(*object.NumberObject).Value / rightObj.(*object.NumberObject).Value,
+        return &object.IntegerInst{
+            Value: leftObj.(*object.IntegerInst).Value / rightObj.(*object.IntegerInst).Value,
             }
     case *ast.ComparisonExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
         switch node.Operator.Type {
         case token.GT:
-            if leftObj.(*object.NumberObject).Value > rightObj.(*object.NumberObject).Value {
+            if leftObj.(*object.IntegerInst).Value > rightObj.(*object.IntegerInst).Value {
                 return True
             } else {
                 return False
             }
         case token.LT:
-            if leftObj.(*object.NumberObject).Value < rightObj.(*object.NumberObject).Value {
+            if leftObj.(*object.IntegerInst).Value < rightObj.(*object.IntegerInst).Value {
                 return True
             } else {
                 return False
@@ -154,17 +154,17 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
         }
     case *ast.NumberExpression:
         val, _ := strconv.Atoi(node.Value.Literals)
-        return &object.NumberObject{Value: val}
+        return &object.IntegerInst{Value: val}
     case *ast.StringExpression:
-        return &object.StringObject{Value: node.Value.Literals}
+        return &object.StringInst{Value: node.Value.Literals}
     case *ast.ListExpression:
-        listObj := &object.ListObject{}
+        listObj := &object.ListInst{}
         for _, item := range node.Items {
             listObj.Items = append(listObj.Items, Eval(item, env))
         }
         return listObj
     case *ast.DictExpression:
-        dictObj := &object.DictObject{
+        dictObj := &object.DictInst{
             Map: map[object.Object]object.Object{},
         }
         for i := 0; i < len(node.Keys); i++ {
@@ -212,7 +212,7 @@ func execWhileStatement(stmt *ast.WhileStatement, env *Environment) {
 }
 
 func execDefStatement(stmt *ast.DefStatement, env *Environment) {
-    funcObj := &object.FunctionObject{
+    funcObj := &object.FunctionInst{
         Name: stmt.Name.Literals,
         Body: stmt.Body,
     }
@@ -273,7 +273,7 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) ob
         return evalFuncCallExpr(obj, args, parentEnv.deriveEnv())
     case *object.BuiltinClass:
         if obj.Name == "super" {
-            return &object.SuperInstance{Py__self__: context.(*object.PyInstance)}
+            return &object.SuperInst{Py__self__: context.(*object.PyInst)}
         }
     case object.Class:
         args := []object.Object{}
@@ -297,7 +297,7 @@ func evalFuncCallExpr(f object.Function, args []object.Object, env *Environment)
         case *object.BuiltinObjectNew:
             return obj.Call(args[0].(object.Class))
         }
-    case *object.FunctionObject:
+    case *object.FunctionInst:
         for i, _ := range obj.Params {
             env.Set(obj.Params[i], args[i])
         }
@@ -321,9 +321,9 @@ func evalClassCallExpr(cls object.Class, args []object.Object, env *Environment)
 
     __new__ := cls.Py__getattribute__("__new__")
 
-    var instObj *object.PyInstance
+    var instObj *object.PyInst
     if __new__ != nil {
-        instObj = evalFuncCallExpr(__new__.(object.Function), []object.Object{cls}, env).(*object.PyInstance)
+        instObj = evalFuncCallExpr(__new__.(object.Function), []object.Object{cls}, env).(*object.PyInst)
     } else {
         instObj = cls.Py__new__(cls)
     }

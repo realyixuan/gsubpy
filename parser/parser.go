@@ -43,7 +43,7 @@ func New(l *lexer.Lexer) *Parser {
 
     // register expression-parsing function
     p.registerPrefixFn(token.IDENTIFIER, p.getIDENTIFIERPrefix)
-    p.registerPrefixFn(token.NUMBER, p.getNUMBERPrefix)
+    p.registerPrefixFn(token.INTEGER, p.getINTEGERPrefix)
     p.registerPrefixFn(token.STRING, p.getSTRINGPrefix)
     p.registerPrefixFn(token.LBRACKET, p.getLBRACKETPrefix)
     p.registerPrefixFn(token.LBRACE, p.getLBRACEPrefix)
@@ -81,7 +81,7 @@ func (p *Parser)parsing(indents string) []ast.Statement {
         if isGTIndents(indents, p.l.Indents) {
             break
         } else if isLTIndents(indents, p.l.Indents) {
-            panic(&object.ExceptionObject{Msg: "IndentError: wrong indents"})
+            panic(&object.ExceptionInst{Msg: "IndentError: wrong indents"})
         }
 
         stmt := p.parsingStatement()
@@ -95,7 +95,7 @@ func (p *Parser)parsing(indents string) []ast.Statement {
 func (p *Parser)parsingStatement() ast.Statement {
     stmtParsingFn := p.getStmtParsingFn()
     if stmtParsingFn == nil {
-        panic(&object.ExceptionObject{Msg: "SyntaxError: ..."})
+        panic(&object.ExceptionInst{Msg: "SyntaxError: ..."})
     }
     return stmtParsingFn()
 }
@@ -145,7 +145,7 @@ func (p *Parser)parsingIfStatement() ast.Statement {
     }
 
     if !isGTIndents(p.l.Indents, curIndents) {
-        panic(&object.ExceptionObject{Msg: "IndentError: wrong Indents"})
+        panic(&object.ExceptionInst{Msg: "IndentError: wrong Indents"})
     }
     
     ifStatement.Body = p.parsing(p.l.Indents)
@@ -178,7 +178,7 @@ func (p *Parser)parsingWhileStatement() ast.Statement {
     }
 
     if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
-        panic(&object.ExceptionObject{Msg: "IndentError: wrong Indents"})
+        panic(&object.ExceptionInst{Msg: "IndentError: wrong Indents"})
     }
     
     stmt.Body = p.parsing(p.l.Indents)
@@ -196,14 +196,14 @@ func (p *Parser)parsingDefStatement() ast.Statement {
 
     p.l.ReadNextToken()
     if p.l.CurToken.Type != token.LPAREN {
-        panic(&object.ExceptionObject{Msg: "SyntaxError: wrong syntax"})
+        panic(&object.ExceptionInst{Msg: "SyntaxError: wrong syntax"})
     }
 
     p.l.ReadNextToken()
     stmt.Params = p.parsingDefParams()
 
     if p.l.CurToken.Type != token.RPAREN {
-        panic(&object.ExceptionObject{Msg: "SyntaxError: wrong syntax"})
+        panic(&object.ExceptionInst{Msg: "SyntaxError: wrong syntax"})
     }
 
     p.l.ReadNextToken()
@@ -213,7 +213,7 @@ func (p *Parser)parsingDefStatement() ast.Statement {
     }
 
     if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
-        panic(&object.ExceptionObject{Msg: "IndentError: wrong Indents"})
+        panic(&object.ExceptionInst{Msg: "IndentError: wrong Indents"})
     }
     
     stmt.Body = p.parsing(p.l.Indents)
@@ -237,13 +237,13 @@ func (p *Parser)parsingClassStatement() ast.Statement {
         stmt.Parent = p.l.CurToken
 
         if p.l.ReadNextToken(); p.l.CurToken.Type != token.RPAREN {
-            panic(&object.ExceptionObject{Msg: "SyntaxError: class define wrong syntax"})
+            panic(&object.ExceptionInst{Msg: "SyntaxError: class define wrong syntax"})
         }
         p.l.ReadNextToken()
     }
 
     if p.l.CurToken.Type != token.COLON {
-        panic(&object.ExceptionObject{Msg: "SyntaxError: class define wrong syntax"})
+        panic(&object.ExceptionInst{Msg: "SyntaxError: class define wrong syntax"})
     }
 
     p.l.ReadNextToken()
@@ -252,7 +252,7 @@ func (p *Parser)parsingClassStatement() ast.Statement {
     internalIndents := p.l.Indents
     
     if !isGTIndents(internalIndents, classIndents) {
-        panic(&object.ExceptionObject{Msg: "IndentError: in class wrong Indents"})
+        panic(&object.ExceptionInst{Msg: "IndentError: in class wrong Indents"})
     }
 
     for isEQIndents(internalIndents, p.l.Indents) {
@@ -409,7 +409,7 @@ func (p *Parser) getAttrOrIdentExpr() ast.Expression {
     return attrExpr
 }
 
-func (p *Parser) getNUMBERPrefix() ast.Expression {
+func (p *Parser) getINTEGERPrefix() ast.Expression {
     return &ast.NumberExpression{p.l.CurToken}
 }
 
@@ -440,7 +440,7 @@ func (p *Parser) getLBRACEPrefix() ast.Expression {
         expr.Keys = append(expr.Keys, p.parsingExpression(LOWEST))
 
         if p.l.CurToken.Type != token.COLON {
-            panic(&object.ExceptionObject{Msg: "SyntaxError: there is a syntax error in dict"})
+            panic(&object.ExceptionInst{Msg: "SyntaxError: there is a syntax error in dict"})
         }
         p.l.ReadNextToken()
 
