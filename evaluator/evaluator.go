@@ -13,15 +13,14 @@ var context object.Object
 var (
     True = &object.BoolInst{Value: 1}
     False = &object.BoolInst{Value: 0}
-    None = &object.NoneInst{Value: 0}
 )
 
 var __builtins__ = map[string]object.Object{
     "object": object.PyObject,
     "True": True,
     "False": False,
-    "None": None,
-    "print": &object.Print{},
+    "None": object.Py_None,
+    "print": object.Py_print,
     "super": &object.BuiltinClass{
         Name: "super",
         },
@@ -86,7 +85,7 @@ func Exec(stmts []ast.Statement, env *Environment) *object.NoneInst {
         }
     }
 
-    return None
+    return object.Py_None
 }
 
 func Eval(expression ast.Expression, env *Environment) object.Object {
@@ -106,9 +105,9 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
             return &object.IntegerInst{
                 Value: leftObj.(*object.IntegerInst).Value + rightObj.(*object.IntegerInst).Value,
                 }
-        case *object.StringInst:
-            return &object.StringInst{
-                Value: leftObj.(*object.StringInst).Value + rightObj.(*object.StringInst).Value,
+        case *object.PyStrInst:
+            return &object.PyStrInst{
+                Value: leftObj.(*object.PyStrInst).Value + rightObj.(*object.PyStrInst).Value,
                 }
         }
 
@@ -156,7 +155,7 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
         val, _ := strconv.Atoi(node.Value.Literals)
         return &object.IntegerInst{Value: val}
     case *ast.StringExpression:
-        return &object.StringInst{Value: node.Value.Literals}
+        return &object.PyStrInst{Value: node.Value.Literals}
     case *ast.ListExpression:
         listObj := &object.ListInst{}
         for _, item := range node.Items {
@@ -176,11 +175,11 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
         return evalCallExpression(node, env)
     case *ast.AttributeExpression:
         inst := Eval(node.Expr, env)
-        return inst.Py__getattribute__(node.Attr.Literals)
+        return inst.Py__getattribute__(&object.PyStrInst{node.Attr.Literals})
     case *ast.ExpressionStatement:
         return Eval(node.Value, env)
     }
-    return None
+    return object.Py_None
 }
 
 func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
@@ -188,7 +187,7 @@ func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
     case *ast.AttributeExpression:
         instObj := Eval(attr.Expr, env)
         valObj := Eval(stmt.Value, env)
-        instObj.Py__setattr__(attr.Attr.Literals, valObj)
+        instObj.Py__setattr__(&object.PyStrInst{attr.Attr.Literals}, valObj)
     case *ast.IdentifierExpression:
         env.Set(attr.Identifier.Literals, Eval(stmt.Value, env))
     }
@@ -253,8 +252,8 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) ob
         for _, param := range callNode.Params {
             paramObjs = append(paramObjs, Eval(param, parentEnv))
         }
-        obj.Call(paramObjs)
-        return None
+        obj.Py__call__(paramObjs)
+        return object.Py_None
     case *object.BoundMethod:
         args := []object.Object{}
         for _, param := range callNode.Params {
@@ -284,7 +283,7 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) ob
         return evalClassCallExpr(obj, args, parentEnv.deriveEnv())
     }
 
-    return None
+    return object.Py_None
 }
 
 func evalSuperCallExpr() {
@@ -313,13 +312,13 @@ func evalFuncCallExpr(f object.Function, args []object.Object, env *Environment)
     }
 
 
-    return None
+    return object.Py_None
 }
 
 func evalClassCallExpr(cls object.Class, args []object.Object, env *Environment) object.Object {
     // TODO: by now, super() in __new__ is invalid
 
-    __new__ := cls.Py__getattribute__("__new__")
+    __new__ := cls.Py__getattribute__(&object.PyStrInst{"__new__"})
 
     var instObj *object.PyInst
     if __new__ != nil {
@@ -328,7 +327,7 @@ func evalClassCallExpr(cls object.Class, args []object.Object, env *Environment)
         instObj = cls.Py__new__(cls)
     }
 
-    __init__ := cls.Py__getattribute__("__init__")
+    __init__ := cls.Py__getattribute__(&object.PyStrInst{"__init__"})
     if __init__ == nil {
         return instObj
     }

@@ -434,12 +434,12 @@ func TestFunctionCallStatement(t *testing.T) {
 func TestStringAssignStatement(t *testing.T) {
     testCases := []struct {
         input       string
-        expected    map[string]*object.StringInst
+        expected    map[string]*object.PyStrInst
     }{
         {
             `val = "abc"`,
-            map[string]*object.StringInst{
-                "val": &object.StringInst{Value: "abc"},
+            map[string]*object.PyStrInst{
+                "val": &object.PyStrInst{Value: "abc"},
             },
         },
     }
@@ -447,7 +447,7 @@ func TestStringAssignStatement(t *testing.T) {
     for _, testCase := range testCases {
         env := testRunProgram(testCase.input)
         for target, expectedObj := range testCase.expected {
-            if resultedObj := env.Get(target).(*object.StringInst); *resultedObj != *expectedObj {
+            if resultedObj := env.Get(target).(*object.PyStrInst); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
                     target, *expectedObj, target, *resultedObj)
             }
@@ -458,14 +458,14 @@ func TestStringAssignStatement(t *testing.T) {
 func TestStringPlusStatement(t *testing.T) {
     testCases := []struct {
         input       string
-        expected    map[string]*object.StringInst
+        expected    map[string]*object.PyStrInst
     }{
         {
             "a = 'abc'\n" +
             "b = 'def'\n" +
             "c = a + b\n",
-            map[string]*object.StringInst{
-                "c": &object.StringInst{Value: "abcdef"},
+            map[string]*object.PyStrInst{
+                "c": &object.PyStrInst{Value: "abcdef"},
             },
         },
     }
@@ -473,7 +473,7 @@ func TestStringPlusStatement(t *testing.T) {
     for _, testCase := range testCases {
         env := testRunProgram(testCase.input)
         for target, expectedObj := range testCase.expected {
-            if resultedObj := env.Get(target).(*object.StringInst); *resultedObj != *expectedObj {
+            if resultedObj := env.Get(target).(*object.PyStrInst); *resultedObj != *expectedObj {
                 t.Errorf("expected (%s=%v), got (%s=%v)",
                     target, *expectedObj, target, *resultedObj)
             }
@@ -493,8 +493,8 @@ func TestListStatement(t *testing.T) {
                 "c": &object.ListInst{
                         Items: []object.Object{
                                 &object.IntegerInst{Value: 1},
-                                &object.StringInst{Value: "abc"},
-                                &object.StringInst{Value: "d"},
+                                &object.PyStrInst{Value: "abc"},
+                                &object.PyStrInst{Value: "d"},
                             },
                     },
             },
@@ -523,7 +523,7 @@ func TestDictStatement(t *testing.T) {
             map[string]*object.DictInst{
                 "d": &object.DictInst{
                         Map: map[object.Object]object.Object{
-                                &object.StringInst{Value: "abc"}: &object.StringInst{Value: "d"},
+                                &object.PyStrInst{Value: "abc"}: &object.PyStrInst{Value: "d"},
                             },
                     },
             },
