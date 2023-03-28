@@ -30,7 +30,7 @@ reuse behaviours
 
 */
 
-
+// TODO: class should also have __call__
 
 package object
 
@@ -78,27 +78,30 @@ type Function interface {
     Py__call__() Object
 }
 
-type BuiltinFunction interface {
-    Function
-    isBuiltinFunction()
+type Builtin interface {
+    Object
+    Call()
 }
 
-type BuiltinObjectNew struct {
+// TODO: should be class
+type PyNew struct {
     Func    func(Class) *PyInst
 }
-func (b *BuiltinObjectNew) Type() Type {return METHOD}
-func (b *BuiltinObjectNew) Py__call__() Object {return Py_None}
-func (b *BuiltinObjectNew) isBuiltinFunction() {}   // TODO: builtin type interface rename
-func (b *BuiltinObjectNew) Call(cls Class) *PyInst {
-    return b.Func(cls)
+func (n *PyNew) Type() Type {return METHOD}
+func (n *PyNew) Call() {}
+func (n *PyNew) Py__call__() Object {return Py_None}
+func (n *PyNew) isBuiltinFunction() {}   // TODO: builtin type interface rename
+func (n *PyNew) Call_b(cls Class) *PyInst {
+    return n.Func(cls)
 }
-func (b *BuiltinObjectNew) Py__getattribute__(*PyStrInst) Object {return nil}
-func (b *BuiltinObjectNew) Py__setattr__(*PyStrInst, Object) {}
-func (b *BuiltinObjectNew) Py__repr__() *PyStrInst {
+func (n *PyNew) Py__getattribute__(*PyStrInst) Object {return nil}
+func (n *PyNew) Py__setattr__(*PyStrInst, Object) {}
+func (n *PyNew) Py__repr__() *PyStrInst {
     return &PyStrInst{"<builtin __new__>"}
 }
 
 type ObjectClass struct {
+    Base Class
 }
 
 func (o *ObjectClass) Py__repr__() *PyStrInst {
@@ -107,7 +110,7 @@ func (o *ObjectClass) Py__repr__() *PyStrInst {
 func (o *ObjectClass) Type() Type {return NONE}
 func (o *ObjectClass) Py__getattribute__(attr *PyStrInst) Object {
     if attr.Value == "__new__" {
-        return &BuiltinObjectNew{
+        return &PyNew{
             Func: o.Py__new__,
             }
     }
@@ -124,14 +127,14 @@ func (o *ObjectClass) Py__init__(*PyInst) {}
 func (o *ObjectClass) Py__name__() *PyStrInst {return &PyStrInst{"object"}}
 func (o *ObjectClass) Py__base__() Class {return nil}
 
-var PyObject = &ObjectClass{}
+var Py_object = &ObjectClass{}
 
 type Pytype struct {
 }
 func (t *Pytype) Type() Type {return TYPE}
 func (t *Pytype) Py__init__(*PyInst) {}
 func (t *Pytype) Py__name__() *PyStrInst {return &PyStrInst{"type"}}
-func (t *Pytype) Py__base__() Class {return PyObject}
+func (t *Pytype) Py__base__() Class {return Py_object}
 func (t *Pytype) Py__repr__() *PyStrInst {
     return &PyStrInst{"type"}
 }
@@ -202,7 +205,7 @@ func (pc *PyStr) Py__repr__() *PyStrInst {
 
 var Py_str = &PyStr{
     Name: "str",
-    Base: PyObject,
+    Base: Py_object,
 }
 
 type PyStrInst struct {
@@ -237,6 +240,9 @@ func (li *ListInst) Py__repr__() *PyStrInst {
 
 func (li *ListInst) Py__getattribute__(*PyStrInst) Object {return nil}
 func (li *ListInst) Py__setattr__(*PyStrInst, Object) {}
+func (li *ListInst) Py__len__() *IntegerInst {
+    return &IntegerInst{len(li.Items)}
+}
 
 type DictInst struct {
     /*
@@ -273,6 +279,9 @@ func (di *DictInst) Py__repr__() *PyStrInst {
 
 func (di *DictInst) Py__getattribute__(*PyStrInst) Object {return nil}
 func (di *DictInst) Py__setattr__(*PyStrInst, Object) {}
+func (di *DictInst) Py__len__() *IntegerInst {
+    return &IntegerInst{len(di.Map)}
+}
 
 // TODO: rename instance
 type FunctionInst struct {
@@ -382,6 +391,7 @@ type Print struct {
 }
 
 func (p *Print) Type() Type {return FUNCTION}
+func (p *Print) Call() {}
 func (p *Print) Py__repr__() *PyStrInst {return &PyStrInst{"print"}}
 func (p *Print) Py__call__(objs []Object) {
     for _, obj := range objs {
@@ -394,6 +404,30 @@ func (p *Print) Py__getattribute__(*PyStrInst) Object {return nil}
 func (p *Print) Py__setattr__(*PyStrInst, Object) {}
 
 var Py_print = &Print{}
+
+type Len struct {}
+
+func (l *Len) Type() Type {return FUNCTION}
+func (l *Len) Call() {}
+func (l *Len) Py__repr__() *PyStrInst {return &PyStrInst{"len"}}
+func (l *Len) Py__call__(obj Object) *IntegerInst {
+    switch o := obj.(type) {
+    case *ListInst:
+        return o.Py__len__()
+    case *DictInst:
+        return o.Py__len__()
+    case *PyInst:
+        // check customized __len__ of instance
+        return nil
+    default:
+        // not supposed to run into here
+        return nil
+    }
+}
+func (l *Len) Py__getattribute__(*PyStrInst) Object {return nil}
+func (l *Len) Py__setattr__(*PyStrInst, Object) {}
+
+var Py_len = &Len{}
 
 type Exception interface {
     Object
@@ -411,14 +445,20 @@ func (ei *ExceptionInst) Py__repr__() *PyStrInst {return &PyStrInst{"Exception"}
 func (ei *ExceptionInst) Py__getattribute__(*PyStrInst) Object {return nil}
 func (ei *ExceptionInst) Py__setattr__(*PyStrInst, Object) {}
 
-type BuiltinClass struct {
-    ObjectClass
-    Name string
+type Super struct {
+    Base Class
 }
+func (s *Super) Type() Type {return CLASS}
+func (s *Super) Call() {}
+func (s *Super) Py__getattribute__(*PyStrInst) Object {return nil}
+func (s *Super) Py__setattr__(*PyStrInst, Object) {}
+func (s *Super) Py__repr__() *PyStrInst {return &PyStrInst{"super"}}
+func (s *Super) Py__init__(*PyInst) {}
+func (s *Super) Py__new__(Class) *PyInst {return nil}
+func (s *Super) Py__name__() *PyStrInst {return &PyStrInst{"super"}}
+func (s *Super) Py__base__() Class {return Py_object}
 
-func (bc *BuiltinClass) String() string {
-    return bc.Name
-}
+var Py_super = &Super{Py_object}
 
 type SuperInst struct {
     Py__self__ *PyInst

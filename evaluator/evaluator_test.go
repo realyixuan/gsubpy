@@ -7,6 +7,18 @@ import (
     "gsubpy/object"
 )
 
+func TestBuiltinLen(t *testing.T) {
+    // should have no error
+    input := `
+lt = [1, 2, 3]
+res = len(lt)
+    `
+    env := testRunProgram(input)
+    if obj := env.Get("res"); obj.(*object.IntegerInst).Value != 3 {
+        t.Errorf("expected %v, got %v", 3, obj.(*object.IntegerInst).Value)
+    }
+}
+
 func TestOneLineAssignStatement(t *testing.T) {
     testCases := []struct {
         input       string
