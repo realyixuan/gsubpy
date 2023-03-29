@@ -23,6 +23,7 @@ var __builtins__ = map[string]object.Object{
     "print": object.Py_print,
     "len": object.Py_len,
     "super": object.Py_super,
+    "type": object.Py_type,
 }
 
 type Environment struct {
@@ -246,7 +247,7 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) ob
     callObj := Eval(callNode.Name, parentEnv)
 
     switch obj := callObj.(type) {
-    case object.Builtin:
+    case object.BuiltinFunction:
         var paramObjs []object.Object
         for _, param := range callNode.Params {
             paramObjs = append(paramObjs, Eval(param, parentEnv))
@@ -257,12 +258,19 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) ob
             o.Py__call__(paramObjs)
             return object.Py_None
         case *object.Len:
-            return o.Py__call__(paramObjs[0])
+            return o.Py__call__(paramObjs)
         case *object.PyNew:
             return o.Call_b(paramObjs[0].(*object.PyClass))
         case *object.Super:
             return &object.SuperInst{Py__self__: context.(*object.PyInst)}
         }
+    case object.Class:
+        args := []object.Object{}
+        for _, param := range callNode.Params {
+            args = append(args, Eval(param, parentEnv))
+        }
+
+        return evalClassCallExpr(obj, args, parentEnv.deriveEnv())
     case *object.BoundMethod:
         args := []object.Object{}
         for _, param := range callNode.Params {
@@ -279,13 +287,6 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) ob
         }
 
         return evalFuncCallExpr(obj, args, parentEnv.deriveEnv())
-    case object.Class:
-        args := []object.Object{}
-        for _, param := range callNode.Params {
-            args = append(args, Eval(param, parentEnv))
-        }
-
-        return evalClassCallExpr(obj, args, parentEnv.deriveEnv())
     }
 
     return object.Py_None
@@ -296,7 +297,7 @@ func evalSuperCallExpr() {
 
 func evalFuncCallExpr(f object.Function, args []object.Object, env *Environment) object.Object {
     switch obj := f.(type) {
-    case object.Builtin:
+    case object.BuiltinFunction:
         switch obj := f.(type) {
         case *object.PyNew:
             return obj.Call_b(args[0].(object.Class))
@@ -321,11 +322,18 @@ func evalFuncCallExpr(f object.Function, args []object.Object, env *Environment)
 }
 
 func evalClassCallExpr(cls object.Class, args []object.Object, env *Environment) object.Object {
+    // A special branch. remove it when __call__ added into class
+    switch o := cls.(type) {
+    case *object.Pytype:
+        return o.Py__call__(args)
+    }
+
+
     // TODO: by now, super() in __new__ is invalid
 
     __new__ := cls.Py__getattribute__(&object.PyStrInst{"__new__"})
 
-    var instObj *object.PyInst
+    var instObj object.Object
     if __new__ != nil {
         instObj = evalFuncCallExpr(__new__.(object.Function), []object.Object{cls}, env).(*object.PyInst)
     } else {

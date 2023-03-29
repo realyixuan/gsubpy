@@ -396,6 +396,17 @@ res = Foo(1).a
     }
 }
 
+func TestTypeReturnType(t *testing.T) {
+    input := `
+s = "hello world"
+res = type(s)
+    `
+    env := testRunProgram(input)
+    if obj := env.Get("res"); obj.Type() != object.TYPE {
+        t.Errorf("type() wrong: expected %v, got %v", object.TYPE, obj.Type())
+    }
+}
+
 func TestDotGetExpression(t *testing.T) {
     input := ""+
     "class Foo:\n" +
