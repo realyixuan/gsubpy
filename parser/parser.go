@@ -4,7 +4,6 @@ import (
     "gsubpy/ast"
     "gsubpy/lexer"
     "gsubpy/token"
-    "gsubpy/object"
 )
 
 type (
@@ -81,7 +80,7 @@ func (p *Parser)parsing(indents string) []ast.Statement {
         if isGTIndents(indents, p.l.Indents) {
             break
         } else if isLTIndents(indents, p.l.Indents) {
-            panic(&object.ExceptionInst{Msg: "IndentError: wrong indents"})
+            panic("IndentError: wrong indents")
         }
 
         stmt := p.parsingStatement()
@@ -95,7 +94,7 @@ func (p *Parser)parsing(indents string) []ast.Statement {
 func (p *Parser)parsingStatement() ast.Statement {
     stmtParsingFn := p.getStmtParsingFn()
     if stmtParsingFn == nil {
-        panic(&object.ExceptionInst{Msg: "SyntaxError: ..."})
+        panic("SyntaxError: ...")
     }
     return stmtParsingFn()
 }
@@ -145,7 +144,7 @@ func (p *Parser)parsingIfStatement() ast.Statement {
     }
 
     if !isGTIndents(p.l.Indents, curIndents) {
-        panic(&object.ExceptionInst{Msg: "IndentError: wrong Indents"})
+        panic("IndentError: wrong Indents")
     }
     
     ifStatement.Body = p.parsing(p.l.Indents)
@@ -178,7 +177,7 @@ func (p *Parser)parsingWhileStatement() ast.Statement {
     }
 
     if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
-        panic(&object.ExceptionInst{Msg: "IndentError: wrong Indents"})
+        panic("IndentError: wrong Indents")
     }
     
     stmt.Body = p.parsing(p.l.Indents)
@@ -196,14 +195,14 @@ func (p *Parser)parsingDefStatement() ast.Statement {
 
     p.l.ReadNextToken()
     if p.l.CurToken.Type != token.LPAREN {
-        panic(&object.ExceptionInst{Msg: "SyntaxError: wrong syntax"})
+        panic("SyntaxError: wrong syntax")
     }
 
     p.l.ReadNextToken()
     stmt.Params = p.parsingDefParams()
 
     if p.l.CurToken.Type != token.RPAREN {
-        panic(&object.ExceptionInst{Msg: "SyntaxError: wrong syntax"})
+        panic("SyntaxError: wrong syntax")
     }
 
     p.l.ReadNextToken()
@@ -213,7 +212,7 @@ func (p *Parser)parsingDefStatement() ast.Statement {
     }
 
     if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
-        panic(&object.ExceptionInst{Msg: "IndentError: wrong Indents"})
+        panic("IndentError: wrong Indents")
     }
     
     stmt.Body = p.parsing(p.l.Indents)
@@ -237,13 +236,13 @@ func (p *Parser)parsingClassStatement() ast.Statement {
         stmt.Parent = p.l.CurToken
 
         if p.l.ReadNextToken(); p.l.CurToken.Type != token.RPAREN {
-            panic(&object.ExceptionInst{Msg: "SyntaxError: class define wrong syntax"})
+            panic("SyntaxError: class define wrong syntax")
         }
         p.l.ReadNextToken()
     }
 
     if p.l.CurToken.Type != token.COLON {
-        panic(&object.ExceptionInst{Msg: "SyntaxError: class define wrong syntax"})
+        panic("SyntaxError: class define wrong syntax")
     }
 
     p.l.ReadNextToken()
@@ -252,7 +251,7 @@ func (p *Parser)parsingClassStatement() ast.Statement {
     internalIndents := p.l.Indents
     
     if !isGTIndents(internalIndents, classIndents) {
-        panic(&object.ExceptionInst{Msg: "IndentError: in class wrong Indents"})
+        panic("IndentError: in class wrong Indents")
     }
 
     for isEQIndents(internalIndents, p.l.Indents) {
@@ -440,7 +439,7 @@ func (p *Parser) getLBRACEPrefix() ast.Expression {
         expr.Keys = append(expr.Keys, p.parsingExpression(LOWEST))
 
         if p.l.CurToken.Type != token.COLON {
-            panic(&object.ExceptionInst{Msg: "SyntaxError: there is a syntax error in dict"})
+            panic("SyntaxError: there is a syntax error in dict")
         }
         p.l.ReadNextToken()
 

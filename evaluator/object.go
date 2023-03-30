@@ -33,7 +33,7 @@ reuse behaviours
 // TODO: class should also have __call__
 // TODO: distinguish class and function although both have __call__
 
-package object
+package evaluator
 
 import (
     "fmt"
@@ -94,11 +94,10 @@ type PyNew struct {
 func (n *PyNew) Py__class__() Class {return Py_Function}
 func (n *PyNew) Type() Type {return METHOD}
 func (n *PyNew) Call() {}
-func (n *PyNew) Py__call__(objs ...Object) Object {return Py_None}
-func (n *PyNew) Py__name__() *PyStrInst {return &PyStrInst{"<builtin __new__>"}}
-func (n *PyNew) Call_b(cls Class) Object {
-    return n.Func(cls)
+func (n *PyNew) Py__call__(objs ...Object) Object {
+    return n.Func(objs[0].(Class))
 }
+func (n *PyNew) Py__name__() *PyStrInst {return &PyStrInst{"<builtin __new__>"}}
 func (n *PyNew) Py__getattribute__(*PyStrInst) Object {return nil}
 func (n *PyNew) Py__setattr__(*PyStrInst, Object) {}
 func (n *PyNew) Py__repr__() *PyStrInst {
@@ -351,11 +350,27 @@ type FunctionInst struct {
     Name    string
     Params  []string
     Body    []ast.Statement
+    env     *Environment
 }
 
 func (fi *FunctionInst) Py__class__() Class {return Py_Function}
 func (fi *FunctionInst) Type() Type {return FUNCTION}
-func (fi *FunctionInst) Py__call__(...Object) Object {return Py_None}
+func (fi *FunctionInst) Py__call__(objs ...Object) Object {
+    env := fi.env.DeriveEnv()
+    for i := 0; i < len(fi.Params); i++ {
+        env.Set(fi.Params[i], objs[i])
+    }
+
+    for _, stmt := range fi.Body {
+        switch node := stmt.(type) {
+        case *ast.ReturnStatement:
+            return Eval(node.Value, env)
+        default:
+            Exec([]ast.Statement{stmt}, env)
+        }
+    }
+    return Py_None
+}
 func (fi *FunctionInst) Py__name__() *PyStrInst {return &PyStrInst{fi.Name}}
 func (fi *FunctionInst) Py__repr__() *PyStrInst {
     return &PyStrInst{fmt.Sprintf("<function %s at %p>", fi.Name, fi)}
@@ -434,7 +449,10 @@ func (bm *BoundMethod) Py__repr__() *PyStrInst {
     return &PyStrInst{s}
 }
 func (bm *BoundMethod) Py__str__() *PyStrInst {return bm.Py__repr__()}
-func (bm *BoundMethod) Py__call__(...Object) Object {return Py_None}
+func (bm *BoundMethod) Py__call__(objs ...Object) Object {
+    objs = append([]Object{bm}, objs...)
+    return bm.Func.Py__call__(objs...)
+}
 func (bm *BoundMethod) Py__name__() *PyStrInst {return bm.Func.Py__name__()}
 func (bm *BoundMethod) Type() Type {return METHOD}
 func (bm *BoundMethod) Py__getattribute__(*PyStrInst) Object {return nil}

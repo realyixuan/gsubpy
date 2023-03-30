@@ -8,13 +8,12 @@ import (
     "gsubpy/lexer"
     "gsubpy/parser"
     "gsubpy/evaluator"
-    "gsubpy/object"
     "gsubpy/ast"
     "gsubpy/token"
 )
 
 func REPLRunning() {
-    env := object.NewEnvironment()
+    env := evaluator.NewEnvironment()
     for {
         fmt.Print(">>> ")
         reader := bufio.NewReader(os.Stdin)
@@ -62,12 +61,12 @@ func REPLRunning() {
                 obj := evaluator.Eval(node, env)
                 if obj != nil {
                     switch node := obj.(type) {
-                    case *object.IntegerInst:
+                    case *evaluator.IntegerInst:
                         fmt.Println(node.Value)
-                    case *object.PyStrInst:
+                    case *evaluator.PyStrInst:
                         fmt.Println(node.Value)
                     }
-                    fmt.Println(obj.(*object.IntegerInst).Value)
+                    fmt.Println(obj.(*evaluator.IntegerInst).Value)
                 }
             case ast.Statement:
                 evaluator.Exec(stmts, env)

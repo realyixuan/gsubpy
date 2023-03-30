@@ -1,7 +1,4 @@
-package object
-
-// simplest way for now
-var context Object
+package evaluator
 
 var (
     Py_True = &BoolInst{Value: 1}

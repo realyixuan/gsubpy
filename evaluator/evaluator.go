@@ -3,14 +3,13 @@ package evaluator
 import (
     "strconv"
     "gsubpy/ast"
-    "gsubpy/object"
     "gsubpy/token"
 )
 
 // simplest way for now
-var context object.Object
+var context Object
 
-func Exec(stmts []ast.Statement, env *object.Environment) *object.NoneInst {
+func Exec(stmts []ast.Statement, env *Environment) *NoneInst {
     for _, stmt := range stmts {
         switch node := stmt.(type) {
         case *ast.AssignStatement:
@@ -28,10 +27,10 @@ func Exec(stmts []ast.Statement, env *object.Environment) *object.NoneInst {
         }
     }
 
-    return object.Py_None
+    return Py_None
 }
 
-func Eval(expression ast.Expression, env *object.Environment) object.Object {
+func Eval(expression ast.Expression, env *Environment) Object {
     switch node := expression.(type) {
     case *ast.IdentifierExpression:
         return env.Get(node.Identifier.Literals)
@@ -40,74 +39,74 @@ func Eval(expression ast.Expression, env *object.Environment) object.Object {
         rightObj := Eval(node.Right, env)
 
         if leftObj.Type() != rightObj.Type() {
-            panic(&object.ExceptionInst{Msg: "TypeError: two different types"})
+            panic(&ExceptionInst{Msg: "TypeError: two different types"})
         }
 
         switch leftObj.(type) {
-        case *object.IntegerInst:
-            return &object.IntegerInst{
-                Value: leftObj.(*object.IntegerInst).Value + rightObj.(*object.IntegerInst).Value,
+        case *IntegerInst:
+            return &IntegerInst{
+                Value: leftObj.(*IntegerInst).Value + rightObj.(*IntegerInst).Value,
                 }
-        case *object.PyStrInst:
-            return &object.PyStrInst{
-                Value: leftObj.(*object.PyStrInst).Value + rightObj.(*object.PyStrInst).Value,
+        case *PyStrInst:
+            return &PyStrInst{
+                Value: leftObj.(*PyStrInst).Value + rightObj.(*PyStrInst).Value,
                 }
         }
 
     case *ast.MinusExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
-        return &object.IntegerInst{
-            Value: leftObj.(*object.IntegerInst).Value - rightObj.(*object.IntegerInst).Value,
+        return &IntegerInst{
+            Value: leftObj.(*IntegerInst).Value - rightObj.(*IntegerInst).Value,
             }
     case *ast.MulExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
-        return &object.IntegerInst{
-            Value: leftObj.(*object.IntegerInst).Value * rightObj.(*object.IntegerInst).Value,
+        return &IntegerInst{
+            Value: leftObj.(*IntegerInst).Value * rightObj.(*IntegerInst).Value,
             }
     case *ast.DivideExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
 
-        if rightObj.(*object.IntegerInst).Value == 0 {
-            panic(&object.ExceptionInst{Msg: "ZeroDivisionError: division by zero"})
+        if rightObj.(*IntegerInst).Value == 0 {
+            panic(&ExceptionInst{Msg: "ZeroDivisionError: division by zero"})
         }
 
-        return &object.IntegerInst{
-            Value: leftObj.(*object.IntegerInst).Value / rightObj.(*object.IntegerInst).Value,
+        return &IntegerInst{
+            Value: leftObj.(*IntegerInst).Value / rightObj.(*IntegerInst).Value,
             }
     case *ast.ComparisonExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
         switch node.Operator.Type {
         case token.GT:
-            if leftObj.(*object.IntegerInst).Value > rightObj.(*object.IntegerInst).Value {
-                return object.Py_True
+            if leftObj.(*IntegerInst).Value > rightObj.(*IntegerInst).Value {
+                return Py_True
             } else {
-                return object.Py_False
+                return Py_False
             }
         case token.LT:
-            if leftObj.(*object.IntegerInst).Value < rightObj.(*object.IntegerInst).Value {
-                return object.Py_True
+            if leftObj.(*IntegerInst).Value < rightObj.(*IntegerInst).Value {
+                return Py_True
             } else {
-                return object.Py_False
+                return Py_False
             }
         }
     case *ast.NumberExpression:
         val, _ := strconv.Atoi(node.Value.Literals)
-        return &object.IntegerInst{Value: val}
+        return &IntegerInst{Value: val}
     case *ast.StringExpression:
-        return &object.PyStrInst{Value: node.Value.Literals}
+        return &PyStrInst{Value: node.Value.Literals}
     case *ast.ListExpression:
-        listObj := &object.ListInst{}
+        listObj := &ListInst{}
         for _, item := range node.Items {
             listObj.Items = append(listObj.Items, Eval(item, env))
         }
         return listObj
     case *ast.DictExpression:
-        dictObj := &object.DictInst{
-            Map: map[object.Object]object.Object{},
+        dictObj := &DictInst{
+            Map: map[Object]Object{},
         }
         for i := 0; i < len(node.Keys); i++ {
             k, v := node.Keys[i], node.Vals[i]
@@ -118,28 +117,28 @@ func Eval(expression ast.Expression, env *object.Environment) object.Object {
         return evalCallExpression(node, env)
     case *ast.AttributeExpression:
         inst := Eval(node.Expr, env)
-        return inst.Py__getattribute__(&object.PyStrInst{node.Attr.Literals})
+        return inst.Py__getattribute__(&PyStrInst{node.Attr.Literals})
     case *ast.ExpressionStatement:
         return Eval(node.Value, env)
     }
-    return object.Py_None
+    return Py_None
 }
 
-func execAssignStatement(stmt *ast.AssignStatement, env *object.Environment) {
+func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
     switch attr := stmt.Target.(type) {
     case *ast.AttributeExpression:
         instObj := Eval(attr.Expr, env)
         valObj := Eval(stmt.Value, env)
-        instObj.Py__setattr__(&object.PyStrInst{attr.Attr.Literals}, valObj)
+        instObj.Py__setattr__(&PyStrInst{attr.Attr.Literals}, valObj)
     case *ast.IdentifierExpression:
         env.Set(attr.Identifier.Literals, Eval(stmt.Value, env))
     }
 }
 
-func execIfStatement(stmt ast.Statement, env *object.Environment) {
+func execIfStatement(stmt ast.Statement, env *Environment) {
     if stmt != nil {
         ifstmt := stmt.(*ast.IfStatement)
-        if ifstmt.Condition == nil || Eval(ifstmt.Condition, env) == object.Py_True {
+        if ifstmt.Condition == nil || Eval(ifstmt.Condition, env) == Py_True {
             Exec(ifstmt.Body, env)
         } else {
             execIfStatement(ifstmt.Else, env)
@@ -147,16 +146,17 @@ func execIfStatement(stmt ast.Statement, env *object.Environment) {
     }
 }
 
-func execWhileStatement(stmt *ast.WhileStatement, env *object.Environment) {
-    for Eval(stmt.Condition, env) == object.Py_True {
+func execWhileStatement(stmt *ast.WhileStatement, env *Environment) {
+    for Eval(stmt.Condition, env) == Py_True {
         Exec(stmt.Body, env)
     }
 }
 
-func execDefStatement(stmt *ast.DefStatement, env *object.Environment) {
-    funcObj := &object.FunctionInst{
+func execDefStatement(stmt *ast.DefStatement, env *Environment) {
+    funcObj := &FunctionInst{
         Name: stmt.Name.Literals,
         Body: stmt.Body,
+        env: env,
     }
 
     var params []string
@@ -167,130 +167,101 @@ func execDefStatement(stmt *ast.DefStatement, env *object.Environment) {
     env.Set(funcObj.Name, funcObj)
 }
 
-func execClassStatement(node *ast.ClassStatement, env *object.Environment) {
+func execClassStatement(node *ast.ClassStatement, env *Environment) {
     clsEnv := env.DeriveEnv()
     Exec(node.Body, clsEnv)
 
-    clsObj := &object.PyClass{
+    clsObj := &PyClass{
         Name: node.Name.Literals,
         Dict: clsEnv.Store(),
     }
 
     if env.Get(node.Parent.Literals) != nil {
         // FIXME: there would be issue if inherit object
-        clsObj.Base = env.Get(node.Parent.Literals).(object.Class)
+        clsObj.Base = env.Get(node.Parent.Literals).(Class)
     } else {
-        clsObj.Base = object.Py_object
+        clsObj.Base = Py_object
     }
 
     env.Set(clsObj.Name, clsObj)
 }
 
-func evalCallExpression(callNode *ast.CallExpression, parentEnv *object.Environment) object.Object {
+func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) Object {
     callObj := Eval(callNode.Name, parentEnv)
 
     switch obj := callObj.(type) {
-    case object.BuiltinFunction:
-        var paramObjs []object.Object
+    case BuiltinFunction:
+        var paramObjs []Object
         for _, param := range callNode.Params {
             paramObjs = append(paramObjs, Eval(param, parentEnv))
         }
 
         switch o := obj.(type) {
-        case *object.Print:
+        case *Print:
             o.Py__call__(paramObjs...)
-            return object.Py_None
-        case *object.Len:
+            return Py_None
+        case *Len:
             return o.Py__call__(paramObjs...)
-        case *object.PyNew:
-            return o.Call_b(paramObjs[0].(*object.PyClass))
-        case *object.Super:
-            return &object.SuperInst{Py__self__: context.(*object.PyInst)}
+        case *PyNew:
+            return o.Py__call__(paramObjs...)
+        case *Super:
+            return &SuperInst{Py__self__: context.(*PyInst)}
         }
-    case object.Class:
-        args := []object.Object{}
+    case Class:
+        args := []Object{}
         for _, param := range callNode.Params {
             args = append(args, Eval(param, parentEnv))
         }
 
         return evalClassCallExpr(obj, args, parentEnv.DeriveEnv())
-    case *object.BoundMethod:
-        args := []object.Object{}
+    case *BoundMethod:
+        args := []Object{}
         for _, param := range callNode.Params {
             args = append(args, Eval(param, parentEnv))
         }
 
-        args = append([]object.Object{obj.Inst}, args...)
+        args = append([]Object{obj.Inst}, args...)
 
-        return evalFuncCallExpr(obj.Func, args, parentEnv.DeriveEnv())
-    case object.Function:
-        args := []object.Object{}
+        return obj.Func.Py__call__(args...)
+    case Function:
+        args := []Object{}
         for _, param := range callNode.Params {
             args = append(args, Eval(param, parentEnv))
         }
 
-        return evalFuncCallExpr(obj, args, parentEnv.DeriveEnv())
+        return obj.Py__call__(args...)
     }
 
-    return object.Py_None
+    return Py_None
 }
 
-func evalSuperCallExpr() {
-}
-
-func evalFuncCallExpr(f object.Function, args []object.Object, env *object.Environment) object.Object {
-    switch obj := f.(type) {
-    case object.BuiltinFunction:
-        switch obj := f.(type) {
-        case *object.PyNew:
-            return obj.Call_b(args[0].(object.Class))
-        }
-    case *object.FunctionInst:
-        for i, _ := range obj.Params {
-            env.Set(obj.Params[i], args[i])
-        }
-
-        for _, stmt := range obj.Body {
-            switch node := stmt.(type) {
-            case *ast.ReturnStatement:
-                return Eval(node.Value, env)
-            default:
-                Exec([]ast.Statement{stmt}, env)
-            }
-        }
-    }
-
-
-    return object.Py_None
-}
-
-func evalClassCallExpr(cls object.Class, args []object.Object, env *object.Environment) object.Object {
+func evalClassCallExpr(cls Class, args []Object, env *Environment) Object {
     // A special branch. remove it when __call__ added into class
     switch o := cls.(type) {
-    case *object.Pytype:
+    case *Pytype:
         return o.Py__call__(args...)
     }
 
     // TODO: by now, super() in __new__ is invalid
 
-    __new__ := cls.Py__getattribute__(&object.PyStrInst{"__new__"})
+    __new__ := cls.Py__getattribute__(&PyStrInst{"__new__"})
 
-    var instObj object.Object
+    var instObj Object
     if __new__ != nil {
-        instObj = evalFuncCallExpr(__new__.(object.Function), []object.Object{cls}, env)
+        instObj = __new__.(Function).Py__call__(cls)
     } else {
         instObj = cls.Py__new__(cls)
     }
 
-    __init__ := cls.Py__getattribute__(&object.PyStrInst{"__init__"})
+    __init__ := cls.Py__getattribute__(&PyStrInst{"__init__"})
     if __init__ == nil {
         return instObj
     }
 
-    args = append([]object.Object{instObj}, args...)
+    args = append([]Object{instObj}, args...)
 
     context = instObj
-    evalFuncCallExpr(__init__.(object.Function), args, env)
+    __init__.(Function).Py__call__(args...)
     context = nil
 
     return instObj
