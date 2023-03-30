@@ -10,64 +10,7 @@ import (
 // simplest way for now
 var context object.Object
 
-var (
-    True = &object.BoolInst{Value: 1}
-    False = &object.BoolInst{Value: 0}
-)
-
-var __builtins__ = map[string]object.Object{
-    "object": object.Py_object,
-    "True": True,
-    "False": False,
-    "None": object.Py_None,
-    "print": object.Py_print,
-    "len": object.Py_len,
-    "super": object.Py_super,
-    "type": object.Py_type,
-}
-
-type Environment struct {
-    store     map[string]object.Object
-    parent    *Environment
-}
-
-func NewEnvironment() *Environment {
-    builtinsEnv := &Environment{
-        store: __builtins__,
-        parent: nil,
-    }
-
-    return &Environment{
-        store: map[string]object.Object{},
-        parent: builtinsEnv,
-    }
-}
-
-func (self *Environment) Set(key string, value object.Object) {
-    self.store[key] = value
-}
-
-func (self *Environment) Get(key string) object.Object {
-    // omit the condition of key not being existing
-    if self.parent == nil {
-        return self.store[key]
-    }
-
-    if obj, ok := self.store[key]; ok {
-        return obj
-    } else {
-        return self.parent.Get(key)
-    }
-}
-
-func (self *Environment) deriveEnv() *Environment {
-    return &Environment{
-        store: map[string]object.Object{},
-        parent: self,
-    }
-}
-
-func Exec(stmts []ast.Statement, env *Environment) *object.NoneInst {
+func Exec(stmts []ast.Statement, env *object.Environment) *object.NoneInst {
     for _, stmt := range stmts {
         switch node := stmt.(type) {
         case *ast.AssignStatement:
@@ -88,7 +31,7 @@ func Exec(stmts []ast.Statement, env *Environment) *object.NoneInst {
     return object.Py_None
 }
 
-func Eval(expression ast.Expression, env *Environment) object.Object {
+func Eval(expression ast.Expression, env *object.Environment) object.Object {
     switch node := expression.(type) {
     case *ast.IdentifierExpression:
         return env.Get(node.Identifier.Literals)
@@ -140,15 +83,15 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
         switch node.Operator.Type {
         case token.GT:
             if leftObj.(*object.IntegerInst).Value > rightObj.(*object.IntegerInst).Value {
-                return True
+                return object.Py_True
             } else {
-                return False
+                return object.Py_False
             }
         case token.LT:
             if leftObj.(*object.IntegerInst).Value < rightObj.(*object.IntegerInst).Value {
-                return True
+                return object.Py_True
             } else {
-                return False
+                return object.Py_False
             }
         }
     case *ast.NumberExpression:
@@ -182,7 +125,7 @@ func Eval(expression ast.Expression, env *Environment) object.Object {
     return object.Py_None
 }
 
-func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
+func execAssignStatement(stmt *ast.AssignStatement, env *object.Environment) {
     switch attr := stmt.Target.(type) {
     case *ast.AttributeExpression:
         instObj := Eval(attr.Expr, env)
@@ -193,10 +136,10 @@ func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
     }
 }
 
-func execIfStatement(stmt ast.Statement, env *Environment) {
+func execIfStatement(stmt ast.Statement, env *object.Environment) {
     if stmt != nil {
         ifstmt := stmt.(*ast.IfStatement)
-        if ifstmt.Condition == nil || Eval(ifstmt.Condition, env) == True {
+        if ifstmt.Condition == nil || Eval(ifstmt.Condition, env) == object.Py_True {
             Exec(ifstmt.Body, env)
         } else {
             execIfStatement(ifstmt.Else, env)
@@ -204,13 +147,13 @@ func execIfStatement(stmt ast.Statement, env *Environment) {
     }
 }
 
-func execWhileStatement(stmt *ast.WhileStatement, env *Environment) {
-    for Eval(stmt.Condition, env) == True {
+func execWhileStatement(stmt *ast.WhileStatement, env *object.Environment) {
+    for Eval(stmt.Condition, env) == object.Py_True {
         Exec(stmt.Body, env)
     }
 }
 
-func execDefStatement(stmt *ast.DefStatement, env *Environment) {
+func execDefStatement(stmt *ast.DefStatement, env *object.Environment) {
     funcObj := &object.FunctionInst{
         Name: stmt.Name.Literals,
         Body: stmt.Body,
@@ -224,13 +167,13 @@ func execDefStatement(stmt *ast.DefStatement, env *Environment) {
     env.Set(funcObj.Name, funcObj)
 }
 
-func execClassStatement(node *ast.ClassStatement, env *Environment) {
-    clsEnv := env.deriveEnv()
+func execClassStatement(node *ast.ClassStatement, env *object.Environment) {
+    clsEnv := env.DeriveEnv()
     Exec(node.Body, clsEnv)
 
     clsObj := &object.PyClass{
         Name: node.Name.Literals,
-        Dict: clsEnv.store,
+        Dict: clsEnv.Store(),
     }
 
     if env.Get(node.Parent.Literals) != nil {
@@ -243,7 +186,7 @@ func execClassStatement(node *ast.ClassStatement, env *Environment) {
     env.Set(clsObj.Name, clsObj)
 }
 
-func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) object.Object {
+func evalCallExpression(callNode *ast.CallExpression, parentEnv *object.Environment) object.Object {
     callObj := Eval(callNode.Name, parentEnv)
 
     switch obj := callObj.(type) {
@@ -255,10 +198,10 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) ob
 
         switch o := obj.(type) {
         case *object.Print:
-            o.Py__call__(paramObjs)
+            o.Py__call__(paramObjs...)
             return object.Py_None
         case *object.Len:
-            return o.Py__call__(paramObjs)
+            return o.Py__call__(paramObjs...)
         case *object.PyNew:
             return o.Call_b(paramObjs[0].(*object.PyClass))
         case *object.Super:
@@ -270,7 +213,7 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) ob
             args = append(args, Eval(param, parentEnv))
         }
 
-        return evalClassCallExpr(obj, args, parentEnv.deriveEnv())
+        return evalClassCallExpr(obj, args, parentEnv.DeriveEnv())
     case *object.BoundMethod:
         args := []object.Object{}
         for _, param := range callNode.Params {
@@ -279,14 +222,14 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) ob
 
         args = append([]object.Object{obj.Inst}, args...)
 
-        return evalFuncCallExpr(obj.Func, args, parentEnv.deriveEnv())
+        return evalFuncCallExpr(obj.Func, args, parentEnv.DeriveEnv())
     case object.Function:
         args := []object.Object{}
         for _, param := range callNode.Params {
             args = append(args, Eval(param, parentEnv))
         }
 
-        return evalFuncCallExpr(obj, args, parentEnv.deriveEnv())
+        return evalFuncCallExpr(obj, args, parentEnv.DeriveEnv())
     }
 
     return object.Py_None
@@ -295,7 +238,7 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) ob
 func evalSuperCallExpr() {
 }
 
-func evalFuncCallExpr(f object.Function, args []object.Object, env *Environment) object.Object {
+func evalFuncCallExpr(f object.Function, args []object.Object, env *object.Environment) object.Object {
     switch obj := f.(type) {
     case object.BuiltinFunction:
         switch obj := f.(type) {
@@ -321,13 +264,12 @@ func evalFuncCallExpr(f object.Function, args []object.Object, env *Environment)
     return object.Py_None
 }
 
-func evalClassCallExpr(cls object.Class, args []object.Object, env *Environment) object.Object {
+func evalClassCallExpr(cls object.Class, args []object.Object, env *object.Environment) object.Object {
     // A special branch. remove it when __call__ added into class
     switch o := cls.(type) {
     case *object.Pytype:
-        return o.Py__call__(args)
+        return o.Py__call__(args...)
     }
-
 
     // TODO: by now, super() in __new__ is invalid
 
@@ -335,7 +277,7 @@ func evalClassCallExpr(cls object.Class, args []object.Object, env *Environment)
 
     var instObj object.Object
     if __new__ != nil {
-        instObj = evalFuncCallExpr(__new__.(object.Function), []object.Object{cls}, env).(*object.PyInst)
+        instObj = evalFuncCallExpr(__new__.(object.Function), []object.Object{cls}, env)
     } else {
         instObj = cls.Py__new__(cls)
     }

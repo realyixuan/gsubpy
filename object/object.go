@@ -79,7 +79,7 @@ type Class interface {
 type Function interface {
     Object
     Py__name__() *PyStrInst
-    Py__call__([]Object) Object
+    Py__call__(...Object) Object
 }
 
 type BuiltinFunction interface {
@@ -94,7 +94,7 @@ type PyNew struct {
 func (n *PyNew) Py__class__() Class {return Py_Function}
 func (n *PyNew) Type() Type {return METHOD}
 func (n *PyNew) Call() {}
-func (n *PyNew) Py__call__([]Object) Object {return Py_None}
+func (n *PyNew) Py__call__(objs ...Object) Object {return Py_None}
 func (n *PyNew) Py__name__() *PyStrInst {return &PyStrInst{"<builtin __new__>"}}
 func (n *PyNew) Call_b(cls Class) Object {
     return n.Func(cls)
@@ -144,7 +144,7 @@ var Py_object = &ObjectClass{}
 type Pytype struct {}
 func (t *Pytype) Py__class__() Class {return Py_type}
 func (t *Pytype) Type() Type {return TYPE}
-func (t *Pytype) Py__call__(objs []Object) Object {
+func (t *Pytype) Py__call__(objs ...Object) Object {
     if len(objs) == 1 {
         return objs[0].Py__class__()
     }
@@ -207,6 +207,24 @@ func (bi *BoolInst) Py__str__() *PyStrInst {
 }
 func (bi *BoolInst) Py__getattribute__(*PyStrInst) Object {return nil}
 func (bi *BoolInst) Py__setattr__(*PyStrInst, Object) {}
+
+// type Pyint struct {}
+// func (pi *Pyint) Py__class__() Class {return Py_object}
+// func (pi *Pyint) Py__init__(*PyInst) {}
+// func (pi *Pyint) Py__name__() *PyStrInst {return &PyStrInst{"int"}}
+// func (pi *Pyint) Type() Type {return CLASS}
+// func (pi *Pyint) Py__getattribute__(attr *PyStrInst) Object {return nil}
+// func (pi *Pyint) Py__setattr__(attr *PyStrInst, val Object) {}
+// func (pi *Pyint) Py__new__(cls Class) Object {return nil}
+// func (pi *Pyint) Py__base__() Class {return Py_object}
+// func (pi *Pyint) Py__repr__() *PyStrInst {
+//     return &PyStrInst{fmt.Sprint("<class 'int'>")}
+// }
+// func (pi *Pyint) Py__str__() *PyStrInst {
+//     return pi.Py__repr__()
+// }
+// 
+// var Py_int = Pyint{}
 
 type IntegerInst struct {
     Value   int
@@ -337,7 +355,7 @@ type FunctionInst struct {
 
 func (fi *FunctionInst) Py__class__() Class {return Py_Function}
 func (fi *FunctionInst) Type() Type {return FUNCTION}
-func (fi *FunctionInst) Py__call__([]Object) Object {return Py_None}
+func (fi *FunctionInst) Py__call__(...Object) Object {return Py_None}
 func (fi *FunctionInst) Py__name__() *PyStrInst {return &PyStrInst{fi.Name}}
 func (fi *FunctionInst) Py__repr__() *PyStrInst {
     return &PyStrInst{fmt.Sprintf("<function %s at %p>", fi.Name, fi)}
@@ -416,7 +434,7 @@ func (bm *BoundMethod) Py__repr__() *PyStrInst {
     return &PyStrInst{s}
 }
 func (bm *BoundMethod) Py__str__() *PyStrInst {return bm.Py__repr__()}
-func (bm *BoundMethod) Py__call__([]Object) Object {return Py_None}
+func (bm *BoundMethod) Py__call__(...Object) Object {return Py_None}
 func (bm *BoundMethod) Py__name__() *PyStrInst {return bm.Func.Py__name__()}
 func (bm *BoundMethod) Type() Type {return METHOD}
 func (bm *BoundMethod) Py__getattribute__(*PyStrInst) Object {return nil}
@@ -465,7 +483,7 @@ func (p *Print) Call() {}
 func (p *Print) Py__repr__() *PyStrInst {return &PyStrInst{"print"}}
 func (p *Print) Py__str__() *PyStrInst {return p.Py__repr__()}
 func (p *Print) Py__name__() *PyStrInst {return p.Py__repr__()}
-func (p *Print) Py__call__(objs []Object) Object {
+func (p *Print) Py__call__(objs ...Object) Object {
     for _, obj := range objs {
         fmt.Print(obj.Py__str__().Value)
         fmt.Print(" ")
@@ -485,7 +503,7 @@ func (l *Len) Call() {}
 func (l *Len) Py__repr__() *PyStrInst {return &PyStrInst{"<function 'len'>"}}
 func (l *Len) Py__str__() *PyStrInst {return l.Py__repr__()}
 func (l *Len) Py__name__() *PyStrInst {return l.Py__repr__()}
-func (l *Len) Py__call__(objs []Object) Object {
+func (l *Len) Py__call__(objs ...Object) Object {
     // supposed to have only one arguments
     obj := objs[0]
 
@@ -529,7 +547,7 @@ type Super struct {}
 func (s *Super) Py__class__() Class {return Py_type}
 func (s *Super) Type() Type {return CLASS}
 func (s *Super) Call() {}
-func (s *Super) Py__call__([]Object) Object {return Py_None}
+func (s *Super) Py__call__(...Object) Object {return Py_None}
 func (s *Super) Py__getattribute__(*PyStrInst) Object {return nil}
 func (s *Super) Py__setattr__(*PyStrInst, Object) {}
 func (s *Super) Py__repr__() *PyStrInst {return &PyStrInst{"<class 'super'>"}}

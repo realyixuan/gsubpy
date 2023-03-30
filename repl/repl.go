@@ -14,7 +14,7 @@ import (
 )
 
 func REPLRunning() {
-    env := evaluator.NewEnvironment()
+    env := object.NewEnvironment()
     for {
         fmt.Print(">>> ")
         reader := bufio.NewReader(os.Stdin)

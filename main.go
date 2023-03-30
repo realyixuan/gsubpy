@@ -31,7 +31,7 @@ func main() {
         l := lexer.New(string(data))
         p := parser.New(l)
         stmts := p.Parsing()
-        evaluator.Exec(stmts, evaluator.NewEnvironment())
+        evaluator.Exec(stmts, object.NewEnvironment())
     }
 }
 

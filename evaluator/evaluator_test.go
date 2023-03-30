@@ -592,11 +592,11 @@ func TestTypeError(t *testing.T) {
     
 }
 
-func testRunProgram(input string) *Environment{
+func testRunProgram(input string) *object.Environment{
     l := lexer.New(input)
     p := parser.New(l)
     stmts := p.Parsing()
-    env := NewEnvironment()
+    env := object.NewEnvironment()
     Exec(stmts, env)
     return env
 }
