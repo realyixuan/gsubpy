@@ -154,7 +154,7 @@ func execWhileStatement(stmt *ast.WhileStatement, env *Environment) {
 
 func execDefStatement(stmt *ast.DefStatement, env *Environment) {
     funcObj := &FunctionInst{
-        Name: stmt.Name.Literals,
+        Name: &PyStrInst{stmt.Name.Literals},
         Body: stmt.Body,
         env: env,
     }
@@ -164,7 +164,7 @@ func execDefStatement(stmt *ast.DefStatement, env *Environment) {
         params = append(params, tok.Literals)
     }
     funcObj.Params = params
-    env.Set(funcObj.Name, funcObj)
+    env.Set(funcObj.Name.Value, funcObj)
 }
 
 func execClassStatement(node *ast.ClassStatement, env *Environment) {
@@ -172,8 +172,12 @@ func execClassStatement(node *ast.ClassStatement, env *Environment) {
     Exec(node.Body, clsEnv)
 
     clsObj := &PyClass{
-        Name: node.Name.Literals,
-        Dict: clsEnv.Store(),
+        Name: &PyStrInst{node.Name.Literals},
+        Dict: &DictInst{Map: map[PyStrInst]Object{}},
+    }
+
+    for k, v := range clsEnv.Store() {
+        clsObj.Dict.Py__setitem__(&k, v)
     }
 
     if env.Get(node.Parent.Literals) != nil {
@@ -183,19 +187,22 @@ func execClassStatement(node *ast.ClassStatement, env *Environment) {
         clsObj.Base = Py_object
     }
 
-    env.Set(clsObj.Name, clsObj)
+    env.Set(clsObj.Name.Value, clsObj)
 }
 
 func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) Object {
     callObj := Eval(callNode.Name, parentEnv)
 
-    switch obj := callObj.(type) {
-    case BuiltinFunction:
-        var paramObjs []Object
-        for _, param := range callNode.Params {
-            paramObjs = append(paramObjs, Eval(param, parentEnv))
-        }
+    var paramObjs []Object
+    for _, param := range callNode.Params {
+        paramObjs = append(paramObjs, Eval(param, parentEnv))
+    }
 
+    switch obj := callObj.(type) {
+    // refactor it after add builtin-type interface
+    case *Pytype:
+        return obj.Call(paramObjs...)
+    case BuiltinFunction:
         switch o := obj.(type) {
         case *Print:
             o.Py__call__(paramObjs...)
@@ -204,16 +211,14 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) Ob
             return o.Py__call__(paramObjs...)
         case *PyNew:
             return o.Py__call__(paramObjs...)
-        case *Super:
-            return &SuperInst{Py__self__: context.(*PyInst)}
         }
     case Class:
         args := []Object{}
         for _, param := range callNode.Params {
             args = append(args, Eval(param, parentEnv))
         }
-
-        return evalClassCallExpr(obj, args, parentEnv.DeriveEnv())
+        inst := Py_type.Py__call__(obj, args...)
+        return inst
     case *BoundMethod:
         args := []Object{}
         for _, param := range callNode.Params {
@@ -233,37 +238,5 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) Ob
     }
 
     return Py_None
-}
-
-func evalClassCallExpr(cls Class, args []Object, env *Environment) Object {
-    // A special branch. remove it when __call__ added into class
-    switch o := cls.(type) {
-    case *Pytype:
-        return o.Py__call__(args...)
-    }
-
-    // TODO: by now, super() in __new__ is invalid
-
-    __new__ := cls.Py__getattribute__(&PyStrInst{"__new__"})
-
-    var instObj Object
-    if __new__ != nil {
-        instObj = __new__.(Function).Py__call__(cls)
-    } else {
-        instObj = cls.Py__new__(cls)
-    }
-
-    __init__ := cls.Py__getattribute__(&PyStrInst{"__init__"})
-    if __init__ == nil {
-        return instObj
-    }
-
-    args = append([]Object{instObj}, args...)
-
-    context = instObj
-    __init__.(Function).Py__call__(args...)
-    context = nil
-
-    return instObj
 }
 

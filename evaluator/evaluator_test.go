@@ -350,7 +350,7 @@ res2 = foo.b
 func TestClass__new__(t *testing.T) {
     input := `
 class Foo:
-    def __new__(cls):
+    def __new__(cls, a):
         return object.__new__(cls)
         
     def __init__(self, a):

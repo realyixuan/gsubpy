@@ -17,33 +17,40 @@ var __builtins__ = map[string] Object{
 }
 
 type Environment struct {
-    store     map[string]Object
+    store     map[PyStrInst]Object
     parent    *Environment
 }
 
 func NewEnvironment() *Environment {
     builtinsEnv := &Environment{
-        store: __builtins__,
+        store: map[PyStrInst]Object{},
         parent: nil,
     }
 
+    for k, v := range __builtins__ {
+        builtinsEnv.Set(k, v)
+    }
+
     return &Environment{
-        store: map[string]Object{},
+        store: map[PyStrInst]Object{},
         parent: builtinsEnv,
     }
 }
 
 func (self *Environment) Set(key string, value Object) {
-    self.store[key] = value
+    self.store[PyStrInst{key}] = value
 }
 
 func (self *Environment) Get(key string) Object {
     // omit the condition of key not being existing
+
+    ko := PyStrInst{key}
+
     if self.parent == nil {
-        return self.store[key]
+        return self.store[ko]
     }
 
-    if obj, ok := self.store[key]; ok {
+    if obj, ok := self.store[ko]; ok {
         return obj
     } else {
         return self.parent.Get(key)
@@ -52,12 +59,13 @@ func (self *Environment) Get(key string) Object {
 
 func (self *Environment) DeriveEnv() *Environment {
     return &Environment{
-        store: map[string] Object{},
+        store: map[PyStrInst] Object{},
         parent: self,
     }
 }
 
-func (self *Environment) Store() map[string]Object {
+func (self *Environment) Store() map[PyStrInst]Object {
+
     return self.store
 }
 

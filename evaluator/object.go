@@ -70,7 +70,7 @@ type Object interface {
 
 type Class interface {
     Object
-    Py__init__(*PyInst)
+    Py__init__(Object, ...Object)
     Py__new__(Class, ...Object) Object
     Py__name__() *PyStrInst
     Py__base__() Class
@@ -134,7 +134,7 @@ func (o *ObjectClass) Py__new__(cls Class, objs ...Object) Object {
         Py__dict__: map[string]Object{},
         }
 }
-func (o *ObjectClass) Py__init__(*PyInst) {}
+func (o *ObjectClass) Py__init__(Object, ...Object) {}
 func (o *ObjectClass) Py__name__() *PyStrInst {return &PyStrInst{"object"}}
 func (o *ObjectClass) Py__base__() Class {return nil}
 
@@ -143,13 +143,31 @@ var Py_object = &ObjectClass{}
 type Pytype struct {}
 func (t *Pytype) Py__class__() Class {return Py_type}
 func (t *Pytype) Type() Type {return TYPE}
-func (t *Pytype) Py__call__(objs ...Object) Object {
+func (t *Pytype) Call(objs ...Object) Object {
     if len(objs) == 1 {
         return objs[0].Py__class__()
     }
+
+    // then, o is supposed to be the name of class or cls
+    return t.Py__new__(t, objs...)
+}
+func (t *Pytype) Py__call__(o Object, objs ...Object) Object {
+    switch cls := o.(type) {
+    case *PyClass:
+        // temporary solution: context should be a stack
+        context = cls
+        inst := cls.Py__new__(cls, objs...)
+        context = inst
+        cls.Py__init__(inst, objs...)
+        context = nil
+        return inst
+    case *Super:
+        inst := cls.Py__new__(cls)
+        return inst
+    }
     return nil
 }
-func (t *Pytype) Py__init__(*PyInst) {}
+func (t *Pytype) Py__init__(Object, ...Object) {}
 func (t *Pytype) Py__name__() *PyStrInst {return t.Py__repr__()}
 func (t *Pytype) Py__base__() Class {return Py_object}
 func (t *Pytype) Py__repr__() *PyStrInst {
@@ -158,8 +176,11 @@ func (t *Pytype) Py__repr__() *PyStrInst {
 func (t *Pytype) Py__str__() *PyStrInst {
     return t.Py__repr__()
 }
-func (t *Pytype) Py__new__(Class, ...Object) Object {return nil}
-func (t *Pytype) Py__pnew__(mcs *Pytype, name string, base *PyClass, attrs map[string]Object) *PyClass {
+func (t *Pytype) Py__new__(cls Class, objs ...Object) Object {
+    var name *PyStrInst = objs[0].(*PyStrInst)
+    var base *PyClass = objs[1].(*PyClass)
+    var attrs *DictInst = objs[2].(*DictInst)
+
     return &PyClass{
         Name: name,
         Base: base,
@@ -242,7 +263,7 @@ func (ni *IntegerInst) Py__setattr__(*PyStrInst, Object) {}
 
 type PyStr struct {}
 func (ps *PyStr) Py__class__() Class {return Py_type}
-func (ps *PyStr) Py__init__(*PyInst) {}
+func (ps *PyStr) Py__init__(Object, ...Object) {}
 func (ps *PyStr) Py__name__() *PyStrInst {return &PyStrInst{"str"}}
 func (ps *PyStr) Type() Type {return TYPE}
 func (ps *PyStr) Py__getattribute__(attr *PyStrInst) Object {return nil}
@@ -272,6 +293,9 @@ func (si *PyStrInst) Py__str__() *PyStrInst {
 }
 func (si *PyStrInst) Py__getattribute__(*PyStrInst) Object {return nil}
 func (si *PyStrInst) Py__setattr__(*PyStrInst, Object) {}
+func (si *PyStrInst) String() string {
+    return fmt.Sprint(si.Value)
+}
 
 type ListInst struct {
     Items   []Object
@@ -283,11 +307,11 @@ func (li *ListInst) Py__repr__() *PyStrInst {
     var s string
     s += "["
     if len(li.Items) > 0 {
-        s += fmt.Sprintf("%v", li.Items[0])
+        s += fmt.Sprintf("%v", li.Items[0].Py__repr__())
     }
     for _, item := range li.Items[1:] {
         s += ", "
-        s += fmt.Sprintf("%v", item)
+        s += fmt.Sprintf("%v", item.Py__repr__())
     }
     s += "]"
     return &PyStrInst{s}
@@ -325,7 +349,7 @@ func (di *DictInst) Py__repr__() *PyStrInst {
     s += "{"
     var i = 0
     for k, v := range di.Map {
-        s += fmt.Sprintf("%v:%v", k, v)
+        s += fmt.Sprintf("%v:%v", k.Py__str__(), v.Py__str__())
         if i == len(di.Map) - 1 {
             break
         }
@@ -362,7 +386,7 @@ func (di *DictInst) Py__setitem__(k Object, v Object) {
 
 // TODO: rename instance
 type FunctionInst struct {
-    Name    string
+    Name    *PyStrInst
     Params  []string
     Body    []ast.Statement
     env     *Environment
@@ -386,9 +410,9 @@ func (fi *FunctionInst) Py__call__(objs ...Object) Object {
     }
     return Py_None
 }
-func (fi *FunctionInst) Py__name__() *PyStrInst {return &PyStrInst{fi.Name}}
+func (fi *FunctionInst) Py__name__() *PyStrInst {return fi.Name}
 func (fi *FunctionInst) Py__repr__() *PyStrInst {
-    return &PyStrInst{fmt.Sprintf("<function %s at %p>", fi.Name, fi)}
+    return &PyStrInst{fmt.Sprintf("<function %v at %p>", fi.Name.Py__str__(), fi)}
 }
 func (fi *FunctionInst) Py__str__() *PyStrInst {
     return fi.Py__repr__()
@@ -398,7 +422,7 @@ func (fi *FunctionInst) Py__setattr__(*PyStrInst, Object) {}
 
 type PyFunction struct {}
 func (F *PyFunction) Py__class__() Class {return Py_type}
-func (F *PyFunction) Py__init__(*PyInst) {}
+func (F *PyFunction) Py__init__(Object, ...Object) {}
 func (F *PyFunction) Py__name__() *PyStrInst {return &PyStrInst{"function"}}
 func (F *PyFunction) Type() Type {return CLASS}
 func (F *PyFunction) Py__getattribute__(attr *PyStrInst) Object {return nil}
@@ -411,18 +435,23 @@ func (F *PyFunction) Py__str__() *PyStrInst {return F.Py__repr__()}
 var Py_Function = &PyFunction{}
 
 type PyClass struct {
-    Name          string
-    Base          Class
-    Dict    map[string]Object
+    Name        *PyStrInst
+    Base        Class
+    Dict        *DictInst    
 }
 
 func (pc *PyClass) Py__class__() Class {return Py_type}
-func (pc *PyClass) Py__init__(*PyInst) {}
-func (pc *PyClass) Py__name__() *PyStrInst {return &PyStrInst{pc.Name}}
+func (pc *PyClass) Py__init__(o Object, objs ...Object) {
+    if __init__ := pc.Dict.Py__getitem__(&PyStrInst{"__init__"}); __init__ != nil {
+        objs = append([]Object{o}, objs...)
+        __init__.(Function).Py__call__(objs...)
+    }
+}
+func (pc *PyClass) Py__name__() *PyStrInst {return pc.Name}
 func (pc *PyClass) Type() Type {return CLASS}
 func (pc *PyClass) Py__getattribute__(attr *PyStrInst) Object {
     // FIXME: defualt to object
-    val := pc.Dict[attr.Value]
+    val := pc.Dict.Py__getitem__(attr)
     if val != nil {
         return val
     }
@@ -434,10 +463,13 @@ func (pc *PyClass) Py__getattribute__(attr *PyStrInst) Object {
     return pc.Base.Py__getattribute__(attr)
 }
 func (pc *PyClass) Py__setattr__(attr *PyStrInst, val Object) {
-    pc.Dict[attr.Value] = val
+    pc.Dict.Py__setitem__(attr, val)
 }
 func (pc *PyClass) Py__new__(cls Class, objs ...Object) Object {
-    // FIXME: haven't execute customized __new__
+    objs = append([]Object{cls}, objs...)
+    if __new__ := pc.Dict.Py__getitem__(&PyStrInst{"__new__"}); __new__ != nil {
+        return __new__.(Function).Py__call__(objs...)
+    }
     return pc.Base.Py__new__(cls, objs...)
 }
 func (pc *PyClass) Py__base__() Class {
@@ -446,7 +478,7 @@ func (pc *PyClass) Py__base__() Class {
 }
 
 func (pc *PyClass) Py__repr__() *PyStrInst {
-    return &PyStrInst{fmt.Sprintf("<class '%s'>", pc.Name)}
+    return &PyStrInst{fmt.Sprintf("<class '%v'>", pc.Name.Py__str__())}
 }
 func (pc *PyClass) Py__str__() *PyStrInst {
     return pc.Py__repr__()
@@ -459,7 +491,7 @@ type BoundMethod struct {
 func (bm *BoundMethod) Py__class__() Class {return Py_Function}
 func (bm *BoundMethod) Py__repr__() *PyStrInst {
     s := fmt.Sprintf("<bound method %s.%s object at %p>",
-            bm.Inst.Py__class__().Py__name__().Value, bm.Func.Name, bm)
+            bm.Inst.Py__class__().Py__name__().Value, bm.Func.Name.Py__str__(), bm)
 
     return &PyStrInst{s}
 }
@@ -580,31 +612,48 @@ type Super struct {}
 func (s *Super) Py__class__() Class {return Py_type}
 func (s *Super) Type() Type {return CLASS}
 func (s *Super) Call() {}
-func (s *Super) Py__call__(...Object) Object {return Py_None}
 func (s *Super) Py__getattribute__(*PyStrInst) Object {return nil}
 func (s *Super) Py__setattr__(*PyStrInst, Object) {}
 func (s *Super) Py__repr__() *PyStrInst {return &PyStrInst{"<class 'super'>"}}
 func (s *Super) Py__str__() *PyStrInst {return s.Py__repr__()}
-func (s *Super) Py__init__(*PyInst) {}
-func (s *Super) Py__new__(Class, ...Object) Object {return nil}
+func (s *Super) Py__init__(Object, ...Object) {}
+func (s *Super) Py__new__(cls Class, objs ...Object) Object {
+    switch o := context.(type) {
+    case *PyInst:
+        return &SuperInst{
+            class: o.Py__class__(),
+            inst: o,
+        }
+    case Class:
+        return &SuperInst{
+            class: o,
+        }
+    }
+    return nil
+}
 func (s *Super) Py__name__() *PyStrInst {return &PyStrInst{"super"}}
 func (s *Super) Py__base__() Class {return Py_object}
 
 var Py_super = &Super{}
 
 type SuperInst struct {
-    Py__self__ *PyInst
+    class Class
+    inst *PyInst
 }
 
 func (si *SuperInst) Py__class__() Class {return Py_super}
 func (si *SuperInst) Py__getattribute__(attr *PyStrInst) Object {
-    switch targetObj := si.Py__self__.Py__class__().Py__base__().Py__getattribute__(attr).(type) {
-    case *FunctionInst:
-        return &BoundMethod{
-            Func: targetObj,
-            Inst: si.Py__self__,
-            }
-    }
+    if si.inst != nil {
+        switch targetObj := si.class.Py__base__().Py__getattribute__(attr).(type) {
+        case *FunctionInst:
+            return &BoundMethod{
+                Func: targetObj,
+                Inst: si.inst,
+                }
+        }
+    } else {
+        return si.class.Py__base__().Py__getattribute__(attr)
+    } 
     return nil
 }
 
