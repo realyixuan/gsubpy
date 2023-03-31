@@ -314,7 +314,7 @@ type DictInst struct {
 
     */
 
-    Map   map[Object]Object 
+    Map   map[PyStrInst]Object 
                             
 }
 
@@ -343,6 +343,21 @@ func (di *DictInst) Py__getattribute__(*PyStrInst) Object {return nil}
 func (di *DictInst) Py__setattr__(*PyStrInst, Object) {}
 func (di *DictInst) Py__len__() *IntegerInst {
     return &IntegerInst{len(di.Map)}
+}
+func (di *DictInst) Py__getitem__(k Object) Object {
+    switch obj := k.(type) {
+    case *PyStrInst:
+        return di.Map[*obj]
+    }
+    return nil
+}
+func (di *DictInst) Py__setitem__(k Object, v Object) {
+    switch obj := k.(type) {
+    case *PyStrInst:
+        di.Map[*obj] = v
+    default:
+        panic("Do not yet support keys other than str")
+    }
 }
 
 // TODO: rename instance

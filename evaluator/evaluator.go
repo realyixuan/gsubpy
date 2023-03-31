@@ -106,11 +106,11 @@ func Eval(expression ast.Expression, env *Environment) Object {
         return listObj
     case *ast.DictExpression:
         dictObj := &DictInst{
-            Map: map[Object]Object{},
+            Map: map[PyStrInst]Object{},
         }
         for i := 0; i < len(node.Keys); i++ {
             k, v := node.Keys[i], node.Vals[i]
-            dictObj.Map[Eval(k, env)] = Eval(v, env)
+            dictObj.Py__setitem__(Eval(k, env), Eval(v, env))
         }
         return dictObj
     case *ast.CallExpression:

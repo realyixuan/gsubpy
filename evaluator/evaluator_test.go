@@ -544,8 +544,8 @@ func TestDictStatement(t *testing.T) {
             "d = {a: 'abc'}\n",
             map[string]*DictInst{
                 "d": &DictInst{
-                        Map: map[Object]Object{
-                                &PyStrInst{Value: "abc"}: &PyStrInst{Value: "d"},
+                        Map: map[PyStrInst]Object{
+                                PyStrInst{Value: "abc"}: &PyStrInst{Value: "d"},
                             },
                     },
             },
