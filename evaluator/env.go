@@ -14,6 +14,7 @@ var __builtins__ = map[string] Object{
     "len": Py_len,
     "super": Py_super,
     "type": Py_type,
+    "int": Py_int,
 }
 
 type Environment struct {
@@ -38,13 +39,13 @@ func NewEnvironment() *Environment {
 }
 
 func (self *Environment) Set(key string, value Object) {
-    self.store[PyStrInst{key}] = value
+    self.store[*NewStrInst(key)] = value
 }
 
 func (self *Environment) Get(key string) Object {
     // omit the condition of key not being existing
 
-    ko := PyStrInst{key}
+    ko := *NewStrInst(key)
 
     if self.parent == nil {
         return self.store[ko]

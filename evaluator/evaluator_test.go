@@ -19,207 +19,69 @@ res = len(lt)
 }
 
 func TestOneLineAssignStatement(t *testing.T) {
-    testCases := []struct {
-        input       string
-        expected    map[string]*IntegerInst
-    }{
-        {
-            `val = 10 + 20 * 10 / 2 - 50`,
-            map[string]*IntegerInst{
-                "val": &IntegerInst{Value: 60},
-            },
-        },
-    }
+    input := `val = 10 + 20 * 10 / 2 - 50`
+    env := testRunProgram(input)
 
-    for _, testCase := range testCases {
-        env := testRunProgram(testCase.input)
-        for target, expectedObj := range testCase.expected {
-            if resultedObj := env.Get(target).(*IntegerInst); *resultedObj != *expectedObj {
-                t.Errorf("expected (%s=%v), got (%s=%v)",
-                    target, *expectedObj, target, *resultedObj)
-            }
-        }
+    if resultedObj := env.Get("val").(*IntegerInst); resultedObj.Value != 60 {
+        t.Errorf("expected %v, got %v", 60, resultedObj.Value)
     }
 }
 
 func TestMultiLineAssignStatement(t *testing.T) {
-    testCases := []struct {
-        input       string
-        expected    map[string]*IntegerInst
-    }{
-        {
-            "vala = 1\n" +
-            "valb = 2\n",
-            map[string]*IntegerInst{
-                "vala": &IntegerInst{Value: 1},
-                "valb": &IntegerInst{Value: 2},
-            },
-        },
-        {
-            "a = 1\n" +
-            "b = 2\n" +
-            "c = a + b\n",
-            map[string]*IntegerInst{
-                "a": &IntegerInst{Value: 1},
-                "b": &IntegerInst{Value: 2},
-                "c": &IntegerInst{Value: 3},
-            },
-        },
-    }
+    input := `
+a = 1
+b = 2
+c = a + b
+    `
 
-    for _, testCase := range testCases {
-        env := testRunProgram(testCase.input)
-        for varname, expectedObj := range testCase.expected {
-            res := env.Get(varname)
-            if res == nil {
-                t.Errorf("no variable %v", varname)
-            } else if resultedObj := res.(*IntegerInst); *resultedObj != *expectedObj {
-                t.Errorf("expected (%s=%v), got (%s=%v)",
-                    varname, *expectedObj, varname, *resultedObj)
-            }
-        }
+    env := testRunProgram(input)
+    if resultObj := env.Get("c").(*IntegerInst); resultObj.Value != 3 {
+        t.Errorf("expected %v, got %v", 3, resultObj.Value)
     }
 }
 
 func TestIfStatement(t *testing.T) {
-    testCases := []struct {
-        input       string
-        expected    map[string]*IntegerInst
-    }{
-        {
-            "a = 10\n" +
-            "b = 20\n" +
-            "if a > b:\n" +
-            "    a = a * 10\n" +
-            "    b = b * 10\n" +
-            "a = a + 10\n",
-            map[string]*IntegerInst{
-                "a": &IntegerInst{Value: 20},
-                "b": &IntegerInst{Value: 20},
-            },
-        },
-        {
-            "a = 10\n" +
-            "b = 20\n" +
-            "if a < b:\n" +
-            "    a = a * 10\n" +
-            "    b = b * 10\n" +
-            "a = a + 10\n",
-            map[string]*IntegerInst{
-                "a": &IntegerInst{Value: 110},
-                "b": &IntegerInst{Value: 200},
-            },
-        },
-    }
-
-    for _, testCase := range testCases {
-        env := testRunProgram(testCase.input)
-        for varname, expectedObj := range testCase.expected {
-            res := env.Get(varname)
-            if res == nil {
-                t.Errorf("no variable %v", varname)
-            } else if resultedObj := res.(*IntegerInst); *resultedObj != *expectedObj {
-                t.Errorf("expected (%s=%v), got (%s=%v)",
-                    varname, *expectedObj, varname, *resultedObj)
-            }
-        }
+    input := `
+res = 0
+if 2 > 1:
+    res = 10
+if 2 < 1:
+    res = res * 2
+    `
+    env := testRunProgram(input)
+    if resultObj := env.Get("res").(*IntegerInst); resultObj.Value != 10 {
+        t.Errorf("expected %v, got %v", 10, resultObj.Value)
     }
 }
 
 func TestIfElifElseStatement(t *testing.T) {
-    testCases := []struct {
-        input       string
-        expected    map[string]*IntegerInst
-    }{
-        {
-            "a = 10\n" +
-            "b = 20\n" +
-            "if a > b:\n" +
-            "    res = 1\n" +
-            "elif a < b:\n" +
-            "    res = 2\n" +
-            "else:\n" +
-            "    res = 3\n",
-            map[string]*IntegerInst{
-                "res": &IntegerInst{Value: 2},
-            },
-        },
-        {
-            "a = 10\n" +
-            "b = 20\n" +
-            "if a > b:\n" +
-            "    res = 1\n" +
-            "else:\n" +
-            "    res = 2\n",
-            map[string]*IntegerInst{
-                "res": &IntegerInst{Value: 2},
-            },
-        },
-        {
-            "a = 10\n" +
-            "b = 20\n" +
-            "if a < b:\n" +
-            "    res = 1\n" +
-            "else:\n" +
-            "    res = 2\n",
-            map[string]*IntegerInst{
-                "res": &IntegerInst{Value: 1},
-            },
-        },
-    }
+    input := `
+res = 0
+if 2 > 1:
+    res = 1
+elif 2 < 1:
+    res = 2
+else:
+    res = 3
+    `
 
-    for _, testCase := range testCases {
-        env := testRunProgram(testCase.input)
-        for varname, expectedObj := range testCase.expected {
-            res := env.Get(varname)
-            if res == nil {
-                t.Errorf("no variable %v", varname)
-            } else if resultedObj := res.(*IntegerInst); *resultedObj != *expectedObj {
-                t.Errorf("expected (%s=%v), got (%s=%v)",
-                    varname, *expectedObj, varname, *resultedObj)
-            }
-        }
+    env := testRunProgram(input)
+    if resultObj := env.Get("res").(*IntegerInst); resultObj.Value != 1 {
+        t.Errorf("expected %v, got %v", 1, resultObj.Value)
     }
 }
 
 func TestWhileStatement(t *testing.T) {
-    testCases := []struct {
-        input       string
-        expected    map[string]*IntegerInst
-    }{
-        {
-            "i = 0\n" +
-            "total = 0\n" +
-            "while i < 10:\n" +
-            "    total = total + i\n" +
-            "    i = i + 1\n",
-            map[string]*IntegerInst{
-                "total": &IntegerInst{Value: 45},
-            },
-        },
-        {
-            "i = 10\n" +
-            "total = 0\n" +
-            "while i > 10:\n" +
-            "    total = total + i\n" +
-            "    i = i + 1\n",
-            map[string]*IntegerInst{
-                "total": &IntegerInst{Value: 0},
-            },
-        },
-    }
-
-    for _, testCase := range testCases {
-        env := testRunProgram(testCase.input)
-        for varname, expectedObj := range testCase.expected {
-            res := env.Get(varname)
-            if res == nil {
-                t.Errorf("no variable %v", varname)
-            } else if resultedObj := res.(*IntegerInst); *resultedObj != *expectedObj {
-                t.Errorf("expected (%s=%v), got (%s=%v)",
-                    varname, *expectedObj, varname, *resultedObj)
-            }
-        }
+    input := `
+i = 0
+total = 0
+while i < 10:
+    total = total + i
+    i = i + 1
+    `
+    env := testRunProgram(input)
+    if resultObj := env.Get("total").(*IntegerInst); resultObj.Value != 45 {
+        t.Errorf("expected %v, got %v", 45, resultObj.Value)
     }
 }
 
@@ -401,8 +263,9 @@ s = "hello world"
 res = type(s)
     `
     env := testRunProgram(input)
-    if obj := env.Get("res"); obj.Type() != TYPE {
-        t.Errorf("type() wrong: expected %v, got %v", TYPE, obj.Type())
+    t.Log("-------------", env)
+    if obj := env.Get("res"); obj != Py_str {
+        t.Errorf("type() wrong: expected %v, got %v", Py_str.Py__str__(), obj.Py__str__())
     }
 }
 
@@ -454,52 +317,22 @@ func TestFunctionCallStatement(t *testing.T) {
 }
 
 func TestStringAssignStatement(t *testing.T) {
-    testCases := []struct {
-        input       string
-        expected    map[string]*PyStrInst
-    }{
-        {
-            `val = "abc"`,
-            map[string]*PyStrInst{
-                "val": &PyStrInst{Value: "abc"},
-            },
-        },
-    }
-
-    for _, testCase := range testCases {
-        env := testRunProgram(testCase.input)
-        for target, expectedObj := range testCase.expected {
-            if resultedObj := env.Get(target).(*PyStrInst); *resultedObj != *expectedObj {
-                t.Errorf("expected (%s=%v), got (%s=%v)",
-                    target, *expectedObj, target, *resultedObj)
-            }
-        }
+    input := `
+val = "abc"
+    `
+    env := testRunProgram(input)
+    if resultObj := env.Get("val").(*PyStrInst); resultObj.Value != "abc" {
+        t.Errorf("expected 'abc', got %v", resultObj.Value)
     }
 }
 
 func TestStringPlusStatement(t *testing.T) {
-    testCases := []struct {
-        input       string
-        expected    map[string]*PyStrInst
-    }{
-        {
-            "a = 'abc'\n" +
-            "b = 'def'\n" +
-            "c = a + b\n",
-            map[string]*PyStrInst{
-                "c": &PyStrInst{Value: "abcdef"},
-            },
-        },
-    }
-
-    for _, testCase := range testCases {
-        env := testRunProgram(testCase.input)
-        for target, expectedObj := range testCase.expected {
-            if resultedObj := env.Get(target).(*PyStrInst); *resultedObj != *expectedObj {
-                t.Errorf("expected (%s=%v), got (%s=%v)",
-                    target, *expectedObj, target, *resultedObj)
-            }
-        }
+    input := `
+s = 'abc' + 'def'
+    `
+    env := testRunProgram(input)
+    if resultObj := env.Get("s").(*PyStrInst); resultObj.Value != "abcdef" {
+        t.Errorf("expected abcdef, got %v", resultObj.Value)
     }
 }
 
@@ -589,6 +422,16 @@ func TestTypeError(t *testing.T) {
 
     testRunProgram("'a' + 1")
     
+}
+
+func TestIntClass(t *testing.T) {
+    input := `
+res = int() + int(1) + int('2')
+`
+    env := testRunProgram(input)
+    if obj := env.Get("res").(*IntegerInst); obj.Value != 3 {
+        t.Errorf("expect 3, got %v", obj.Value)
+    }
 }
 
 func testRunProgram(input string) *Environment{

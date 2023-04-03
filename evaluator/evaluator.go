@@ -44,13 +44,9 @@ func Eval(expression ast.Expression, env *Environment) Object {
 
         switch leftObj.(type) {
         case *IntegerInst:
-            return &IntegerInst{
-                Value: leftObj.(*IntegerInst).Value + rightObj.(*IntegerInst).Value,
-                }
+            return NewInteger(leftObj.(*IntegerInst).Value + rightObj.(*IntegerInst).Value)
         case *PyStrInst:
-            return &PyStrInst{
-                Value: leftObj.(*PyStrInst).Value + rightObj.(*PyStrInst).Value,
-                }
+            return NewStrInst(leftObj.(*PyStrInst).Value + rightObj.(*PyStrInst).Value)
         }
 
     case *ast.MinusExpression:
@@ -97,7 +93,7 @@ func Eval(expression ast.Expression, env *Environment) Object {
         val, _ := strconv.Atoi(node.Value.Literals)
         return &IntegerInst{Value: val}
     case *ast.StringExpression:
-        return &PyStrInst{Value: node.Value.Literals}
+        return NewStrInst(node.Value.Literals)
     case *ast.ListExpression:
         listObj := &ListInst{}
         for _, item := range node.Items {
@@ -117,7 +113,7 @@ func Eval(expression ast.Expression, env *Environment) Object {
         return evalCallExpression(node, env)
     case *ast.AttributeExpression:
         inst := Eval(node.Expr, env)
-        return inst.Py__getattribute__(&PyStrInst{node.Attr.Literals})
+        return inst.Py__getattribute__(NewStrInst(node.Attr.Literals))
     case *ast.ExpressionStatement:
         return Eval(node.Value, env)
     }
@@ -129,7 +125,7 @@ func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
     case *ast.AttributeExpression:
         instObj := Eval(attr.Expr, env)
         valObj := Eval(stmt.Value, env)
-        instObj.Py__setattr__(&PyStrInst{attr.Attr.Literals}, valObj)
+        instObj.Py__setattr__(NewStrInst(attr.Attr.Literals), valObj)
     case *ast.IdentifierExpression:
         env.Set(attr.Identifier.Literals, Eval(stmt.Value, env))
     }
@@ -154,7 +150,7 @@ func execWhileStatement(stmt *ast.WhileStatement, env *Environment) {
 
 func execDefStatement(stmt *ast.DefStatement, env *Environment) {
     funcObj := &FunctionInst{
-        Name: &PyStrInst{stmt.Name.Literals},
+        Name: NewStrInst(stmt.Name.Literals),
         Body: stmt.Body,
         env: env,
     }
@@ -172,7 +168,7 @@ func execClassStatement(node *ast.ClassStatement, env *Environment) {
     Exec(node.Body, clsEnv)
 
     clsObj := &PyClass{
-        Name: &PyStrInst{node.Name.Literals},
+        Name: NewStrInst(node.Name.Literals),
         Dict: &DictInst{Map: map[PyStrInst]Object{}},
     }
 
