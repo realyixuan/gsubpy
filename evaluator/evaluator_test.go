@@ -434,6 +434,16 @@ res = int() + int(1) + int('2')
     }
 }
 
+func TestStrClass(t *testing.T) {
+    input := `
+res = str() + str(1) + str("2")
+`
+    env := testRunProgram(input)
+    if obj := env.Get("res").(*PyStrInst); obj.Value != "12" {
+        t.Errorf("expect '12', got %v", obj.Value)
+    }
+}
+
 func testRunProgram(input string) *Environment{
     l := lexer.New(input)
     p := parser.New(l)

@@ -15,6 +15,7 @@ var __builtins__ = map[string] Object{
     "super": Py_super,
     "type": Py_type,
     "int": Py_int,
+    "str": Py_str,
 }
 
 type Environment struct {
