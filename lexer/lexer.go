@@ -30,6 +30,7 @@ func New(input string) *Lexer {
 
 func (l *Lexer) ReadNextToken() {
     l.skipWhitespace()
+    l.skipoverComment()
 
     switch l.ch {
     case '=':
@@ -171,6 +172,15 @@ func (l *Lexer) readChar() {
         l.ch = '\x03'   // end of text, special byte
     }
     l.idx += 1
+}
+
+func (l *Lexer) skipoverComment() {
+    if l.ch == '#' {
+        for l.ch != '\n' && l.ch != '\x03' {
+            l.readChar()
+        }
+        l.readChar()
+    }
 }
 
 func isDigit(ch byte) bool {
