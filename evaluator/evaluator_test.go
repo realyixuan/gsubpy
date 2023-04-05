@@ -40,6 +40,50 @@ c = a + b
     }
 }
 
+func TestPlUSASSIGN(t *testing.T) {
+    input := `
+val = 1
+val += 2
+`
+    env := testRunProgram(input)
+    if obj := env.Get("val").(*IntegerInst); obj.Value != 3 {
+        t.Errorf("expect 3, got %v", obj.Value)
+    }
+}
+
+func TestMINUSASSIGN(t *testing.T) {
+    input := `
+val = 3
+val -= 2
+`
+    env := testRunProgram(input)
+    if obj := env.Get("val").(*IntegerInst); obj.Value != 1 {
+        t.Errorf("expect 1, got %v", obj.Value)
+    }
+}
+
+func TestMULASSIGN(t *testing.T) {
+    input := `
+val = 2
+val *= 2
+`
+    env := testRunProgram(input)
+    if obj := env.Get("val").(*IntegerInst); obj.Value != 4 {
+        t.Errorf("expect 4, got %v", obj.Value)
+    }
+}
+
+func TestDIVIDEASSIGN(t *testing.T) {
+    input := `
+val = 2
+val /= 2
+`
+    env := testRunProgram(input)
+    if obj := env.Get("val").(*IntegerInst); obj.Value != 1 {
+        t.Errorf("expect 1, got %v", obj.Value)
+    }
+}
+
 func TestIfStatement(t *testing.T) {
     input := `
 res = 0

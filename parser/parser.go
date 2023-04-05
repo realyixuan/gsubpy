@@ -289,8 +289,38 @@ func (p *Parser)parsingAssignStatement() ast.Statement {
     assignment := ast.AssignStatement{
         Target: p.getAttrOrIdentExpr(),
     }
+
+    symbol := p.l.CurToken.Type
+
     p.l.ReadNextToken()
-    assignment.Value = p.parsingExpression(0)
+
+    var val ast.Expression
+    rExpr := p.parsingExpression(0)
+    if symbol == token.PLUSASSIGN {
+        val = &ast.PlusExpression{
+            Left: assignment.Target,
+            Right: rExpr,
+            }
+    } else if symbol == token.MINUSASSIGN {
+        val = &ast.MinusExpression{
+            Left: assignment.Target,
+            Right: rExpr,
+            }
+    } else if symbol == token.MULASSIGN {
+        val = &ast.MulExpression{
+            Left: assignment.Target,
+            Right: rExpr,
+            }
+    } else if symbol == token.DIVIDEASSIGN {
+        val = &ast.DivideExpression{
+            Left: assignment.Target,
+            Right: rExpr,
+            }
+    } else {
+        val = rExpr
+    }
+
+    assignment.Value = val
     p.l.ReadNextToken()
     return &assignment
 }
@@ -386,10 +416,14 @@ func (p *Parser) isAttributeAssign() bool {
         cl.ReadNextToken() // skip over 'identifier', no error check
     }
 
-    if cl.CurToken.Type != token.ASSIGN {
-        return false
-    } else {
+    if cl.CurToken.Type == token.ASSIGN ||
+        cl.CurToken.Type == token.PLUSASSIGN ||
+        cl.CurToken.Type == token.MINUSASSIGN ||
+        cl.CurToken.Type == token.MULASSIGN ||
+        cl.CurToken.Type == token.DIVIDEASSIGN {
         return true
+    } else {
+        return false
     }
 
 }

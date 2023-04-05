@@ -37,17 +37,37 @@ func (l *Lexer) ReadNextToken() {
         l.CurToken = token.Token{Type: token.ASSIGN, Literals: string(l.ch)}
         l.readChar()
     case '+':
-        l.CurToken = token.Token{Type: token.PLUS, Literals: string(l.ch)}
         l.readChar()
+        if l.ch == '=' {
+            l.CurToken = token.Token{Type: token.PLUSASSIGN, Literals: token.PLUSASSIGN}
+            l.readChar()
+        } else {
+            l.CurToken = token.Token{Type: token.PLUS, Literals: token.PLUS}
+        }
     case '-':
-        l.CurToken = token.Token{Type: token.MINUS, Literals: string(l.ch)}
         l.readChar()
+        if l.ch == '=' {
+            l.CurToken = token.Token{Type: token.MINUSASSIGN, Literals: token.MINUSASSIGN}
+            l.readChar()
+        } else {
+            l.CurToken = token.Token{Type: token.MINUS, Literals: "-"}
+        }
     case '*':
-        l.CurToken = token.Token{Type: token.MUL, Literals: string(l.ch)}
         l.readChar()
+        if l.ch == '=' {
+            l.CurToken = token.Token{Type: token.MULASSIGN, Literals: token.MULASSIGN}
+            l.readChar()
+        } else {
+            l.CurToken = token.Token{Type: token.MUL, Literals: "*"}
+        }
     case '/':
-        l.CurToken = token.Token{Type: token.DIVIDE, Literals: string(l.ch)}
         l.readChar()
+        if l.ch == '=' {
+            l.CurToken = token.Token{Type: token.DIVIDEASSIGN, Literals: token.DIVIDEASSIGN}
+            l.readChar()
+        } else {
+            l.CurToken = token.Token{Type: token.DIVIDE, Literals: token.DIVIDE}
+        }
     case '>':
         l.CurToken = token.Token{Type: token.GT, Literals: string(l.ch)}
         l.readChar()

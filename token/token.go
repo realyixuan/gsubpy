@@ -22,10 +22,14 @@ const (
     INTEGER      = "INTEGER"
     STRING      = "STRING"
 
-    PLUS        = "PLUS"
-    MINUS       = "MINUS"
-    MUL         = "MUL"
-    DIVIDE      = "DIVIDE"
+    PLUS        = "+"
+    MINUS       = "-"
+    MUL         = "*"
+    DIVIDE      = "/"
+    PLUSASSIGN  = "+="
+    MINUSASSIGN  = "-="
+    MULASSIGN  = "*="
+    DIVIDEASSIGN  = "/="
 
     GT          = ">"
     LT          = "<"
