@@ -89,6 +89,23 @@ type DivideExpression struct {
 
 func (de *DivideExpression) getExpression() {}
 
+type AndExpression struct {
+    Left    Expression
+    Right   Expression
+}
+func (ae *AndExpression) getExpression() {}
+
+type OrExpression struct {
+    Left    Expression
+    Right   Expression
+}
+func (oe *OrExpression) getExpression() {}
+
+type NotExpression struct {
+    Expr   Expression
+}
+func (ne *NotExpression) getExpression() {}
+
 type IfStatement struct {
     Condition   Expression
     Body        []Statement

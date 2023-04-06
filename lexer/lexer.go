@@ -34,8 +34,13 @@ func (l *Lexer) ReadNextToken() {
 
     switch l.ch {
     case '=':
-        l.CurToken = token.Token{Type: token.ASSIGN, Literals: string(l.ch)}
         l.readChar()
+        if l.ch == '=' {
+            l.CurToken = token.Token{Type: token.EQ, Literals: token.EQ}
+            l.readChar()
+        } else {
+            l.CurToken = token.Token{Type: token.ASSIGN, Literals: token.ASSIGN}
+        }
     case '+':
         l.readChar()
         if l.ch == '=' {

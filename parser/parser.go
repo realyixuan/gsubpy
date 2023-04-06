@@ -46,6 +46,7 @@ func New(l *lexer.Lexer) *Parser {
     p.registerPrefixFn(token.STRING, p.getSTRINGPrefix)
     p.registerPrefixFn(token.LBRACKET, p.getLBRACKETPrefix)
     p.registerPrefixFn(token.LBRACE, p.getLBRACEPrefix)
+    p.registerPrefixFn(token.NOT, p.getNOTPrefix)
 
     p.registerInfixFn(token.DOT, p.getDOTInfix)
     p.registerInfixFn(token.PLUS, p.getPLUSInfix)
@@ -54,7 +55,10 @@ func New(l *lexer.Lexer) *Parser {
     p.registerInfixFn(token.DIVIDE, p.getDIVIDEInfix)
     p.registerInfixFn(token.GT, p.getGTInfix)
     p.registerInfixFn(token.LT, p.getLTInfix)
+    p.registerInfixFn(token.EQ, p.getEQInfix)
     p.registerInfixFn(token.LPAREN, p.getLPARENInfix)
+    p.registerInfixFn(token.AND, p.getANDInfix)
+    p.registerInfixFn(token.OR, p.getORInfix)
 
     return p
 }
@@ -121,6 +125,7 @@ func (p *Parser) getStmtParsingFn() statementParsingFn {
 func (p *Parser)parsingExpressionStatement() ast.Statement {
     val := p.parsingExpression(0)
     p.l.ReadNextToken()
+    p.l.ReadNextToken()
     return &ast.ExpressionStatement{
         Value: val,
     }
@@ -136,6 +141,7 @@ func (p *Parser)parsingIfStatement() ast.Statement {
     } else {
         p.l.ReadNextToken()
         ifStatement.Condition = p.parsingExpression(0)
+        p.l.ReadNextToken()
     }
 
     if p.l.CurToken.Type == token.COLON {
@@ -170,6 +176,7 @@ func (p *Parser)parsingWhileStatement() ast.Statement {
     stmt := &ast.WhileStatement{}
     p.l.ReadNextToken()
     stmt.Condition = p.parsingExpression(0)
+    p.l.ReadNextToken()
 
     if p.l.CurToken.Type == token.COLON {
         p.l.ReadNextToken()
@@ -268,6 +275,7 @@ func (p *Parser)parsingReturnStatement() ast.Statement {
     stmt := &ast.ReturnStatement{
         Value: p.parsingExpression(LOWEST),
     }
+    p.l.ReadNextToken()
     return stmt
 }
 
@@ -322,6 +330,7 @@ func (p *Parser)parsingAssignStatement() ast.Statement {
 
     assignment.Value = val
     p.l.ReadNextToken()
+    p.l.ReadNextToken()
     return &assignment
 }
 
@@ -329,13 +338,13 @@ func (p *Parser)parsingExpression(precedence int) ast.Expression {
     prefixFn := p.getPrefixFn()
     left := prefixFn()
 
-    p.l.ReadNextToken()
-
     // get the corresponding precedence of Token, and 
     // if it doesn't be in definition, like EOF, COLON, and others
     // that means the ending of the expression, it
     // will return LOWEST precedence
-    for getPrecedence(p.l.CurToken.Type) > precedence {
+    for getPrecedence(p.l.PeekNextToken().Type) > precedence {
+        p.l.ReadNextToken()
+
         infixFn := p.getInfixFn()
 
         p.l.ReadNextToken()
@@ -348,16 +357,14 @@ func (p *Parser)parsingExpression(precedence int) ast.Expression {
 
 func (p *Parser)parsingCallParams(precedence int) []ast.Expression {
     var params []ast.Expression
-
     for p.l.CurToken.Type != token.RPAREN && p.l.CurToken.Type != token.EOF {
         param := p.parsingExpression(LOWEST)
+        p.l.ReadNextToken()
         params = append(params, param)
         if p.l.CurToken.Type == token.COMMA {
             p.l.ReadNextToken()
         }
     }
-
-    p.l.ReadNextToken()
 
     return params
 }
@@ -389,6 +396,8 @@ func getPrecedence(tok token.TokenType) int {
         return COMPARISON
     case token.GT:
         return COMPARISON
+    case token.EQ:
+        return COMPARISON
     case token.PLUS:
         return SUM
     case token.MINUS:
@@ -397,6 +406,12 @@ func getPrecedence(tok token.TokenType) int {
         return PRODUCT
     case token.DIVIDE:
         return PRODUCT
+    case token.AND:
+        return AND
+    case token.OR:
+        return OR
+    case token.NOT:
+        return NOT
     default:
         return LOWEST
     }
@@ -456,6 +471,7 @@ func (p *Parser) getLBRACKETPrefix() ast.Expression {
     p.l.ReadNextToken()
     for p.l.CurToken.Type != token.EOF && p.l.CurToken.Type != token.RBRACKET {
         expr.Items = append(expr.Items, p.parsingExpression(LOWEST))
+        p.l.ReadNextToken()
 
         if p.l.CurToken.Type == token.COMMA {
             p.l.ReadNextToken()
@@ -471,6 +487,7 @@ func (p *Parser) getLBRACEPrefix() ast.Expression {
     p.l.ReadNextToken()
     for p.l.CurToken.Type != token.EOF && p.l.CurToken.Type != token.RBRACE {
         expr.Keys = append(expr.Keys, p.parsingExpression(LOWEST))
+        p.l.ReadNextToken()
 
         if p.l.CurToken.Type != token.COLON {
             panic("SyntaxError: there is a syntax error in dict")
@@ -478,11 +495,21 @@ func (p *Parser) getLBRACEPrefix() ast.Expression {
         p.l.ReadNextToken()
 
         expr.Vals = append(expr.Vals, p.parsingExpression(LOWEST))
+        p.l.ReadNextToken()
 
         if p.l.CurToken.Type == token.COMMA {
             p.l.ReadNextToken()
         }
     }
+
+    return expr
+}
+
+func (p *Parser) getNOTPrefix() ast.Expression {
+    expr := &ast.NotExpression{}
+
+    p.l.ReadNextToken()
+    expr.Expr = p.parsingExpression(getPrecedence(token.NOT))
 
     return expr
 }
@@ -502,7 +529,8 @@ func (p *Parser) getDOTInfix(left ast.Expression) ast.Expression {
     expr := &ast.AttributeExpression{Expr: left}
 
     expr.Attr = p.l.CurToken
-    p.l.ReadNextToken()
+    // TODO;
+    // p.l.ReadNextToken()
 
     return expr
 }
@@ -544,10 +572,32 @@ func (p *Parser) getLTInfix(left ast.Expression) ast.Expression {
     }
 }
 
+func (p *Parser) getEQInfix(left ast.Expression) ast.Expression {
+    return &ast.ComparisonExpression{
+        Operator: token.Token{token.EQ, "=="},
+        Left: left,
+        Right: p.parsingExpression(getPrecedence(token.EQ)),
+    }
+}
+
 func (p *Parser) getLPARENInfix(left ast.Expression) ast.Expression {
     return &ast.CallExpression{
         Name: left,
         Params: p.parsingCallParams(getPrecedence(token.LPAREN)),
+    }
+}
+
+func (p *Parser) getANDInfix(left ast.Expression) ast.Expression {
+    return &ast.AndExpression{
+        Left: left,
+        Right: p.parsingExpression(getPrecedence(token.AND)),
+    }
+}
+
+func (p *Parser) getORInfix(left ast.Expression) ast.Expression {
+    return &ast.OrExpression{
+        Left: left,
+        Right: p.parsingExpression(getPrecedence(token.OR)),
     }
 }
 
@@ -557,6 +607,9 @@ func (p *Parser) registerInfixFn(tok token.TokenType, fn prefInfixFn) {
 
 const (
     LOWEST int = iota
+    OR
+    AND
+    NOT
     COMPARISON
     SUM
     PRODUCT

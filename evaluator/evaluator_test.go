@@ -84,6 +84,46 @@ val /= 2
     }
 }
 
+func TestEQ(t *testing.T) {
+    input := `
+res = 2 == 2
+`
+    env := testRunProgram(input)
+    if obj := env.Get("res").(*BoolInst); obj != Py_True {
+        t.Errorf("expect True, got %v", obj.Py__str__())
+    }
+}
+
+func TestNOT(t *testing.T) {
+    input := `
+res = not 1 > 2
+`
+    env := testRunProgram(input)
+    if obj := env.Get("res").(*BoolInst); obj != Py_True {
+        t.Errorf("expect True, got %v", obj.Py__str__())
+    }
+}
+
+func TestAND(t *testing.T) {
+    input := `
+res = 2 > 1 and 1 > 2
+`
+    env := testRunProgram(input)
+    if obj := env.Get("res").(*BoolInst); obj != Py_False {
+        t.Errorf("expect False, got %v", obj.Py__str__())
+    }
+}
+
+func TestOR(t *testing.T) {
+    input := `
+res = 2 > 1 or 1 > 2
+`
+    env := testRunProgram(input)
+    if obj := env.Get("res").(*BoolInst); obj != Py_True {
+        t.Errorf("expect True, got %v", obj.Py__str__())
+    }
+}
+
 func TestIfStatement(t *testing.T) {
     input := `
 res = 0

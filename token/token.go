@@ -15,7 +15,7 @@ const (
     RETURN      = "return"
     CLASS       = "class"
 
-    ASSIGN      = "ASSIGN"
+    ASSIGN      = "="
     IDENTIFIER  = "IDENTIFIER"
     UNDERSCORE  = "_"
 
@@ -33,6 +33,11 @@ const (
 
     GT          = ">"
     LT          = "<"
+    EQ          = "=="
+
+    AND         = "and"
+    OR          = "or"
+    NOT         = "not"
 
     LPAREN      = "("
     RPAREN      = ")"
@@ -53,6 +58,9 @@ var Keywords = map[string]TokenType {
     "def":      DEF,
     "return":   RETURN,
     "class":    CLASS,
+    "and":      AND,
+    "or":       OR,
+    "not":      NOT,
 }
 
 

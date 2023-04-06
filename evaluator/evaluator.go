@@ -88,6 +88,37 @@ func Eval(expression ast.Expression, env *Environment) Object {
             } else {
                 return Py_False
             }
+        case token.EQ:
+            if leftObj.(*IntegerInst).Value == rightObj.(*IntegerInst).Value {
+                return Py_True
+            } else {
+                return Py_False
+            }
+        }
+    case *ast.NotExpression:
+        obj := Eval(node.Expr, env)
+        // TODO: need to add __bool__ for every type
+        // now, temporarily apply this to comparison expression
+        if obj == Py_True {
+            return Py_False
+        } else {
+            return Py_True
+        }
+    case *ast.AndExpression:
+        leftObj := Eval(node.Left, env)
+        rightObj := Eval(node.Right, env)
+        if leftObj == Py_True && rightObj == Py_True {
+            return Py_True
+        } else {
+            return Py_False
+        }
+    case *ast.OrExpression:
+        leftObj := Eval(node.Left, env)
+        rightObj := Eval(node.Right, env)
+        if leftObj == Py_True || rightObj == Py_True {
+            return Py_True
+        } else {
+            return Py_False
         }
     case *ast.NumberExpression:
         val, _ := strconv.Atoi(node.Value.Literals)
