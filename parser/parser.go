@@ -46,6 +46,7 @@ func New(l *lexer.Lexer) *Parser {
     p.registerPrefixFn(token.STRING, p.getSTRINGPrefix)
     p.registerPrefixFn(token.LBRACKET, p.getLBRACKETPrefix)
     p.registerPrefixFn(token.LBRACE, p.getLBRACEPrefix)
+    p.registerPrefixFn(token.LPAREN, p.getLPARENPrefix)
     p.registerPrefixFn(token.NOT, p.getNOTPrefix)
 
     p.registerInfixFn(token.DOT, p.getDOTInfix)
@@ -502,6 +503,19 @@ func (p *Parser) getLBRACEPrefix() ast.Expression {
         }
     }
 
+    return expr
+}
+
+func (p *Parser) getLPARENPrefix() ast.Expression {
+    p.l.ReadNextToken()
+
+    expr := p.parsingExpression(LOWEST)
+
+    if p.l.PeekNextToken().Type == token.RPAREN {
+        p.l.ReadNextToken()
+    } else {
+        panic("SyntaxError: expect ')'")
+    }
     return expr
 }
 

@@ -124,6 +124,16 @@ res = 2 > 1 or 1 > 2
     }
 }
 
+func TestPAREN(t *testing.T) {
+    input := `
+res = (not 2 > 1) or 2 > 1
+`
+    env := testRunProgram(input)
+    if obj := env.Get("res").(*BoolInst); obj != Py_True {
+        t.Errorf("expect True, got %v", obj.Py__str__())
+    }
+}
+
 func TestIfStatement(t *testing.T) {
     input := `
 res = 0

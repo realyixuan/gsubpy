@@ -30,9 +30,6 @@ reuse behaviours
 
 */
 
-// TODO: class should also have __call__
-// TODO: distinguish class and function although both have __call__
-
 package evaluator
 
 import (
@@ -88,7 +85,6 @@ type BuiltinFunction interface {
     Call()
 }
 
-// TODO: should be class
 type PyNew struct {
     Func    func(Class, ...Object) Object
 }
@@ -441,7 +437,6 @@ func (di *DictInst) Py__setitem__(k Object, v Object) {
     }
 }
 
-// TODO: rename instance
 type FunctionInst struct {
     Name    *PyStrInst
     Params  []string
@@ -597,7 +592,6 @@ func (pi *PyInst) Py__repr__() *PyStrInst {
 }
 func (pi *PyInst) Py__str__() *PyStrInst {return pi.Py__repr__()}
 
-// TODO: temporary
 type Print struct {}
 func (p *Print) Py__class__() Class {return Py_Function}
 func (p *Print) Type() Type {return FUNCTION}
