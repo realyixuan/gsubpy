@@ -38,7 +38,7 @@ func Eval(expression ast.Expression, env *Environment) Object {
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
 
-        if leftObj.Type() != rightObj.Type() {
+        if leftObj.Py__class__() != rightObj.Py__class__() {
             panic(&ExceptionInst{Msg: "TypeError: two different types"})
         }
 
@@ -52,15 +52,11 @@ func Eval(expression ast.Expression, env *Environment) Object {
     case *ast.MinusExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
-        return &IntegerInst{
-            Value: leftObj.(*IntegerInst).Value - rightObj.(*IntegerInst).Value,
-            }
+        return NewInteger(leftObj.(*IntegerInst).Value - rightObj.(*IntegerInst).Value)
     case *ast.MulExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
-        return &IntegerInst{
-            Value: leftObj.(*IntegerInst).Value * rightObj.(*IntegerInst).Value,
-            }
+        return NewInteger(leftObj.(*IntegerInst).Value * rightObj.(*IntegerInst).Value)
     case *ast.DivideExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
@@ -69,31 +65,17 @@ func Eval(expression ast.Expression, env *Environment) Object {
             panic(&ExceptionInst{Msg: "ZeroDivisionError: division by zero"})
         }
 
-        return &IntegerInst{
-            Value: leftObj.(*IntegerInst).Value / rightObj.(*IntegerInst).Value,
-            }
+        return NewInteger(leftObj.(*IntegerInst).Value / rightObj.(*IntegerInst).Value)
     case *ast.ComparisonExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
         switch node.Operator.Type {
         case token.GT:
-            if leftObj.(*IntegerInst).Value > rightObj.(*IntegerInst).Value {
-                return Py_True
-            } else {
-                return Py_False
-            }
+            return leftObj.Py__gt__(rightObj)
         case token.LT:
-            if leftObj.(*IntegerInst).Value < rightObj.(*IntegerInst).Value {
-                return Py_True
-            } else {
-                return Py_False
-            }
+            return leftObj.Py__lt__(rightObj)
         case token.EQ:
-            if leftObj.(*IntegerInst).Value == rightObj.(*IntegerInst).Value {
-                return Py_True
-            } else {
-                return Py_False
-            }
+            return leftObj.Py__eq__(rightObj)
         }
     case *ast.NotExpression:
         obj := Eval(node.Expr, env)
@@ -122,7 +104,7 @@ func Eval(expression ast.Expression, env *Environment) Object {
         }
     case *ast.NumberExpression:
         val, _ := strconv.Atoi(node.Value.Literals)
-        return &IntegerInst{Value: val}
+        return NewInteger(val)
     case *ast.StringExpression:
         return NewStrInst(node.Value.Literals)
     case *ast.ListExpression:
