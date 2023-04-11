@@ -2,6 +2,7 @@ package main
 
 import (
     "os"
+    "fmt"
 
     "gsubpy/repl"
     "gsubpy/lexer"
@@ -12,7 +13,11 @@ import (
 func main() {
     defer func() {
         if r := recover(); r != nil {
-            panic(r)
+            for _, f := range evaluator.Py_traceback.Frames {
+                fmt.Println("line", f.LineNum)
+                fmt.Println("\t", f.Line)
+            }
+            fmt.Println(r)
         }
     }()
 

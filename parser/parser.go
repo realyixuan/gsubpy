@@ -1,6 +1,7 @@
 package parser
 
 import (
+    "fmt"
     "gsubpy/ast"
     "gsubpy/lexer"
     "gsubpy/token"
@@ -85,7 +86,7 @@ func (p *Parser)parsing(indents string) []ast.Statement {
         if isGTIndents(indents, p.l.Indents) {
             break
         } else if isLTIndents(indents, p.l.Indents) {
-            panic("IndentError: wrong indents")
+            panic(fmt.Sprintf("line %v\n\t%s\nIndentError: wrong indents", p.l.LineNum, p.l.Line))
         }
 
         stmt := p.parsingStatement()
@@ -99,7 +100,7 @@ func (p *Parser)parsing(indents string) []ast.Statement {
 func (p *Parser)parsingStatement() ast.Statement {
     stmtParsingFn := p.getStmtParsingFn()
     if stmtParsingFn == nil {
-        panic("SyntaxError: ...")
+        panic(fmt.Sprintf("line %v\n\t%s\nSyntaxError: ...", p.l.LineNum, p.l.Line))
     }
     return stmtParsingFn()
 }
@@ -124,12 +125,13 @@ func (p *Parser) getStmtParsingFn() statementParsingFn {
 
 
 func (p *Parser)parsingExpressionStatement() ast.Statement {
-    val := p.parsingExpression(0)
-    p.l.ReadNextToken()
-    p.l.ReadNextToken()
-    return &ast.ExpressionStatement{
-        Value: val,
+    expr := &ast.ExpressionStatement{
+        Literals: ast.Literals{LineNum: p.l.LineNum, Line: p.l.Line},
     }
+    expr.Value = p.parsingExpression(0)
+    p.l.ReadNextToken()
+    p.l.ReadNextToken()
+    return expr
 }
 
 func (p *Parser)parsingIfStatement() ast.Statement {
@@ -151,7 +153,7 @@ func (p *Parser)parsingIfStatement() ast.Statement {
     }
 
     if !isGTIndents(p.l.Indents, curIndents) {
-        panic("IndentError: wrong Indents")
+        panic(fmt.Sprintf("line %v\n\t%s\nIndentError: wrong Indents", p.l.LineNum, p.l.Line))
     }
     
     ifStatement.Body = p.parsing(p.l.Indents)
@@ -185,7 +187,7 @@ func (p *Parser)parsingWhileStatement() ast.Statement {
     }
 
     if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
-        panic("IndentError: wrong Indents")
+        panic(fmt.Sprintf("line %v\n\t%s\nIndentError: wrong Indents", p.l.LineNum, p.l.Line))
     }
     
     stmt.Body = p.parsing(p.l.Indents)
@@ -203,14 +205,14 @@ func (p *Parser)parsingDefStatement() ast.Statement {
 
     p.l.ReadNextToken()
     if p.l.CurToken.Type != token.LPAREN {
-        panic("SyntaxError: wrong syntax")
+        panic(fmt.Sprintf("line %v\n\t%s\nSyntaxError: wrong syntax", p.l.LineNum, p.l.Line))
     }
 
     p.l.ReadNextToken()
     stmt.Params = p.parsingDefParams()
 
     if p.l.CurToken.Type != token.RPAREN {
-        panic("SyntaxError: wrong syntax")
+        panic(fmt.Sprintf("line %v\n\t%s\nSyntaxError: wrong syntax", p.l.LineNum, p.l.Line))
     }
 
     p.l.ReadNextToken()
@@ -220,7 +222,7 @@ func (p *Parser)parsingDefStatement() ast.Statement {
     }
 
     if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
-        panic("IndentError: wrong Indents")
+        panic(fmt.Sprintf("line %v\n\t%s\nIndentError: wrong Indents", p.l.LineNum, p.l.Line))
     }
     
     stmt.Body = p.parsing(p.l.Indents)
@@ -244,13 +246,13 @@ func (p *Parser)parsingClassStatement() ast.Statement {
         stmt.Parent = p.l.CurToken
 
         if p.l.ReadNextToken(); p.l.CurToken.Type != token.RPAREN {
-            panic("SyntaxError: class define wrong syntax")
+            panic(fmt.Sprintf("line %v\n\t%s\nSyntaxError: class define wrong syntax", p.l.LineNum, p.l.Line))
         }
         p.l.ReadNextToken()
     }
 
     if p.l.CurToken.Type != token.COLON {
-        panic("SyntaxError: class define wrong syntax")
+        panic(fmt.Sprintf("line %v\n\t%s\nSyntaxError: class define wrong syntax", p.l.LineNum, p.l.Line))
     }
 
     p.l.ReadNextToken()
@@ -259,7 +261,7 @@ func (p *Parser)parsingClassStatement() ast.Statement {
     internalIndents := p.l.Indents
     
     if !isGTIndents(internalIndents, classIndents) {
-        panic("IndentError: in class wrong Indents")
+        panic(fmt.Sprintf("line %v\n\t%s\nIndentError: in class wrong Indents", p.l.LineNum, p.l.Line))
     }
 
     for isEQIndents(internalIndents, p.l.Indents) {
@@ -297,6 +299,7 @@ func (p *Parser)parsingDefParams() []token.Token {
 func (p *Parser)parsingAssignStatement() ast.Statement {
     assignment := ast.AssignStatement{
         Target: p.getAttrOrIdentExpr(),
+        Literals: ast.Literals{LineNum: p.l.LineNum, Line: p.l.Line},
     }
 
     symbol := p.l.CurToken.Type
@@ -378,7 +381,10 @@ func (p *Parser)isWhiteLine() bool {
 }
 
 func (p *Parser) getPrefixFn() prefPrefixFn {
-    prefixFn := p.prefixFns[p.l.CurToken.Type] 
+    prefixFn, ok := p.prefixFns[p.l.CurToken.Type] 
+    if !ok {
+        panic(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax", p.l.LineNum, p.l.Line))
+    }
     return prefixFn
 }
 
@@ -491,7 +497,7 @@ func (p *Parser) getLBRACEPrefix() ast.Expression {
         p.l.ReadNextToken()
 
         if p.l.CurToken.Type != token.COLON {
-            panic("SyntaxError: there is a syntax error in dict")
+            panic(fmt.Sprintf("line %v\n\t%s\nSyntaxError: there is a syntax error in dict", p.l.LineNum, p.l.Line))
         }
         p.l.ReadNextToken()
 
@@ -501,6 +507,10 @@ func (p *Parser) getLBRACEPrefix() ast.Expression {
         if p.l.CurToken.Type == token.COMMA {
             p.l.ReadNextToken()
         }
+    }
+
+    if p.l.CurToken.Type != token.RBRACE {
+        panic(fmt.Sprintf("line %v\n\t%s\nSyntaxError: there is a syntax error in dict, expect '}'", p.l.LineNum, p.l.Line))
     }
 
     return expr
@@ -514,7 +524,7 @@ func (p *Parser) getLPARENPrefix() ast.Expression {
     if p.l.PeekNextToken().Type == token.RPAREN {
         p.l.ReadNextToken()
     } else {
-        panic("SyntaxError: expect ')'")
+        panic(fmt.Sprintf("line %v\n\t%s\nSyntaxError: expect ')'", p.l.LineNum, p.l.Line))
     }
     return expr
 }

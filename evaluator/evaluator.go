@@ -10,7 +10,24 @@ import (
 var context Object
 
 func Exec(stmts []ast.Statement, env *Environment) *NoneInst {
+    var s ast.Statement
+    defer func() {
+        if r := recover(); r != nil {
+            // TODO: add method of getting literals
+            var f Frame
+            switch o := s.(type) {
+            case *ast.AssignStatement:
+                f = Frame{Literals: o.Literals}
+            case *ast.ExpressionStatement:
+                f = Frame{Literals: o.Literals}
+            }
+            Py_traceback.append(f)
+            panic(r)
+        }
+    }()
+
     for _, stmt := range stmts {
+        s = stmt
         switch node := stmt.(type) {
         case *ast.AssignStatement:
             execAssignStatement(node, env)
@@ -248,4 +265,19 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) Ob
 
     return Py_None
 }
+
+type Frame struct {
+    ast.Literals
+    context     string
+}
+
+type Traceback struct {
+    Frames      []Frame
+}
+
+func (tb *Traceback) append(f Frame) {
+    tb.Frames = append(tb.Frames, f)
+}
+
+var Py_traceback = &Traceback{}
 

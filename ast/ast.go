@@ -16,15 +16,22 @@ type Program struct {
     stmts []Statement
 }
 
+type Literals struct {
+    LineNum     int
+    Line        string
+}
+
 type AssignStatement struct {
     Target      Expression
     Value       Expression
+    Literals
 }
 
 func (as *AssignStatement) getStatement() {}
 
 type ExpressionStatement struct {
     Value       Expression
+    Literals
 }
 
 func (es *ExpressionStatement) getStatement() {}

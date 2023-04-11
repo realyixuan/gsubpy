@@ -1,6 +1,7 @@
 package lexer
 
 import (
+    "fmt"
     "gsubpy/token"
 )
 
@@ -15,6 +16,8 @@ the lexer have following aiblities:
 type Lexer struct {
     input       string
     idx         int
+    LineNum     int
+    Line        string
     ch          byte
     Indents     string
     indentReady bool
@@ -23,6 +26,7 @@ type Lexer struct {
 
 func New(input string) *Lexer {
     l := &Lexer{input: input, indentReady: true}
+    l.readLine()
     l.readChar()
     l.ReadNextToken()
     return l
@@ -112,6 +116,7 @@ func (l *Lexer) ReadNextToken() {
         l.readChar()
     case '\n':
         l.CurToken = token.Token{Type: token.LINEFEED, Literals: string(l.ch)}
+        l.readLine()
         l.readChar()
         l.indentReady = true
     case '\x03':
@@ -128,7 +133,7 @@ func (l *Lexer) ReadNextToken() {
                 l.CurToken = token.Token{Type: token.IDENTIFIER, Literals: identifier}
             }
         } else {
-            panic("syntaxException: syntax error")
+            panic(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax", l.LineNum, l.Line))
 
             l.CurToken = token.Token{Type: token.ILLEGAL}
             l.readChar()
@@ -166,7 +171,7 @@ func (l *Lexer) readString() string {
     }
 
     if l.ch != stringMark {
-        panic("string have wrong format")
+        panic(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax, string have wrong format", l.LineNum, l.Line))
     }
 
     return result
@@ -199,12 +204,21 @@ func (l *Lexer) readChar() {
     l.idx += 1
 }
 
+func (l *Lexer)readLine() {
+    l.Line = ""
+    for idx := l.idx; idx < len(l.input) && l.input[idx] != '\n'; idx++ {
+        l.Line += string(l.input[idx])
+    }
+    l.LineNum += 1
+}
+
 func (l *Lexer) skipoverComment() {
     if l.ch == '#' {
         for l.ch != '\n' && l.ch != '\x03' {
             l.readChar()
         }
-        l.readChar()
+        // TODO: remove it 
+        // l.readChar()
     }
 }
 
