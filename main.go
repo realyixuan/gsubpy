@@ -13,11 +13,16 @@ import (
 func main() {
     defer func() {
         if r := recover(); r != nil {
-            for _, f := range evaluator.Py_traceback.Frames {
-                fmt.Println("line", f.LineNum)
-                fmt.Println("\t", f.Line)
+            switch o := r.(type) {
+            case *evaluator.ExceptionInst:
+                for _, f := range evaluator.Py_traceback.Frames {
+                    fmt.Println("line", f.LineNum)
+                    fmt.Println("\t", f.Line)
+                }
+                fmt.Println(o.Py__str__())
+            default:
+                panic(r)
             }
-            fmt.Println(r)
         }
     }()
 

@@ -56,7 +56,7 @@ func Eval(expression ast.Expression, env *Environment) Object {
         rightObj := Eval(node.Right, env)
 
         if leftObj.Py__class__() != rightObj.Py__class__() {
-            panic(&ExceptionInst{Msg: "TypeError: two different types"})
+            panic(NewException("TypeError: two different types"))
         }
 
         switch leftObj.(type) {
@@ -79,7 +79,7 @@ func Eval(expression ast.Expression, env *Environment) Object {
         rightObj := Eval(node.Right, env)
 
         if rightObj.(*IntegerInst).Value == 0 {
-            panic(&ExceptionInst{Msg: "ZeroDivisionError: division by zero"})
+            panic(NewException("ZeroDivisionError: division by zero"))
         }
 
         return NewInteger(leftObj.(*IntegerInst).Value / rightObj.(*IntegerInst).Value)

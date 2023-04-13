@@ -715,25 +715,53 @@ func (l *Len) Py__gt__(other Object) *BoolInst {return nil}
 
 var Py_len = &Len{}
 
-type Exception interface {
-    Object
-    ErrorMsg() string
+type PyException struct {}
+func (e *PyException) Py__class__() Class {return Py_type}
+func (e *PyException) Py__repr__() *PyStrInst {return NewStrInst("<class 'Exception'>")}
+func (e *PyException) Py__str__() *PyStrInst {return e.Py__repr__()}
+func (e *PyException) Py__getattribute__(attr *PyStrInst) Object {return nil}
+func (e *PyException) Py__setattr__(attr *PyStrInst, valObj Object) {}
+func (e *PyException) Py__new__(cls Class, objs ...Object) Object {
+    return &ExceptionInst{Py_class: cls}
 }
+func (e *PyException) Py__init__(self Object, objs ...Object) {
+    if len(objs) != 0 {
+        switch o := self.(type) {
+        case *ExceptionInst:
+            o.Payload = objs[0]
+        default:
+            panic("Exception: not yet support it")
+        }
+    }
+}
+func (e *PyException) Py__name__() *PyStrInst {return NewStrInst("Exception")}
+func (e *PyException) Py__base__() Class {return Py_object}
+func (e *PyException) Py__eq__(other Object) *BoolInst {return nil}
+func (e *PyException) Py__lt__(other Object) *BoolInst {return nil}
+func (e *PyException) Py__gt__(other Object) *BoolInst {return nil}
+
+var Py_Exception = &PyException{}
 
 type ExceptionInst struct {
-    Msg string
+    Payload     Object
+    Py_class    Class
 }
 
-func (ei *ExceptionInst) Py__class__() Class {return nil}
-func (ei *ExceptionInst) ErrorMsg() string {return ei.Msg}
-func (ei *ExceptionInst) String() string {return "Exception"}
-func (ei *ExceptionInst) Py__repr__() *PyStrInst {return NewStrInst("Exception")}
-func (ei *ExceptionInst) Py__str__() *PyStrInst {return ei.Py__repr__()}
+func (ei *ExceptionInst) Py__class__() Class {return ei.Py_class}
+func (ei *ExceptionInst) Py__repr__() *PyStrInst {return ei.Payload.Py__repr__()}
+func (ei *ExceptionInst) Py__str__() *PyStrInst {return ei.Payload.Py__str__()}
 func (ei *ExceptionInst) Py__getattribute__(*PyStrInst) Object {return nil}
 func (ei *ExceptionInst) Py__setattr__(*PyStrInst, Object) {}
 func (ei *ExceptionInst) Py__eq__(other Object) *BoolInst {return nil}
 func (ei *ExceptionInst) Py__lt__(other Object) *BoolInst {return nil}
 func (ei *ExceptionInst) Py__gt__(other Object) *BoolInst {return nil}
+
+func NewException(msg string) *ExceptionInst {
+    return &ExceptionInst{
+        Payload: NewStrInst(msg),
+        Py_class: Py_Exception,
+    }
+}
 
 type Super struct {}
 func (s *Super) Py__class__() Class {return Py_type}

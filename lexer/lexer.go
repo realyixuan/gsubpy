@@ -3,6 +3,7 @@ package lexer
 import (
     "fmt"
     "gsubpy/token"
+    "gsubpy/evaluator"
 )
 
 /*
@@ -133,7 +134,7 @@ func (l *Lexer) ReadNextToken() {
                 l.CurToken = token.Token{Type: token.IDENTIFIER, Literals: identifier}
             }
         } else {
-            panic(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax", l.LineNum, l.Line))
+            panic(evaluator.NewException(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax", l.LineNum, l.Line)))
 
             l.CurToken = token.Token{Type: token.ILLEGAL}
             l.readChar()
@@ -171,7 +172,7 @@ func (l *Lexer) readString() string {
     }
 
     if l.ch != stringMark {
-        panic(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax, string have wrong format", l.LineNum, l.Line))
+        panic(evaluator.NewException(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax, string have wrong format", l.LineNum, l.Line)))
     }
 
     return result
