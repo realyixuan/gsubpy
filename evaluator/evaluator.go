@@ -9,7 +9,7 @@ import (
 // simplest way for now
 var context Object
 
-func Exec(stmts []ast.Statement, env *Environment) *NoneInst {
+func Exec(stmts []ast.Statement, env *Environment) (Object, bool) {
     var s ast.Statement
     defer func() {
         if r := recover(); r != nil {
@@ -32,19 +32,26 @@ func Exec(stmts []ast.Statement, env *Environment) *NoneInst {
         case *ast.AssignStatement:
             execAssignStatement(node, env)
         case *ast.IfStatement:
-            execIfStatement(node, env)
+            rv, isReturn := execIfStatement(node, env)
+            if isReturn {
+                return rv, isReturn
+            }
         case *ast.WhileStatement:
-            execWhileStatement(node, env)
+            rv, isReturn := execWhileStatement(node, env)
+            if isReturn {
+                return rv, isReturn
+            }
         case *ast.DefStatement:
             execDefStatement(node, env)
         case *ast.ClassStatement:
             execClassStatement(node, env)
         case *ast.ExpressionStatement:
             Eval(node, env)
+        case *ast.ReturnStatement:
+            return Eval(node.Value, env), true
         }
     }
-
-    return Py_None
+    return Py_None, false
 }
 
 func Eval(expression ast.Expression, env *Environment) Object {
@@ -161,21 +168,33 @@ func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
     }
 }
 
-func execIfStatement(stmt ast.Statement, env *Environment) {
+func execIfStatement(stmt ast.Statement, env *Environment) (Object, bool) {
     if stmt != nil {
         ifstmt := stmt.(*ast.IfStatement)
         if ifstmt.Condition == nil || Eval(ifstmt.Condition, env) == Py_True {
-            Exec(ifstmt.Body, env)
+            rv, isReturn := Exec(ifstmt.Body, env)
+            if isReturn {
+                return rv, true
+            }
         } else {
-            execIfStatement(ifstmt.Else, env)
+            rv, isReturn := execIfStatement(ifstmt.Else, env)
+            if isReturn {
+                return rv, true
+            }
         }
     }
+
+    return nil, false
 }
 
-func execWhileStatement(stmt *ast.WhileStatement, env *Environment) {
+func execWhileStatement(stmt *ast.WhileStatement, env *Environment) (Object, bool) {
     for Eval(stmt.Condition, env) == Py_True {
-        Exec(stmt.Body, env)
+        rv, isReturn := Exec(stmt.Body, env)
+        if isReturn {
+            return rv, isReturn
+        }
     }
+    return nil, false
 }
 
 func execDefStatement(stmt *ast.DefStatement, env *Environment) {

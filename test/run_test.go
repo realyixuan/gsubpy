@@ -389,12 +389,17 @@ func TestDotSetExpression(t *testing.T) {
 
 func TestReturnStatement(t *testing.T) {
     // should have no error
-    input := ""+
-    "def foo(a, b):\n" +
-    "    return a + b\n"
+    input := `
+def foo():
+    if 1 > 0:
+        return 1
+    return 0
+
+res = foo()
+`
     env := testRunProgram(input)
-    if obj := env.Get("foo"); obj == nil {
-        t.Errorf("func 'foo' does not exists")
+    if obj := env.Get("res").(*evaluator.IntegerInst); obj.Value != 1 {
+        t.Errorf("expect 1, got %v", obj.Value)
     }
 }
 

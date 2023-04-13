@@ -510,16 +510,8 @@ func (fi *FunctionInst) Py__call__(objs ...Object) Object {
     for i := 0; i < len(fi.Params); i++ {
         env.Set(fi.Params[i], objs[i])
     }
-
-    for _, stmt := range fi.Body {
-        switch node := stmt.(type) {
-        case *ast.ReturnStatement:
-            return Eval(node.Value, env)
-        default:
-            Exec([]ast.Statement{stmt}, env)
-        }
-    }
-    return Py_None
+    rv, _ := Exec(fi.Body, env)
+    return rv
 }
 func (fi *FunctionInst) Py__name__() *PyStrInst {return fi.Name}
 func (fi *FunctionInst) Py__repr__() *PyStrInst {
