@@ -138,7 +138,9 @@ func (p *Parser)parsingExpressionStatement() ast.Statement {
 func (p *Parser)parsingIfStatement() ast.Statement {
     curIndents := p.l.Indents
 
-    ifStatement := &ast.IfStatement{}
+    ifStatement := &ast.IfStatement{
+        Literals: ast.Literals{LineNum: p.l.LineNum, Line: p.l.Line},
+    }
     if p.l.CurToken.Type == token.ELSE {
         ifStatement.Condition = nil
         p.l.ReadNextToken()
@@ -177,7 +179,9 @@ func (p *Parser)parsingElifOrElseStatement() ast.Statement {
 func (p *Parser)parsingWhileStatement() ast.Statement {
     curIndents := p.l.Indents
 
-    stmt := &ast.WhileStatement{}
+    stmt := &ast.WhileStatement{
+        Literals: ast.Literals{LineNum: p.l.LineNum, Line: p.l.Line},
+    }
     p.l.ReadNextToken()
     stmt.Condition = p.parsingExpression(0)
     p.l.ReadNextToken()
@@ -202,6 +206,7 @@ func (p *Parser)parsingDefStatement() ast.Statement {
     p.l.ReadNextToken()
     stmt := &ast.DefStatement{
         Name: p.l.CurToken,
+        Literals: ast.Literals{LineNum: p.l.LineNum, Line: p.l.Line},
     }
 
     p.l.ReadNextToken()
@@ -237,6 +242,7 @@ func (p *Parser)parsingClassStatement() ast.Statement {
     p.l.ReadNextToken()
     stmt := &ast.ClassStatement{
         Name: p.l.CurToken,
+        Literals: ast.Literals{LineNum: p.l.LineNum, Line: p.l.Line},
     }
 
     // inheritance
@@ -278,6 +284,7 @@ func (p *Parser)parsingReturnStatement() ast.Statement {
     p.l.ReadNextToken()
     stmt := &ast.ReturnStatement{
         Value: p.parsingExpression(LOWEST),
+        Literals: ast.Literals{LineNum: p.l.LineNum, Line: p.l.Line},
     }
     p.l.ReadNextToken()
     return stmt

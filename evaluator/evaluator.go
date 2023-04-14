@@ -14,13 +14,7 @@ func Exec(stmts []ast.Statement, env *Environment) (Object, bool) {
     defer func() {
         if r := recover(); r != nil {
             // TODO: add method of getting literals
-            var f Frame
-            switch o := s.(type) {
-            case *ast.AssignStatement:
-                f = Frame{Literals: o.Literals}
-            case *ast.ExpressionStatement:
-                f = Frame{Literals: o.Literals}
-            }
+            f := Frame{Literals: s.GetLiterals()}
             Py_traceback.append(f)
             panic(r)
         }

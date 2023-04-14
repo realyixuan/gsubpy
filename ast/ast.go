@@ -6,6 +6,7 @@ import (
 
 type Statement interface {
     getStatement()
+    GetLiterals() Literals
 }
 
 type Expression interface {
@@ -28,6 +29,7 @@ type AssignStatement struct {
 }
 
 func (as *AssignStatement) getStatement() {}
+func (as *AssignStatement) GetLiterals() Literals {return as.Literals}
 
 type ExpressionStatement struct {
     Value       Expression
@@ -36,6 +38,7 @@ type ExpressionStatement struct {
 
 func (es *ExpressionStatement) getStatement() {}
 func (es *ExpressionStatement) getExpression() {}
+func (es *ExpressionStatement) GetLiterals() Literals {return es.Literals}
 
 type IdentifierExpression struct {
     Identifier  token.Token
@@ -117,16 +120,20 @@ type IfStatement struct {
     Condition   Expression
     Body        []Statement
     Else        Statement
+    Literals
 }
 
 func (ie *IfStatement) getStatement() {}
+func (ie *IfStatement) GetLiterals() Literals {return ie.Literals}
 
 type WhileStatement struct {
     Condition   Expression
     Body        []Statement
+    Literals
 }
 
 func (ws *WhileStatement) getStatement() {}
+func (ws *WhileStatement) GetLiterals() Literals {return ws.Literals}
 
 type ComparisonExpression struct {
     Operator    token.Token
@@ -140,15 +147,19 @@ type DefStatement struct {
     Name    token.Token
     Params  []token.Token
     Body    []Statement
+    Literals
 }
 
 func (fs *DefStatement) getStatement() {}
+func (fs *DefStatement) GetLiterals() Literals {return fs.Literals}
 
 type ReturnStatement struct {
     Value   Expression
+    Literals
 }
 
 func (rs *ReturnStatement) getStatement() {}
+func (rs *ReturnStatement) GetLiterals() Literals {return rs.Literals}
 
 type CallExpression struct {
     Name        Expression
@@ -161,9 +172,11 @@ type ClassStatement struct {
     Name    token.Token
     Body    []Statement
     Parent  token.Token
+    Literals
 }
 
 func (cs *ClassStatement) getStatement() {}
+func (cs *ClassStatement) GetLiterals() Literals {return cs.Literals}
 
 type AttributeExpression struct {
     Expr    Expression
