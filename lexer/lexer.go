@@ -134,7 +134,7 @@ func (l *Lexer) ReadNextToken() {
                 l.CurToken = token.Token{Type: token.IDENTIFIER, Literals: identifier}
             }
         } else {
-            panic(evaluator.NewException(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax", l.LineNum, l.Line)))
+            panic(evaluator.Error(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax", l.LineNum, l.Line)))
 
             l.CurToken = token.Token{Type: token.ILLEGAL}
             l.readChar()
@@ -172,7 +172,7 @@ func (l *Lexer) readString() string {
     }
 
     if l.ch != stringMark {
-        panic(evaluator.NewException(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax, string have wrong format", l.LineNum, l.Line)))
+        panic(evaluator.Error(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax, string have wrong format", l.LineNum, l.Line)))
     }
 
     return result
@@ -218,8 +218,6 @@ func (l *Lexer) skipoverComment() {
         for l.ch != '\n' && l.ch != '\x03' {
             l.readChar()
         }
-        // TODO: remove it 
-        // l.readChar()
     }
 }
 

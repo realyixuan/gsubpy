@@ -1,59 +1,60 @@
 package evaluator
 
-var (
-    Py_True = &BoolInst{Value: 1}
-    Py_False = &BoolInst{Value: 0}
-)
-
 var __builtins__ = map[string] Object{
     "object": Py_object,
     "True": Py_True,
     "False": Py_False,
     "None": Py_None,
     "print": Py_print,
-    "len": Py_len,
-    "super": Py_super,
     "type": Py_type,
     "int": Py_int,
     "str": Py_str,
+    "len": Py_len,
+    "bool": Py_bool,
+    "hash": Py_hash,
     "Exception": Py_Exception,
 }
 
 type Environment struct {
-    store     map[PyStrInst]Object
+    store     *DictInst
     parent    *Environment
 }
 
 func NewEnvironment() *Environment {
     builtinsEnv := &Environment{
-        store: map[PyStrInst]Object{},
+        store: newDictInst(),
         parent: nil,
     }
 
     for k, v := range __builtins__ {
-        builtinsEnv.Set(k, v)
+        builtinsEnv.Set(newStringInst(k), v)
     }
 
     return &Environment{
-        store: map[PyStrInst]Object{},
+        store: newDictInst(),
         parent: builtinsEnv,
     }
 }
 
-func (self *Environment) Set(key string, value Object) {
-    self.store[*NewStrInst(key)] = value
+func (e *Environment) SetFromString(key string, value Object) {
+    e.Set(newStringInst(key), value)
 }
 
-func (self *Environment) Get(key string) Object {
-    // omit the condition of key not being existing
+func (self *Environment) Set(key Object, value Object) {
+    self.store.Set(key, value)
+}
 
-    ko := *NewStrInst(key)
+func (e *Environment) GetFromString(key string) Object {
+    return e.Get(newStringInst(key))
+}
 
+func (self *Environment) Get(key Object) Object {
     if self.parent == nil {
-        return self.store[ko]
+        val := self.store.Get(key)
+        return val
     }
 
-    if obj, ok := self.store[ko]; ok {
+    if obj := self.store.Get(key); obj != nil {
         return obj
     } else {
         return self.parent.Get(key)
@@ -62,13 +63,12 @@ func (self *Environment) Get(key string) Object {
 
 func (self *Environment) DeriveEnv() *Environment {
     return &Environment{
-        store: map[PyStrInst] Object{},
+        store: newDictInst(),
         parent: self,
     }
 }
 
-func (self *Environment) Store() map[PyStrInst]Object {
-
+func (self *Environment) Store() *DictInst {
     return self.store
 }
 

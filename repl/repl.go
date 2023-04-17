@@ -63,7 +63,7 @@ func REPLRunning() {
                     switch node := obj.(type) {
                     case *evaluator.IntegerInst:
                         fmt.Println(node.Value)
-                    case *evaluator.PyStrInst:
+                    case *evaluator.StringInst:
                         fmt.Println(node.Value)
                     }
                     fmt.Println(obj.(*evaluator.IntegerInst).Value)

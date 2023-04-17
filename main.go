@@ -19,7 +19,7 @@ func main() {
                     fmt.Println("line", f.LineNum)
                     fmt.Println("\t", f.Line)
                 }
-                fmt.Println(o.Py__str__())
+                fmt.Println(o.Payload)
             default:
                 panic(r)
             }
