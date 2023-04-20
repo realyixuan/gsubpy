@@ -238,9 +238,10 @@ func init()  {
                 case Py_type:
                     return objs[1].Type()
                 default:
-                    self := cls.Attr(__new__).(Function).Call(objs...)
+                    self := Call(attrItself(cls, __new__), objs...)
+
                     args := append([]Object{self}, objs[1:]...)
-                    cls.Attr(__init__).(Function).Call(args...)
+                    Call(attrItself(cls, __init__), args...)
                     return self
                 }
             },
@@ -337,6 +338,37 @@ func init() {
     )
 }
 
+var PyBuiltinFunction__call__ = newBuiltinFunc(__call__,
+    func(objs ...Object) Object {
+        self := objs[0]
+        return self.(Function).Call(objs[1:]...)
+    },
+)
+
+type PyBuiltinFunction struct {
+    *objectData
+}
+
+func newPyBuiltinFunction() *PyBuiltinFunction {
+    o := &PyBuiltinFunction{
+        objectData: &objectData{
+            d: newDictInst(),
+        },
+    }
+    return o
+}
+
+func (bf *PyBuiltinFunction) Type() Class { return Py_type }
+func (bf *PyBuiltinFunction) Base() Class { return Py_object }
+func (bf *PyBuiltinFunction) Id() int64 { return int64(uintptr(unsafe.Pointer(bf))) }
+func (bf *PyBuiltinFunction) Attr(name *StringInst) Object { return Getattr(bf, name) }
+
+var Py_builtin_function = newPyBuiltinFunction()
+func init() {
+    Py_builtin_function.attrs().Set(__name__, newStringInst("builtin_function"))
+    Py_builtin_function.attrs().Set(__call__, PyBuiltinFunction__call__)
+}
+
 type FunctionInst struct {
     *objectData
     Name    *StringInst
@@ -400,7 +432,7 @@ func newBuiltinFunc(name *StringInst, f builtinFn) *BuiltinFunctionInst {
 }
 
 func (f *BuiltinFunctionInst) Call(objs ...Object) Object { return f.gfunc(objs...) }
-func (f *BuiltinFunctionInst) Type() Class { return Py_function }
+func (f *BuiltinFunctionInst) Type() Class { return Py_builtin_function }
 func (f *BuiltinFunctionInst) Id() int64 { return int64(uintptr(unsafe.Pointer(f))) }
 func (f *BuiltinFunctionInst) Attr(name *StringInst) Object { return Getattr(f, name) }
 
@@ -420,7 +452,7 @@ var Py_len = newBuiltinFunc(
     newStringInst("len"),
     func(objs ...Object) Object {
         lenFn := attrItself(objs[0].Type(), __len__)
-        return lenFn.(Function).Call(objs[0])
+        return Call(lenFn, objs[0])
     },
 )
 
@@ -428,7 +460,7 @@ var Py_hash = newBuiltinFunc(
     newStringInst("hash"),
     func(objs ...Object) Object {
         hashFn := attrItself(objs[0].Type(), __hash__).(Function)
-        return hashFn.Call(objs[0])
+        return Call(hashFn, objs[0])
     },
 )
 
@@ -453,7 +485,7 @@ func (m *MethodInst) Id() int64 { return int64(uintptr(unsafe.Pointer(m))) }
 func (m *MethodInst) Attr(name *StringInst) Object { return Getattr(m, name) }
 func (m *MethodInst) Call(objs ...Object) Object {
     objs = append([]Object{m.inst}, objs...)
-    return m.f.Call(objs...)
+    return Call(m.f, objs...)
 }
 
 type PyNoneType struct {
@@ -651,20 +683,14 @@ var Pystr__hash__ = newBuiltinFunc(__hash__,
 
 var Pystr__eq__ = newBuiltinFunc(__eq__,
     func(objs ...Object) Object {
-        switch objs[1].(type) {
-        case *StringInst:
-        default:
-            return Py_False
+        if s2, ok := objs[1].(*StringInst); ok {
+            s1 := objs[0].(*StringInst)
+            if s1.Value == s2.Value {
+                return Py_True
+            }
         }
 
-        s1 := objs[0].(*StringInst)
-        s2 := objs[1].(*StringInst)
-
-        if s1.Value == s2.Value {
-            return Py_True
-        } else {
-            return Py_False
-        }
+        return Py_False
     },
 )
 
@@ -804,9 +830,9 @@ func init() {
     Py_bool.attrs().Set(__new__, newBuiltinFunc(__new__,
             func(objs ...Object) Object {
                 if boolFn := attrItself(objs[1].Type(), __bool__); boolFn != nil {
-                    return boolFn.(Function).Call(objs[1])
+                    return Call(boolFn, objs[1])
                 } else if lenFn := attrItself(objs[1].Type(), __len__); lenFn != nil {
-                    l := lenFn.(Function).Call(objs[1]).(*IntegerInst)
+                    l := Call(lenFn, objs[1]).(*IntegerInst)
                     if l.Value != 0 {
                         return Py_True
                     } else {
@@ -883,12 +909,12 @@ func init() {
                 s += "["
                 if len(li.items) > 0 {
                     strFn := attrItself(li.items[0].Type(), __str__).(Function)
-                    s += fmt.Sprintf("%v", strFn.Call(li.items[0]))
+                    s += fmt.Sprintf("%v", Call(strFn, li.items[0]))
                 }
                 for _, item := range li.items[1:] {
                     s += ", "
                     strFn := attrItself(item.Type(), __str__).(Function)
-                    s += fmt.Sprintf("%v", strFn.Call(item))
+                    s += fmt.Sprintf("%v", Call(strFn, item))
                 }
                 s += "]"
                 return newStringInst(s)
@@ -974,23 +1000,20 @@ func (d *DictInst) Get(key Object) Object {
     case *StringInst:
         hashVal = Pystr__hash__.Call(key)
     default:
-        hashVal = key.Attr(__hash__).(Function).Call()
+        hashVal = typeCall(__hash__, key)
     }
     if pairs, ok := d.store[hashVal.(*IntegerInst).Value]; ok {
         for _, pair := range pairs {
-            var target Object
+            var isMatch Object
             switch pair.Key.(type) {
             case *StringInst:
-                target = Pystr__eq__.Call(pair.Key, key)
+                isMatch = Pystr__eq__.Call(pair.Key, key)
             default:
-                target = pair.Key.Attr(__eq__).(Function).Call(key)
+                isMatch = typeCall(__eq__, pair.Key, key)
             }
 
-            switch target.Type().(type) {
-            case *Pybool:
-                if target.(*IntegerInst).Value == 1 {
-                    return pair.Value
-                }
+            if isMatch == Py_True {
+                return pair.Value
             }
 
         }
@@ -1005,26 +1028,23 @@ func (d *DictInst) Set(key Object, val Object) {
     case *StringInst:
         hashVal = Pystr__hash__.Call(key)
     default:
-        hashVal = key.Attr(__hash__).(Function).Call()
+        hashVal = typeCall(__hash__, key)
     }
 
     var flag bool = false
 
     for _, pair := range d.store[hashVal.(*IntegerInst).Value] {
-        var target Object
+        var isMatch Object
         switch pair.Key.(type) {
         case *StringInst:
-            target = Pystr__eq__.Call(pair.Key, key)
+            isMatch = Pystr__eq__.Call(pair.Key, key)
         default:
-            target = pair.Key.Attr(__eq__).(Function).Call(key)
+            isMatch = typeCall(__eq__, pair.Key, key)
         }
 
-        switch target.Type().(type) {
-        case *Pybool:
-            if target.(*IntegerInst).Value == 1 {
-                pair.Value = val
-                flag = true
-            }
+        if isMatch == Py_True {
+            pair.Value = val
+            flag = true
         }
     }
 
@@ -1075,7 +1095,7 @@ func (e *ExceptionInst) Attr(name *StringInst) Object { return Getattr(e, name) 
 
 func Getattr(obj Object, name *StringInst) Object {
     __getattribute__ := attrFromAll(obj.Type(), __getattribute__).(Function)
-    return __getattribute__.Call(obj, name)
+    return Call(__getattribute__, obj, name)
 }
 
 func attrItself(obj Object, name *StringInst) Object {
@@ -1111,5 +1131,31 @@ func attrFromAll(obj Object, name *StringInst) Object {
     }
 
     return nil
+}
+
+func typeCall(attrName *StringInst, obj Object, args ...Object) Object {
+    attr := attrItself(obj.Type(), attrName)
+    if attr == nil {
+        panic(Error(fmt.Sprintf("%v object is not callable", StringOf(obj.Type()))))
+    }
+
+    fn, ok := attr.(Function) 
+    if ok == false {
+        panic(Error(fmt.Sprintf("%v object is not callable", StringOf(attr.Type()))))
+    }
+    
+    args = append([]Object{obj}, args...)
+    return Call(fn, args...)
+}
+
+func Call(obj Object, args ...Object) Object {
+    __call__Fn := attrItself(obj.Type(), __call__)
+    args = append([]Object{obj}, args...)
+
+    if __call__Fn != PyBuiltinFunction__call__ {
+        return Call(__call__Fn, args...)
+    } else {
+        return __call__Fn.(Function).Call(args...)
+    }
 }
 

@@ -85,11 +85,11 @@ func Eval(expression ast.Expression, env *Environment) Object {
         rightObj := Eval(node.Right, env)
         switch node.Operator.Type {
         case token.GT:
-            return attrItself(leftObj.Type(), __gt__).(Function).Call(leftObj, rightObj)
+            return typeCall(__gt__, leftObj, rightObj)
         case token.LT:
-            return attrItself(leftObj.Type(), __lt__).(Function).Call(leftObj, rightObj)
+            return typeCall(__lt__, leftObj, rightObj)
         case token.EQ:
-            return attrItself(leftObj.Type(), __eq__).(Function).Call(leftObj, rightObj)
+            return typeCall(__eq__, leftObj, rightObj)
         }
         return Py_True
     case *ast.NotExpression:
@@ -152,11 +152,7 @@ func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
         instObj := Eval(attr.Expr, env)
         valObj := Eval(stmt.Value, env)
 
-        attrItself(instObj.Type(), __setattr__).(Function).Call(
-            instObj,
-            newStringInst(attr.Attr.Literals),
-            valObj,
-        )
+        typeCall(__setattr__, instObj, newStringInst(attr.Attr.Literals), valObj)
     case *ast.IdentifierExpression:
         env.SetFromString(attr.Identifier.Literals, Eval(stmt.Value, env))
     }
@@ -248,14 +244,8 @@ func toPy_True(obj Object) bool {
 }
 
 func StringOf(obj Object) Object {
-    __str__Fn := attrItself(obj.Type(), __str__).(Function)
+    __str__Fn := attrItself(obj.Type(), __str__)
     return Call(__str__Fn, obj)
-}
-
-func Call(obj Object, args ...Object) Object {
-    __call__Fn := attrItself(obj.Type(), __call__).(Function)
-    args = append([]Object{obj}, args...)
-    return __call__Fn.Call(args...)
 }
 
 type Frame struct {
