@@ -21,7 +21,6 @@ func REPLRunning() {
         line, err := reader.ReadString('\n')
 
         if err != nil {
-            // if EOF
             print("\n")
             break
         }
@@ -50,23 +49,15 @@ func REPLRunning() {
         stmts := p.Parsing()
 
         if len(stmts) == 0 {
-            //
         } else if len(stmts) > 1{
             panic("invalid syntax")
         } else {
             stmt := stmts[0]
-            // ? How to compare interfaces
             switch node := stmt.(type) {
             case *ast.ExpressionStatement:
                 obj := evaluator.Eval(node, env)
-                if obj != nil {
-                    switch node := obj.(type) {
-                    case *evaluator.IntegerInst:
-                        fmt.Println(node.Value)
-                    case *evaluator.StringInst:
-                        fmt.Println(node.Value)
-                    }
-                    fmt.Println(obj.(*evaluator.IntegerInst).Value)
+                if obj != evaluator.Py_None {
+                    fmt.Println(evaluator.StringOf(obj))
                 }
             case ast.Statement:
                 evaluator.Exec(stmts, env)
