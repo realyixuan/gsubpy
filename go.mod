@@ -1,3 +1,3 @@
-module gsubpy
+module github.com/realyixuan/gsubpy
 
-go 1.19
+go 1.20

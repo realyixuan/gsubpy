@@ -29,7 +29,7 @@ import (
     "crypto/sha1"
     "encoding/binary"
     
-    "gsubpy/ast"
+    "github.com/realyixuan/gsubpy/ast"
 )
 
 var __name__ = newStringInst("__name__")

@@ -2,9 +2,10 @@ package test
 
 import (
     "testing"
-    "gsubpy/lexer"
-    "gsubpy/parser"
-    "gsubpy/evaluator"
+
+    "github.com/realyixuan/gsubpy/lexer"
+    "github.com/realyixuan/gsubpy/parser"
+    "github.com/realyixuan/gsubpy/evaluator"
 )
 
 func TestOneLineAssignStatement(t *testing.T) {

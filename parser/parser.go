@@ -2,10 +2,11 @@ package parser
 
 import (
     "fmt"
-    "gsubpy/ast"
-    "gsubpy/lexer"
-    "gsubpy/token"
-    "gsubpy/evaluator"
+
+    "github.com/realyixuan/gsubpy/ast"
+    "github.com/realyixuan/gsubpy/lexer"
+    "github.com/realyixuan/gsubpy/token"
+    "github.com/realyixuan/gsubpy/evaluator"
 )
 
 type (

@@ -5,11 +5,11 @@ import (
     "bufio"
     "fmt"
 
-    "gsubpy/lexer"
-    "gsubpy/parser"
-    "gsubpy/evaluator"
-    "gsubpy/ast"
-    "gsubpy/token"
+    "github.com/realyixuan/gsubpy/lexer"
+    "github.com/realyixuan/gsubpy/parser"
+    "github.com/realyixuan/gsubpy/evaluator"
+    "github.com/realyixuan/gsubpy/ast"
+    "github.com/realyixuan/gsubpy/token"
 )
 
 func REPLRunning() {

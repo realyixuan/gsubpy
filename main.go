@@ -4,10 +4,10 @@ import (
     "os"
     "fmt"
 
-    "gsubpy/repl"
-    "gsubpy/lexer"
-    "gsubpy/parser"
-    "gsubpy/evaluator"
+    "github.com/realyixuan/gsubpy/repl"
+    "github.com/realyixuan/gsubpy/lexer"
+    "github.com/realyixuan/gsubpy/parser"
+    "github.com/realyixuan/gsubpy/evaluator"
 )
 
 func main() {

@@ -2,8 +2,9 @@ package evaluator
 
 import (
     "strconv"
-    "gsubpy/ast"
-    "gsubpy/token"
+
+    "github.com/realyixuan/gsubpy/ast"
+    "github.com/realyixuan/gsubpy/token"
 )
 
 func Exec(stmts []ast.Statement, env *Environment) (Object, bool) {

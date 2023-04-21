@@ -2,8 +2,9 @@ package lexer
 
 import (
     "fmt"
-    "gsubpy/token"
-    "gsubpy/evaluator"
+
+    "github.com/realyixuan/gsubpy/token"
+    "github.com/realyixuan/gsubpy/evaluator"
 )
 
 /*

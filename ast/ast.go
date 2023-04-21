@@ -1,7 +1,7 @@
 package ast
 
 import (
-    "gsubpy/token"
+    "github.com/realyixuan/gsubpy/token"
 )
 
 type Statement interface {

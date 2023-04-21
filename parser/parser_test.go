@@ -3,7 +3,7 @@ package parser
 import (
     "testing"
 
-    "gsubpy/lexer"
+    "github.com/realyixuan/gsubpy/lexer"
 )
 
 func TestSpaceIndentParsing(t *testing.T) {

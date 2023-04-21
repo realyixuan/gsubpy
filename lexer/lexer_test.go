@@ -1,7 +1,7 @@
 package lexer
 
 import (
-    "gsubpy/token"
+    "github.com/realyixuan/gsubpy/token"
 )
 
 import (
