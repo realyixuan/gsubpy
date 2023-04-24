@@ -47,6 +47,11 @@ var __call__ = newStringInst("__call__")
 var __len__ = newStringInst("__len__")
 var __bool__ = newStringInst("__bool__")
 
+var __getitem__ = newStringInst("__getitem__")
+
+var __iter__ = newStringInst("__iter__")
+var __next__ = newStringInst("__next__")
+
 type Object interface {
     Type()          Class
     Id()            int64
@@ -464,6 +469,22 @@ var Py_hash = newBuiltinFunc(
     },
 )
 
+var Py_iter = newBuiltinFunc(
+    newStringInst("iter"),
+    func(objs ...Object) Object {
+        iterFn := attrItself(objs[0].Type(), __iter__)
+        return Call(iterFn, objs[0])
+    },
+)
+
+var Py_next = newBuiltinFunc(
+    newStringInst("next"),
+    func(objs ...Object) Object {
+        nextFn := attrItself(objs[0].Type(), __next__)
+        return Call(nextFn, objs[0])
+    },
+)
+
 type MethodInst struct {
     *objectData
     inst       Object
@@ -873,6 +894,71 @@ var Py_False = &IntegerInst{
     Value: 0,
 }
 
+
+type Pylist_iterator struct {
+    *objectData
+}
+
+func newPylist_iterator() *Pylist_iterator {
+    o := &Pylist_iterator{
+        objectData: &objectData{
+            d: newDictInst(),
+        },
+    }
+    o.init()
+    return o
+}
+
+func (pli *Pylist_iterator) init() {
+    pli.attrs().Set(__name__, newStringInst("list_iterator"))
+
+    pli.attrs().Set(__iter__, newBuiltinFunc(__iter__,
+            func(objs ...Object) Object {
+                return objs[0]
+            },
+        ),
+    )
+
+    pli.attrs().Set(__next__, newBuiltinFunc(__next__,
+            func(objs ...Object) Object {
+                self := objs[0].(*ListIteratorInst)
+                if self.idx >= Call(Py_len, self.listInst).(*IntegerInst).Value {
+                    // TODO: replace it with StopIteration Exception
+                    return nil
+                }
+                self.idx += 1
+                return typeCall(__getitem__, self.listInst, newIntegerInst(self.idx-1))
+            },
+        ),
+    )
+
+}
+
+func (pli *Pylist_iterator) Type() Class { return Py_type }
+func (pli *Pylist_iterator) Base() Class { return Py_object }
+func (pli *Pylist_iterator) Id() int64 { return int64(uintptr(unsafe.Pointer(pli))) }
+func (pli *Pylist_iterator) Attr(name *StringInst) Object { return Getattr(pli, name) }
+
+var Py_list_iterator = newPylist_iterator()
+
+type ListIteratorInst struct {
+    *objectData
+    idx     int64
+    listInst    *ListInst
+}
+
+func newListIteratorInst(t *ListInst) *ListIteratorInst {
+    return &ListIteratorInst{
+        objectData: &objectData{d: newDictInst()},
+        idx: 0,
+        listInst: t,
+    }
+}
+
+func (lii *ListIteratorInst) Type() Class { return Py_list_iterator }
+func (lii *ListIteratorInst) Id() int64 { return int64(uintptr(unsafe.Pointer(lii))) }
+func (lii *ListIteratorInst) Attr(name *StringInst) Object { return Getattr(lii, name) }
+
 type Pylist struct {
     *objectData
 }
@@ -921,6 +1007,24 @@ func init() {
             },
         ),
     )
+
+    Py_list.attrs().Set(__getitem__, newBuiltinFunc(__getitem__,
+            func(objs ...Object) Object {
+                self := objs[0].(*ListInst)
+                idx := objs[1].(*IntegerInst)
+                return self.items[idx.Value]
+            },
+        ),
+    )
+
+    Py_list.attrs().Set(__iter__, newBuiltinFunc(__iter__,
+            func(objs ...Object) Object {
+                self := objs[0].(*ListInst)
+                return newListIteratorInst(self)
+            },
+        ),
+    )
+
 }
 
 type ListInst struct {

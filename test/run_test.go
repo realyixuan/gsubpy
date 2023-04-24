@@ -497,6 +497,17 @@ res = bool(1)
     }
 }
 
+func TestIterList(t *testing.T) {
+    input := `
+iterator = iter([1, 2])
+res = next(iterator)
+`
+    env := testRunProgram(input)
+    if res := env.GetFromString("res"); res.(*evaluator.IntegerInst).Value != 1 {
+        t.Errorf("expect 1, got %v", evaluator.StringOf(res))
+    }
+}
+
 func testRunProgram(input string) *evaluator.Environment{
     l := lexer.New(input)
     p := parser.New(l)

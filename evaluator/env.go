@@ -13,6 +13,9 @@ var __builtins__ = map[string] Object{
     "bool": Py_bool,
     "hash": Py_hash,
     "Exception": Py_Exception,
+
+    "iter": Py_iter,
+    "next": Py_next,
 }
 
 type Environment struct {
