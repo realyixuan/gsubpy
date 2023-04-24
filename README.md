@@ -28,7 +28,7 @@ or with `.py` file:
 $ gsubpy a_py_file.py
 ~~~
 
-### Supporting features:
+### Supporting features (currently):
 
 - types: `int`, `str`, `list`, `dict`
 
@@ -42,3 +42,7 @@ $ gsubpy a_py_file.py
 
 - class without multi-inheritance
 
+
+### Reference:
+
+- [Writing An Interpreter In Go - Thorsten Ball](https://www.amazon.com/Writing-Interpreter-Go-Thorsten-Ball/dp/3982016118)
