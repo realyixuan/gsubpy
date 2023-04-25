@@ -695,6 +695,71 @@ func (i *IntegerInst) Type() Class { return i.class }
 func (i *IntegerInst) Id() int64 { return int64(uintptr(unsafe.Pointer(i))) }
 func (i *IntegerInst) Attr(name *StringInst) Object { return Getattr(i, name) }
 
+type Pystr_iterator struct {
+    *objectData
+}
+
+func newPystr_iterator() *Pystr_iterator {
+    o := &Pystr_iterator{
+        objectData: &objectData{
+            d: newDictInst(),
+        },
+    }
+    o.init()
+    return o
+}
+
+func (psi *Pystr_iterator) init() {
+    psi.attrs().Set(__name__, newStringInst("str_iterator"))
+
+    psi.attrs().Set(__iter__, newBuiltinFunc(__iter__,
+            func(objs ...Object) Object {
+                return objs[0]
+            },
+        ),
+    )
+
+    psi.attrs().Set(__next__, newBuiltinFunc(__next__,
+            func(objs ...Object) Object {
+                self := objs[0].(*StringIteratorInst)
+                if self.idx >= Call(Py_len, self.stringInst).(*IntegerInst).Value {
+                    // TODO: replace it with StopIteration Exception
+                    return nil
+                }
+                self.idx += 1
+                return typeCall(__getitem__, self.stringInst, newIntegerInst(self.idx-1))
+            },
+        ),
+    )
+
+}
+
+func (psi *Pystr_iterator) Type() Class { return Py_type }
+func (psi *Pystr_iterator) Base() Class { return Py_object }
+func (psi *Pystr_iterator) Id() int64 { return int64(uintptr(unsafe.Pointer(psi))) }
+func (psi *Pystr_iterator) Attr(name *StringInst) Object { return Getattr(psi, name) }
+
+var Py_str_iterator = newPystr_iterator()
+
+type StringIteratorInst struct {
+    *objectData
+    idx     int64
+    stringInst    *StringInst
+}
+
+func newStringIteratorInst(t *StringInst) *StringIteratorInst {
+    return &StringIteratorInst{
+        objectData: &objectData{d: newDictInst()},
+        idx: 0,
+        stringInst: t,
+    }
+}
+
+func (lsi *StringIteratorInst) Type() Class { return Py_str_iterator }
+func (lsi *StringIteratorInst) Id() int64 { return int64(uintptr(unsafe.Pointer(lsi))) }
+func (lsi *StringIteratorInst) Attr(name *StringInst) Object { return Getattr(lsi, name) }
+
+
 var Pystr__hash__ = newBuiltinFunc(__hash__,
     func(objs ...Object) Object {
         strInst := objs[0].(*StringInst)
@@ -807,6 +872,24 @@ func init() {
             },
         ),
     )
+
+    Py_str.attrs().Set(__iter__, newBuiltinFunc(__iter__,
+            func(objs ...Object) Object {
+                self := objs[0].(*StringInst)
+                return newStringIteratorInst(self)
+            },
+        ),
+    )
+
+    Py_str.attrs().Set(__getitem__, newBuiltinFunc(__getitem__,
+            func(objs ...Object) Object {
+                self := objs[0].(*StringInst)
+                idx := objs[1].(*IntegerInst)
+                return newStringInst(string(self.Value[idx.Value]))
+            },
+        ),
+    )
+
 }
 
 type StringInst struct {
@@ -1156,6 +1239,152 @@ func (d *DictInst) Set(key Object, val Object) {
         d.store[hashVal.(*IntegerInst).Value] = append(d.store[hashVal.(*IntegerInst).Value], &pair{Key: key, Value: val})
     }
 }
+
+type Pyrange_iterator struct {
+    *objectData
+}
+
+func newPyrange_iterator() *Pyrange_iterator {
+    o := &Pyrange_iterator{
+        objectData: &objectData{
+            d: newDictInst(),
+        },
+    }
+    o.init()
+    return o
+}
+
+func (pri *Pyrange_iterator) init() {
+    pri.attrs().Set(__name__, newStringInst("range_iterator"))
+
+    pri.attrs().Set(__iter__, newBuiltinFunc(__iter__,
+            func(objs ...Object) Object {
+                return objs[0]
+            },
+        ),
+    )
+
+    pri.attrs().Set(__next__, newBuiltinFunc(__next__,
+            func(objs ...Object) Object {
+                self := objs[0].(*RangeIteratorInst)
+                if self.rangeInst.step > 0 {
+                    if self.curV >= self.rangeInst.end {
+                        return nil
+                    }
+                } else if self.rangeInst.step < 0 {
+                    if self.curV <= self.rangeInst.end {
+                        return nil
+                    }
+                }
+                res := self.curV
+                self.curV += self.rangeInst.step
+                return newIntegerInst(res)
+            },
+        ),
+    )
+}
+
+func (pri *Pyrange_iterator) Type() Class { return Py_type }
+func (pri *Pyrange_iterator) Base() Class { return Py_object }
+func (pri *Pyrange_iterator) Id() int64 { return int64(uintptr(unsafe.Pointer(pri))) }
+func (pri *Pyrange_iterator) Attr(name *StringInst) Object { return Getattr(pri, name) }
+
+var Py_range_iterator = newPyrange_iterator()
+
+type RangeIteratorInst struct {
+    *objectData
+    curV        int64
+    rangeInst    *RangeInst
+}
+
+func newRangeIteratorInst(t *RangeInst) *RangeIteratorInst {
+    return &RangeIteratorInst{
+        objectData: &objectData{d: newDictInst()},
+        curV: t.start,
+        rangeInst: t,
+    }
+}
+
+func (rii *RangeIteratorInst) Type() Class { return Py_range_iterator }
+func (rii *RangeIteratorInst) Id() int64 { return int64(uintptr(unsafe.Pointer(rii))) }
+func (rii *RangeIteratorInst) Attr(name *StringInst) Object { return Getattr(rii, name) }
+
+type Pyrange struct {
+    *objectData
+}
+
+func newPyrange() *Pyrange {
+    o := &Pyrange{objectData: &objectData{d: newDictInst()}}
+    o.init()
+    return o
+}
+
+func (pr *Pyrange) init() {
+    pr.attrs().Set(__name__, newStringInst("range"))
+
+    pr.attrs().Set(__new__, newBuiltinFunc(__new__,
+            func (objs ...Object) Object {
+                if len(objs) == 2 {
+                    return newRangeInst(
+                        0,
+                        objs[1].(*IntegerInst).Value,
+                        1,
+                        )
+                } else if len(objs) == 3 {
+                    return newRangeInst(
+                        objs[1].(*IntegerInst).Value,
+                        objs[2].(*IntegerInst).Value,
+                        1,
+                        )
+                } else if len(objs) == 4 {
+                    return newRangeInst(
+                        objs[1].(*IntegerInst).Value,
+                        objs[2].(*IntegerInst).Value,
+                        objs[3].(*IntegerInst).Value,
+                        )
+                }
+
+                return nil
+            },
+        ),
+    )
+
+    pr.attrs().Set(__iter__, newBuiltinFunc(__iter__,
+            func (objs ...Object) Object {
+                return newRangeIteratorInst(objs[0].(*RangeInst))
+            },
+        ),
+    )
+
+}
+
+func (pr *Pyrange) Type() Class { return Py_type }
+func (pr *Pyrange) Base() Class { return Py_object }
+func (pr *Pyrange) Id() int64 { return int64(uintptr(unsafe.Pointer(pr))) }
+func (pr *Pyrange) Attr(name *StringInst) Object { return Getattr(pr, name) }
+
+var Py_range = newPyrange()
+
+type RangeInst struct {
+    *objectData
+    start   int64
+    end     int64
+    step    int64
+}
+
+func newRangeInst(start, end, step int64) *RangeInst {
+    return &RangeInst{
+        objectData: &objectData{d: newDictInst()},
+        start: start,
+        end: end,
+        step: step,
+    }
+}
+
+func (ri *RangeInst) Type() Class { return Py_range }
+func (ri *RangeInst) Id() int64 { return int64(uintptr(unsafe.Pointer(ri))) }
+func (ri *RangeInst) Attr(name *StringInst) Object { return Getattr(ri, name) }
+
 
 type PyException struct {
     *objectData

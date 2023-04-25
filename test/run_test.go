@@ -508,6 +508,28 @@ res = next(iterator)
     }
 }
 
+func TestIterString(t *testing.T) {
+    input := `
+iterator = iter("abc")
+res = next(iterator)
+`
+    env := testRunProgram(input)
+    if res := env.GetFromString("res"); res.(*evaluator.StringInst).Value != "a" {
+        t.Errorf("expect 'a', got %v", evaluator.StringOf(res))
+    }
+}
+
+func TestIterRange(t *testing.T) {
+    input := `
+iterator = iter(range(3))
+res = next(iterator)
+`
+    env := testRunProgram(input)
+    if res := env.GetFromString("res"); res.(*evaluator.IntegerInst).Value != 0 {
+        t.Errorf("expect 0, got %v", evaluator.StringOf(res))
+    }
+}
+
 func testRunProgram(input string) *evaluator.Environment{
     l := lexer.New(input)
     p := parser.New(l)
