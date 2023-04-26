@@ -14,6 +14,8 @@ const (
     DEF         = "def"
     RETURN      = "return"
     CLASS       = "class"
+    FOR         = "for"
+    IN          = "in"
 
     ASSIGN      = "="
     IDENTIFIER  = "IDENTIFIER"
@@ -61,6 +63,8 @@ var Keywords = map[string]TokenType {
     "and":      AND,
     "or":       OR,
     "not":      NOT,
+    "for":      FOR,
+    "in":       IN,
 }
 
 

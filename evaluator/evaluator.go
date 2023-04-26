@@ -32,6 +32,11 @@ func Exec(stmts []ast.Statement, env *Environment) (Object, bool) {
             if isReturn {
                 return rv, isReturn
             }
+        case *ast.ForStatement:
+            rv, isReturn := execForStatement(node, env)
+            if isReturn {
+                return rv, isReturn
+            }
         case *ast.DefStatement:
             execDefStatement(node, env)
         case *ast.ClassStatement:
@@ -184,6 +189,22 @@ func execWhileStatement(stmt *ast.WhileStatement, env *Environment) (Object, boo
         if isReturn {
             return rv, isReturn
         }
+    }
+    return nil, false
+}
+
+func execForStatement(stmt *ast.ForStatement, env *Environment) (Object, bool) {
+    target := Eval(stmt.Target, env)
+    iterator := Call(Py_iter, target)
+
+    for val := Call(Py_next, iterator); val != nil; {
+        // not considering multi-values currently,
+        env.SetFromString(stmt.Identifiers[0].Literals, val)
+        rv, isReturn := Exec(stmt.Body, env)
+        if isReturn {
+            return rv, isReturn
+        }
+        val = Call(Py_next, iterator)
     }
     return nil, false
 }

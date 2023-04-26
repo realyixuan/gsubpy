@@ -185,6 +185,35 @@ func TestWhileStatement(t *testing.T) {
 
 }
 
+func TestForStatement(t *testing.T) {
+    testCases := []struct{
+        input           string
+        expectedTokens  []token.Token
+    } {
+        {
+            "for c in 'abc'",
+            []token.Token{
+                token.Token{Type: token.FOR, Literals: "for"},
+                token.Token{Type: token.IDENTIFIER, Literals: "c"},
+                token.Token{Type: token.IN, Literals: "in"},
+                token.Token{Type: token.STRING, Literals: "abc"},
+            },
+        },
+    }
+
+
+    for _, testCase := range testCases {
+        l := New(testCase.input)
+        for _, tk := range testCase.expectedTokens {
+            if tk != l.CurToken {
+                t.Errorf("expected %s, got %s", tk, l.CurToken)
+            }
+            l.ReadNextToken()
+        }
+    }
+
+}
+
 func TestDefStatement(t *testing.T) {
     testCases := []struct{
         input           string

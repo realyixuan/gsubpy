@@ -135,6 +135,16 @@ type WhileStatement struct {
 func (ws *WhileStatement) getStatement() {}
 func (ws *WhileStatement) GetLiterals() Literals {return ws.Literals}
 
+type ForStatement struct {
+    Identifiers []token.Token
+    Target      Expression
+    Body        []Statement
+    Literals
+}
+
+func (fs *ForStatement) getStatement() {}
+func (fs *ForStatement) GetLiterals() Literals {return fs.Literals}
+
 type ComparisonExpression struct {
     Operator    token.Token
     Left        Expression

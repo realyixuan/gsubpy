@@ -34,6 +34,7 @@ func New(l *lexer.Lexer) *Parser {
     p.registerStatementParsingFn(token.ASSIGN, p.parsingAssignStatement)
     p.registerStatementParsingFn(token.IF, p.parsingIfStatement)
     p.registerStatementParsingFn(token.WHILE, p.parsingWhileStatement)
+    p.registerStatementParsingFn(token.FOR, p.parsingForStatement)
     p.registerStatementParsingFn(token.DEF, p.parsingDefStatement)
     p.registerStatementParsingFn(token.CLASS, p.parsingClassStatement)
     p.registerStatementParsingFn(token.RETURN, p.parsingReturnStatement)
@@ -191,6 +192,52 @@ func (p *Parser)parsingWhileStatement() ast.Statement {
         p.l.ReadNextToken()
         p.l.ReadNextToken()
     }
+
+    if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
+        panic(evaluator.Error(fmt.Sprintf("line %v\n\t%s\nIndentError: wrong Indents", p.l.LineNum, p.l.Line)))
+    }
+    
+    stmt.Body = p.parsing(p.l.Indents)
+
+    return stmt
+}
+
+func (p *Parser)parsingForStatement() ast.Statement {
+    curIndents := p.l.Indents
+
+    stmt := &ast.ForStatement{
+        Literals: ast.Literals{LineNum: p.l.LineNum, Line: p.l.Line},
+    }
+
+    p.l.ReadNextToken()
+    var idents []token.Token
+    for ; p.l.CurToken.Type != token.IN; p.l.ReadNextToken() {
+        if p.l.CurToken.Type != token.IDENTIFIER {
+            panic(evaluator.Error(fmt.Sprintf("line %v\n\t%s\nSyntaxError: ", p.l.LineNum, p.l.Line)))
+        }
+
+        idents = append(idents, p.l.CurToken)
+
+        if p.l.PeekNextToken().Type == token.COMMA {
+            p.l.ReadNextToken()
+        }
+    }
+
+    if p.l.CurToken.Type != token.IN {
+        panic(evaluator.Error(fmt.Sprintf("line %v\n\t%s\nSyntaxError: expect in", p.l.LineNum, p.l.Line)))
+    }
+
+    stmt.Identifiers = idents
+    p.l.ReadNextToken()
+
+    stmt.Target = p.parsingExpression(0)
+
+    p.l.ReadNextToken()
+    if p.l.CurToken.Type != token.COLON {
+        panic(evaluator.Error(fmt.Sprintf("line %v\n\t%s\nSyntaxError: expect :", p.l.LineNum, p.l.Line)))
+    }
+    p.l.ReadNextToken()
+    p.l.ReadNextToken()
 
     if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {
         panic(evaluator.Error(fmt.Sprintf("line %v\n\t%s\nIndentError: wrong Indents", p.l.LineNum, p.l.Line)))

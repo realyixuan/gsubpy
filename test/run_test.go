@@ -169,6 +169,18 @@ while i < 10:
     }
 }
 
+func TestForStatement(t *testing.T) {
+    input := `
+sum = 0
+for i in [1, 2, 3, 4]:
+    sum += i
+    `
+    env := testRunProgram(input)
+    if resultObj := env.GetFromString("sum").(*evaluator.IntegerInst); resultObj.Value != 10{
+        t.Errorf("expected %v, got %v", 10, resultObj.Value)
+    }
+}
+
 func TestExpressionStatement(t *testing.T) {
     input := `
 a = 1 + 1
