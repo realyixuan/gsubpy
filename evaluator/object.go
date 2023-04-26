@@ -1128,15 +1128,77 @@ func (l *ListInst) Type() Class { return Py_list }
 func (l *ListInst) Id() int64 { return int64(uintptr(unsafe.Pointer(l))) }
 func (l *ListInst) Attr(name *StringInst) Object { return Getattr(l, name) }
 
-func hash(bv []byte) int64 {
-    // sha1 just fine
-    bs := sha1.Sum(bv)
-    var v int64
-    for i := 0; i < 8; i++ {
-        v += int64(bs[i]) << (8*i)
-    }
-    return v
+type Pydict_keyiterator struct {
+    *objectData
 }
+
+func newPydict_keyiterator() *Pydict_keyiterator {
+    o := &Pydict_keyiterator{
+        objectData: &objectData{d: newDictInst()},
+    }
+    o.init()
+    return o
+}
+
+func (dki *Pydict_keyiterator) init() {
+    dki.attrs().Set(__name__, newStringInst("dict_keyiterator"))
+
+    dki.attrs().Set(__iter__, newBuiltinFunc(__iter__, 
+            func (objs ...Object) Object {
+                return objs[0]
+            },
+        ),
+    )
+
+    dki.attrs().Set(__next__, newBuiltinFunc(__next__, 
+            func (objs ...Object) Object {
+                self := objs[0].(*DictKeyiteratorInst)
+
+                if self.idx >= int64(len(self.keys)) {
+                    return nil
+                }
+
+                res := self.keys[self.idx]
+                self.idx += 1
+                return res
+            },
+        ),
+    )
+
+}
+
+func (dki *Pydict_keyiterator) Type() Class { return Py_type }
+func (dki *Pydict_keyiterator) Base() Class { return Py_object }
+func (dki *Pydict_keyiterator) Id() int64 { return int64(uintptr(unsafe.Pointer(dki))) }
+func (dki *Pydict_keyiterator) Attr(name *StringInst) Object { return Getattr(dki, name) }
+
+var Py_dict_keyiterator = newPydict_keyiterator()
+
+type DictKeyiteratorInst struct {
+    *objectData
+    idx     int64
+    keys    []Object
+}
+
+func newDictKeyiteratorInst(t *DictInst) *DictKeyiteratorInst {
+    // XXX: no way remembering location of keys,
+    //  so have to put keys in list initially
+    var dks []Object
+    for _, v := range t.store {
+        for _, pair := range v {
+            dks = append(dks, pair.Key)
+        }
+    }
+    return &DictKeyiteratorInst{
+        objectData: &objectData{d: newDictInst()},
+        keys: dks,
+        idx: 0,
+    }
+}
+
+func (ki *DictKeyiteratorInst) Type() Class { return Py_dict_keyiterator }
+func (ki *DictKeyiteratorInst) Id() int64 { return int64(uintptr(unsafe.Pointer(ki))) }
+func (ki *DictKeyiteratorInst) Attr(name *StringInst) Object { return Getattr(ki, name) }
 
 type Pydict struct {
     *objectData
@@ -1156,6 +1218,26 @@ func (pd *Pydict) Id() int64 { return int64(uintptr(unsafe.Pointer(pd))) }
 func (pd *Pydict) Attr(name *StringInst) Object { return Getattr(pd, name) }
 
 var Py_dict = newPydict()
+func init() {
+    Py_dict.attrs().Set(__name__, newStringInst("dict"))
+
+    Py_dict.attrs().Set(__iter__, newBuiltinFunc(__iter__,
+            func (objs ...Object) Object {
+                self := objs[0].(*DictInst)
+                return newDictKeyiteratorInst(self)
+            },
+        ),
+    )
+
+    Py_dict.attrs().Set(__getitem__, newBuiltinFunc(__getitem__,
+            func (objs ...Object) Object {
+                self, key := objs[0].(*DictInst), objs[1]
+                return self.Get(key)
+            },
+        ),
+    )
+
+}
 
 type pair struct {
     Key     Object
@@ -1425,6 +1507,16 @@ func Error(s string) *ExceptionInst {
 func (e *ExceptionInst) Type() Class { return Py_Exception }
 func (e *ExceptionInst) Id() int64 { return int64(uintptr(unsafe.Pointer(e))) }
 func (e *ExceptionInst) Attr(name *StringInst) Object { return Getattr(e, name) }
+
+func hash(bv []byte) int64 {
+    // sha1 just fine
+    bs := sha1.Sum(bv)
+    var v int64
+    for i := 0; i < 8; i++ {
+        v += int64(bs[i]) << (8*i)
+    }
+    return v
+}
 
 func Getattr(obj Object, name *StringInst) Object {
     __getattribute__ := attrFromAll(obj.Type(), __getattribute__).(Function)

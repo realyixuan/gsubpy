@@ -497,6 +497,17 @@ res = bool(1)
     }
 }
 
+func TestIterDictKey(t *testing.T) {
+    input := `
+iterator = iter({'a': 1, 'b': 2})
+res = next(iterator)
+`
+    env := testRunProgram(input)
+    if res := env.GetFromString("res"); res.(*evaluator.StringInst).Value != "a" {
+        t.Errorf("expect 'a', got %v", evaluator.StringOf(res))
+    }
+}
+
 func TestIterList(t *testing.T) {
     input := `
 iterator = iter([1, 2])
