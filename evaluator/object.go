@@ -48,6 +48,7 @@ var __len__ = newStringInst("__len__")
 var __bool__ = newStringInst("__bool__")
 
 var __getitem__ = newStringInst("__getitem__")
+var __contains__ = newStringInst("__contains__")
 
 var __iter__ = newStringInst("__iter__")
 var __next__ = newStringInst("__next__")
@@ -873,6 +874,24 @@ func init() {
         ),
     )
 
+    Py_str.attrs().Set(__contains__, newBuiltinFunc(__contains__,
+            func(objs ...Object) Object {
+                //TODO
+                self := objs[0].(*StringInst)
+                item := objs[1]
+
+                for _, ch := range self.Value {
+                    chStr := newStringInst(string(ch))
+                    if typeCall(__eq__, chStr, item) == Py_True {
+                        return Py_True
+                    }
+                }
+
+                return Py_False
+            },
+        ),
+    )
+
     Py_str.attrs().Set(__iter__, newBuiltinFunc(__iter__,
             func(objs ...Object) Object {
                 self := objs[0].(*StringInst)
@@ -1100,6 +1119,21 @@ func init() {
         ),
     )
 
+    Py_list.attrs().Set(__contains__, newBuiltinFunc(__contains__,
+            func(objs ...Object) Object {
+                self := objs[0].(*ListInst)
+                item := objs[1]
+                for val := Call(Py_next, self); val != nil; {
+                    if typeCall(__eq__, val, item) == Py_True {
+                        return Py_True
+                    }
+                    val = Call(Py_next, self)
+                }
+                return Py_False
+            },
+        ),
+    )
+
     Py_list.attrs().Set(__iter__, newBuiltinFunc(__iter__,
             func(objs ...Object) Object {
                 self := objs[0].(*ListInst)
@@ -1233,6 +1267,20 @@ func init() {
             func (objs ...Object) Object {
                 self, key := objs[0].(*DictInst), objs[1]
                 return self.Get(key)
+            },
+        ),
+    )
+
+    Py_dict.attrs().Set(__contains__, newBuiltinFunc(__contains__,
+            func (objs ...Object) Object {
+                self, item := objs[0].(*DictInst), objs[1]
+                for val := Call(Py_next, self); val != nil; {
+                    if typeCall(__eq__, val, item) == Py_True {
+                        return Py_True
+                    }
+                    val = Call(Py_next, self)
+                }
+                return Py_False
             },
         ),
     )
