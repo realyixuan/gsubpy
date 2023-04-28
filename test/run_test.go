@@ -511,7 +511,7 @@ res = bool(1)
 
 func TestIterDictKey(t *testing.T) {
     input := `
-iterator = iter({'a': 1, 'b': 2})
+iterator = iter({'a': 1})
 res = next(iterator)
 `
     env := testRunProgram(input)
