@@ -48,6 +48,7 @@ var __len__ = newStringInst("__len__")
 var __bool__ = newStringInst("__bool__")
 
 var __getitem__ = newStringInst("__getitem__")
+var __setitem__ = newStringInst("__setitem__")
 var __contains__ = newStringInst("__contains__")
 
 var __iter__ = newStringInst("__iter__")
@@ -159,9 +160,9 @@ var Pyobject__getattribute__ = newBuiltinFunc(__getattribute__,
 var Pyobject__setattr__ = newBuiltinFunc(__setattr__,
     func(objs ...Object) Object {
         self := objs[0]
-        name := objs[1]
+        name := objs[1].(*StringInst)
         val := objs[2]
-        self.attrs().Set(name, val)
+        self.attrs().set(name, val)
         return Py_None
     },
 )
@@ -182,21 +183,21 @@ func newPyobject() *Pyobject {
 func (po *Pyobject) Type() Class { return Py_type }
 func (po *Pyobject) Base() Class { return nil }
 func (po *Pyobject) Id() int64 { return int64(uintptr(unsafe.Pointer(po))) }
-func (po *Pyobject) Attr(name *StringInst) Object { return po.d.lookForAttr(name) }
+func (po *Pyobject) Attr(name *StringInst) Object { return po.d.get(name) }
 
 var Py_object = newPyobject()
 func init() {
-    Py_object.attrs().Set(__name__, newStringInst("object"))
-    Py_object.attrs().Set(__hash__, Pyobject__hash__)
-    Py_object.attrs().Set(__new__, Pyobject__new__)
-    Py_object.attrs().Set(__init__, Pyobject__init__)
-    Py_object.attrs().Set(__repr__, Pyobject__repr__)
-    Py_object.attrs().Set(__str__, Pyobject__str__)
-    Py_object.attrs().Set(__eq__, Pyobject__eq__)
-    Py_object.attrs().Set(__lt__, Pyobject__lt__)
-    Py_object.attrs().Set(__gt__, Pyobject__gt__)
-    Py_object.attrs().Set(__getattribute__, Pyobject__getattribute__)
-    Py_object.attrs().Set(__setattr__, Pyobject__setattr__)
+    Py_object.attrs().set(__name__, newStringInst("object"))
+    Py_object.attrs().set(__hash__, Pyobject__hash__)
+    Py_object.attrs().set(__new__, Pyobject__new__)
+    Py_object.attrs().set(__init__, Pyobject__init__)
+    Py_object.attrs().set(__repr__, Pyobject__repr__)
+    Py_object.attrs().set(__str__, Pyobject__str__)
+    Py_object.attrs().set(__eq__, Pyobject__eq__)
+    Py_object.attrs().set(__lt__, Pyobject__lt__)
+    Py_object.attrs().set(__gt__, Pyobject__gt__)
+    Py_object.attrs().set(__getattribute__, Pyobject__getattribute__)
+    Py_object.attrs().set(__setattr__, Pyobject__setattr__)
 }
 
 type Pytype struct {
@@ -219,8 +220,8 @@ func (pt *Pytype) Attr(name *StringInst) Object { return Getattr(pt, name) }
 
 var Py_type = newPytype()
 func init()  {
-    Py_type.attrs().Set(__name__, newStringInst("type"))
-    Py_type.attrs().Set(__new__, newBuiltinFunc(__new__,
+    Py_type.attrs().set(__name__, newStringInst("type"))
+    Py_type.attrs().set(__new__, newBuiltinFunc(__new__,
             func(objs ...Object) Object {
                 var name *StringInst = objs[0].(*StringInst)
                 var base *Pyclass = objs[1].(*Pyclass)
@@ -230,14 +231,14 @@ func init()  {
         ),
     )
 
-    Py_type.attrs().Set(__init__, newBuiltinFunc(__init__,
+    Py_type.attrs().set(__init__, newBuiltinFunc(__init__,
             func(objs ...Object) Object {
                 return Py_None
             },
         ),
     )
 
-    Py_type.attrs().Set(__call__, newBuiltinFunc(__call__,
+    Py_type.attrs().set(__call__, newBuiltinFunc(__call__,
             func(objs ...Object) Object {
                 cls := objs[0]
                 switch cls {
@@ -254,7 +255,7 @@ func init()  {
         ),
     )
 
-    Py_type.attrs().Set(__getattribute__, newBuiltinFunc(__getattribute__,
+    Py_type.attrs().set(__getattribute__, newBuiltinFunc(__getattribute__,
             func(objs ...Object) Object {
                 cls := objs[0]
                 name := objs[1]
@@ -288,7 +289,7 @@ func newPyclass(
 }
 
 func (pc *Pyclass) init() {
-    pc.attrs().Set(__name__, pc.name)
+    pc.attrs().set(__name__, pc.name)
 }
 
 func (pc *Pyclass) Type() Class { return Py_type }
@@ -334,8 +335,8 @@ func (pf *PyFunction) Attr(name *StringInst) Object { return Getattr(pf, name) }
 
 var Py_function = newPyFunction()
 func init() {
-    Py_function.attrs().Set(__name__, newStringInst("function"))
-    Py_function.attrs().Set(__call__, newBuiltinFunc(__call__,
+    Py_function.attrs().set(__name__, newStringInst("function"))
+    Py_function.attrs().set(__call__, newBuiltinFunc(__call__,
             func(objs ...Object) Object {
                 self := objs[0]
                 return self.(Function).Call(objs[1:]...)
@@ -371,8 +372,8 @@ func (bf *PyBuiltinFunction) Attr(name *StringInst) Object { return Getattr(bf, 
 
 var Py_builtin_function = newPyBuiltinFunction()
 func init() {
-    Py_builtin_function.attrs().Set(__name__, newStringInst("builtin_function"))
-    Py_builtin_function.attrs().Set(__call__, PyBuiltinFunction__call__)
+    Py_builtin_function.attrs().set(__name__, newStringInst("builtin_function"))
+    Py_builtin_function.attrs().set(__call__, PyBuiltinFunction__call__)
 }
 
 type FunctionInst struct {
@@ -403,7 +404,7 @@ func newFunctionInst(
 }
 
 func (f *FunctionInst) init() {
-    f.attrs().Set(__name__, f.Name)
+    f.attrs().set(__name__, f.Name)
 }
 
 func (f *FunctionInst) Call(objs ...Object) Object {
@@ -530,8 +531,8 @@ func (pn *PyNoneType) Attr(name *StringInst) Object { return Getattr(pn, name) }
 
 var Py_NoneType = newPyNoneType()
 func init() {
-    Py_NoneType.attrs().Set(__name__, newStringInst("NoneType"))
-    Py_NoneType.attrs().Set(__str__, newBuiltinFunc(__str__,
+    Py_NoneType.attrs().set(__name__, newStringInst("NoneType"))
+    Py_NoneType.attrs().set(__str__, newBuiltinFunc(__str__,
             func(objs ...Object) Object {
                 return newStringInst("None")
             },
@@ -575,9 +576,9 @@ func (pi *Pyint) Attr(name *StringInst) Object { return Getattr(pi, name) }
 
 var Py_int = newPyint()
 func init() {
-    Py_int.attrs().Set(__name__, newStringInst("int"))
+    Py_int.attrs().set(__name__, newStringInst("int"))
 
-    Py_int.attrs().Set(__new__, newBuiltinFunc(__new__,
+    Py_int.attrs().set(__new__, newBuiltinFunc(__new__,
             func(objs ...Object) Object {
                 if len(objs[1:]) == 0 {
                     return newIntegerInst(int64(0))
@@ -596,14 +597,14 @@ func init() {
         ),
     )
 
-    Py_int.attrs().Set(__hash__, newBuiltinFunc(__hash__,
+    Py_int.attrs().set(__hash__, newBuiltinFunc(__hash__,
             func(objs ...Object) Object {
                 return objs[0]
             },
         ),
     )
 
-    Py_int.attrs().Set(__repr__, newBuiltinFunc(__repr__,
+    Py_int.attrs().set(__repr__, newBuiltinFunc(__repr__,
             func(objs ...Object) Object {
                 v := strconv.FormatInt(objs[0].(*IntegerInst).Value, 10)
                 return newStringInst(v)
@@ -611,7 +612,7 @@ func init() {
         ),
     )
 
-    Py_int.attrs().Set(__str__, newBuiltinFunc(__str__,
+    Py_int.attrs().set(__str__, newBuiltinFunc(__str__,
             func(objs ...Object) Object {
                 v := strconv.FormatInt(objs[0].(*IntegerInst).Value, 10)
                 return newStringInst(v)
@@ -619,7 +620,7 @@ func init() {
         ),
     )
 
-    Py_int.attrs().Set(__eq__, newBuiltinFunc(__eq__,
+    Py_int.attrs().set(__eq__, newBuiltinFunc(__eq__,
             func(objs ...Object) Object {
                 v1 := objs[0].(*IntegerInst).Value
                 v2 := objs[1].(*IntegerInst).Value
@@ -633,7 +634,7 @@ func init() {
         ),
     )
 
-    Py_int.attrs().Set(__gt__, newBuiltinFunc(__gt__,
+    Py_int.attrs().set(__gt__, newBuiltinFunc(__gt__,
             func(objs ...Object) Object {
                 v1 := objs[0].(*IntegerInst).Value
                 v2 := objs[1].(*IntegerInst).Value
@@ -648,7 +649,7 @@ func init() {
         ),
     )
 
-    Py_int.attrs().Set(__lt__, newBuiltinFunc(__lt__,
+    Py_int.attrs().set(__lt__, newBuiltinFunc(__lt__,
             func(objs ...Object) Object {
                 v1 := objs[0].(*IntegerInst).Value
                 v2 := objs[1].(*IntegerInst).Value
@@ -662,7 +663,7 @@ func init() {
         ),
     )
 
-    Py_int.attrs().Set(__bool__, newBuiltinFunc(__bool__,
+    Py_int.attrs().set(__bool__, newBuiltinFunc(__bool__,
             func(objs ...Object) Object {
                 self := objs[0].(*IntegerInst)
                 if self.Value == 0 {
@@ -711,16 +712,16 @@ func newPystr_iterator() *Pystr_iterator {
 }
 
 func (psi *Pystr_iterator) init() {
-    psi.attrs().Set(__name__, newStringInst("str_iterator"))
+    psi.attrs().set(__name__, newStringInst("str_iterator"))
 
-    psi.attrs().Set(__iter__, newBuiltinFunc(__iter__,
+    psi.attrs().set(__iter__, newBuiltinFunc(__iter__,
             func(objs ...Object) Object {
                 return objs[0]
             },
         ),
     )
 
-    psi.attrs().Set(__next__, newBuiltinFunc(__next__,
+    psi.attrs().set(__next__, newBuiltinFunc(__next__,
             func(objs ...Object) Object {
                 self := objs[0].(*StringIteratorInst)
                 if self.idx >= op_CALL(Py_len, self.stringInst).(*IntegerInst).Value {
@@ -728,7 +729,7 @@ func (psi *Pystr_iterator) init() {
                     return nil
                 }
                 self.idx += 1
-                return op_SUBSCR(self.stringInst, newIntegerInst(self.idx-1))
+                return op_SUBSCR_GET(self.stringInst, newIntegerInst(self.idx-1))
             },
         ),
     )
@@ -801,45 +802,39 @@ func (ps *Pystr) Attr(name *StringInst) Object { return Getattr(ps, name) }
 
 var Py_str = newPystr()
 func init() {
-    Py_str.attrs().Set(__name__, newStringInst("str"))
+    Py_str.attrs().set(__name__, newStringInst("str"))
 
-    Py_str.attrs().Set(__new__, newBuiltinFunc(__new__,
+    Py_str.attrs().set(__new__, newBuiltinFunc(__new__,
             func(objs ...Object) Object {
                 if len(objs[1:]) == 0 {
                     return newStringInst("")
                 }
 
-                switch o := objs[1].(type) {
-                case *IntegerInst:
-                    v := strconv.FormatInt(o.Value, 10)
-                    return newStringInst(v)
-                case *StringInst:
-                    return o
-                }
+                o := objs[1]
 
-                return nil
+                return typeCall(__str__, o)
             },
         ),
     )
 
-    Py_str.attrs().Set(__hash__, Pystr__hash__)
-    Py_str.attrs().Set(__eq__, Pystr__eq__)
+    Py_str.attrs().set(__hash__, Pystr__hash__)
+    Py_str.attrs().set(__eq__, Pystr__eq__)
 
-    Py_str.attrs().Set(__repr__, newBuiltinFunc(__repr__,
+    Py_str.attrs().set(__repr__, newBuiltinFunc(__repr__,
             func(objs ...Object) Object {
                 return newStringInst("'" + objs[0].(*StringInst).Value + "'")
             },
         ),
     )
 
-    Py_str.attrs().Set(__str__, newBuiltinFunc(__str__,
+    Py_str.attrs().set(__str__, newBuiltinFunc(__str__,
             func(objs ...Object) Object {
                 return objs[0]
             },
         ),
     )
 
-    Py_str.attrs().Set(__gt__, newBuiltinFunc(__gt__,
+    Py_str.attrs().set(__gt__, newBuiltinFunc(__gt__,
             func(objs ...Object) Object {
                 s1 := objs[0].(*StringInst)
                 s2 := objs[1].(*StringInst)
@@ -853,7 +848,7 @@ func init() {
         ),
     )
 
-    Py_str.attrs().Set(__lt__, newBuiltinFunc(__lt__,
+    Py_str.attrs().set(__lt__, newBuiltinFunc(__lt__,
             func(objs ...Object) Object {
                 s1 := objs[0].(*StringInst)
                 s2 := objs[1].(*StringInst)
@@ -867,14 +862,14 @@ func init() {
         ),
     )
 
-    Py_str.attrs().Set(__len__, newBuiltinFunc(__len__,
+    Py_str.attrs().set(__len__, newBuiltinFunc(__len__,
             func(objs ...Object) Object {
                 return newIntegerInst(int64(len(objs[0].(*StringInst).Value)))
             },
         ),
     )
 
-    Py_str.attrs().Set(__contains__, newBuiltinFunc(__contains__,
+    Py_str.attrs().set(__contains__, newBuiltinFunc(__contains__,
             func(objs ...Object) Object {
                 self := objs[0].(*StringInst)
                 item := objs[1]
@@ -891,7 +886,7 @@ func init() {
         ),
     )
 
-    Py_str.attrs().Set(__iter__, newBuiltinFunc(__iter__,
+    Py_str.attrs().set(__iter__, newBuiltinFunc(__iter__,
             func(objs ...Object) Object {
                 self := objs[0].(*StringInst)
                 return newStringIteratorInst(self)
@@ -899,7 +894,7 @@ func init() {
         ),
     )
 
-    Py_str.attrs().Set(__getitem__, newBuiltinFunc(__getitem__,
+    Py_str.attrs().set(__getitem__, newBuiltinFunc(__getitem__,
             func(objs ...Object) Object {
                 self := objs[0].(*StringInst)
                 idx := objs[1].(*IntegerInst)
@@ -949,7 +944,7 @@ func (pb *Pybool) Attr(name *StringInst) Object { return Getattr(pb, name) }
 
 var Py_bool = newPybool()
 func init() {
-    Py_bool.attrs().Set(__new__, newBuiltinFunc(__new__,
+    Py_bool.attrs().set(__new__, newBuiltinFunc(__new__,
             func(objs ...Object) Object {
                 if boolFn := attrItself(objs[1].Type(), __bool__); boolFn != nil {
                     return op_CALL(boolFn, objs[1])
@@ -966,7 +961,7 @@ func init() {
         ),
     )
 
-    Py_bool.attrs().Set(__str__, newBuiltinFunc(__str__,
+    Py_bool.attrs().set(__str__, newBuiltinFunc(__str__,
             func(objs ...Object) Object {
                 o := objs[0].(*IntegerInst)
                 if o.Value == 1 {
@@ -1011,16 +1006,16 @@ func newPylist_iterator() *Pylist_iterator {
 }
 
 func (pli *Pylist_iterator) init() {
-    pli.attrs().Set(__name__, newStringInst("list_iterator"))
+    pli.attrs().set(__name__, newStringInst("list_iterator"))
 
-    pli.attrs().Set(__iter__, newBuiltinFunc(__iter__,
+    pli.attrs().set(__iter__, newBuiltinFunc(__iter__,
             func(objs ...Object) Object {
                 return objs[0]
             },
         ),
     )
 
-    pli.attrs().Set(__next__, newBuiltinFunc(__next__,
+    pli.attrs().set(__next__, newBuiltinFunc(__next__,
             func(objs ...Object) Object {
                 self := objs[0].(*ListIteratorInst)
                 if self.idx >= op_CALL(Py_len, self.listInst).(*IntegerInst).Value {
@@ -1028,7 +1023,7 @@ func (pli *Pylist_iterator) init() {
                     return nil
                 }
                 self.idx += 1
-                return op_SUBSCR(self.listInst, newIntegerInst(self.idx-1))
+                return op_SUBSCR_GET(self.listInst, newIntegerInst(self.idx-1))
             },
         ),
     )
@@ -1079,37 +1074,35 @@ func (pl *Pylist) Attr(name *StringInst) Object { return Getattr(pl, name) }
 
 var Py_list = newPylist()
 func init() {
-    Py_list.attrs().Set(__name__, newStringInst("list"))
+    Py_list.attrs().set(__name__, newStringInst("list"))
 
-    Py_list.attrs().Set(__len__, newBuiltinFunc(__len__,
+    Py_list.attrs().set(__len__, newBuiltinFunc(__len__,
             func(objs ...Object) Object {
                 return newIntegerInst(int64(len(objs[0].(*ListInst).items)))
             },
         ),
     )
 
-    Py_list.attrs().Set(__str__, newBuiltinFunc(__str__,
+    Py_list.attrs().set(__str__, newBuiltinFunc(__str__,
             func(objs ...Object) Object {
                 li := objs[0].(*ListInst)
 
                 var s string
                 s += "["
                 if len(li.items) > 0 {
-                    strFn := attrItself(li.items[0].Type(), __str__).(Function)
-                    s += fmt.Sprintf("%v", op_CALL(strFn, li.items[0]))
+                    s += fmt.Sprintf("%v", op_CALL(Py_str, li.items[0]))
                 }
                 for _, item := range li.items[1:] {
-                    s += ", "
-                    strFn := attrItself(item.Type(), __str__).(Function)
-                    s += fmt.Sprintf("%v", op_CALL(strFn, item))
+                    s += fmt.Sprintf(", %v", op_CALL(Py_str, item))
                 }
                 s += "]"
+
                 return newStringInst(s)
             },
         ),
     )
 
-    Py_list.attrs().Set(__getitem__, newBuiltinFunc(__getitem__,
+    Py_list.attrs().set(__getitem__, newBuiltinFunc(__getitem__,
             func(objs ...Object) Object {
                 self := objs[0].(*ListInst)
                 idx := objs[1].(*IntegerInst)
@@ -1118,7 +1111,7 @@ func init() {
         ),
     )
 
-    Py_list.attrs().Set(__contains__, newBuiltinFunc(__contains__,
+    Py_list.attrs().set(__contains__, newBuiltinFunc(__contains__,
             func(objs ...Object) Object {
                 self := objs[0].(*ListInst)
                 item := objs[1]
@@ -1133,7 +1126,7 @@ func init() {
         ),
     )
 
-    Py_list.attrs().Set(__iter__, newBuiltinFunc(__iter__,
+    Py_list.attrs().set(__iter__, newBuiltinFunc(__iter__,
             func(objs ...Object) Object {
                 self := objs[0].(*ListInst)
                 return newListIteratorInst(self)
@@ -1174,16 +1167,16 @@ func newPydict_keyiterator() *Pydict_keyiterator {
 }
 
 func (dki *Pydict_keyiterator) init() {
-    dki.attrs().Set(__name__, newStringInst("dict_keyiterator"))
+    dki.attrs().set(__name__, newStringInst("dict_keyiterator"))
 
-    dki.attrs().Set(__iter__, newBuiltinFunc(__iter__, 
+    dki.attrs().set(__iter__, newBuiltinFunc(__iter__, 
             func (objs ...Object) Object {
                 return objs[0]
             },
         ),
     )
 
-    dki.attrs().Set(__next__, newBuiltinFunc(__next__, 
+    dki.attrs().set(__next__, newBuiltinFunc(__next__, 
             func (objs ...Object) Object {
                 self := objs[0].(*DictKeyiteratorInst)
 
@@ -1252,9 +1245,30 @@ func (pd *Pydict) Attr(name *StringInst) Object { return Getattr(pd, name) }
 
 var Py_dict = newPydict()
 func init() {
-    Py_dict.attrs().Set(__name__, newStringInst("dict"))
+    Py_dict.attrs().set(__name__, newStringInst("dict"))
 
-    Py_dict.attrs().Set(__iter__, newBuiltinFunc(__iter__,
+    Py_dict.attrs().set(__str__, newBuiltinFunc(__str__,
+            func (objs ...Object) Object {
+                d := objs[0].(*DictInst)
+
+                var s string
+                s += "{"
+                for _, pairs := range d.store {
+                    for _, pair := range pairs {
+                        s += fmt.Sprintf("%v: %v, ",
+                            op_CALL(Py_str, pair.Key),
+                            op_CALL(Py_str, pair.Value),
+                            )
+                    }
+                }
+                s += "}"
+
+                return newStringInst(s)
+            },
+        ),
+    )
+
+    Py_dict.attrs().set(__iter__, newBuiltinFunc(__iter__,
             func (objs ...Object) Object {
                 self := objs[0].(*DictInst)
                 return newDictKeyiteratorInst(self)
@@ -1262,15 +1276,46 @@ func init() {
         ),
     )
 
-    Py_dict.attrs().Set(__getitem__, newBuiltinFunc(__getitem__,
+    Py_dict.attrs().set(__getitem__, newBuiltinFunc(__getitem__,
             func (objs ...Object) Object {
                 self, key := objs[0].(*DictInst), objs[1]
-                return self.Get(key)
+                hashVal := op_CALL(Py_hash, key)
+                if pairs, ok := self.store[hashVal.(*IntegerInst).Value]; ok {
+                    for _, pair := range pairs {
+                        if op_EQ(pair.Key, key) == Py_True {
+                            return pair.Value
+                        }
+                    }
+                }
+
+                return nil
             },
         ),
     )
 
-    Py_dict.attrs().Set(__contains__, newBuiltinFunc(__contains__,
+    Py_dict.attrs().set(__setitem__, newBuiltinFunc(__getitem__,
+            func (objs ...Object) Object {
+                self, key, val := objs[0].(*DictInst), objs[1], objs[2]
+                hashVal := op_CALL(Py_hash, key)
+
+                var flag bool = false
+                for _, pair := range self.store[hashVal.(*IntegerInst).Value] {
+                    if op_EQ(pair.Key, key) == Py_True {
+                        pair.Value = val
+                        flag = true
+                    }
+                }
+
+                if !flag {
+                    self.store[hashVal.(*IntegerInst).Value] = append(self.store[hashVal.(*IntegerInst).Value], &pair{Key: key, Value: val})
+                }
+
+                return Py_None
+            },
+        ),
+    )
+
+    Py_dict.attrs().set(__contains__, newBuiltinFunc(__contains__,
             func (objs ...Object) Object {
                 self, item := objs[0].(*DictInst), objs[1]
                 for val := op_CALL(Py_next, self); val != nil; {
@@ -1311,7 +1356,7 @@ func (d *DictInst) Type() Class { return Py_dict }
 func (d *DictInst) Id() int64 { return int64(uintptr(unsafe.Pointer(d))) }
 func (d *DictInst) Attr(name *StringInst) Object { return Getattr(d, name) }
 
-func (d *DictInst) lookForAttr(key *StringInst) Object {
+func (d *DictInst) get(key *StringInst) Object {
     hashVal := Pystr__hash__.Call(key)
     if pairs, ok := d.store[hashVal.(*IntegerInst).Value]; ok {
         for _, pair := range pairs {
@@ -1324,25 +1369,12 @@ func (d *DictInst) lookForAttr(key *StringInst) Object {
     return nil
 }
 
-func (d *DictInst) Get(key Object) Object {
-    hashVal := op_CALL(Py_hash, key)
-    if pairs, ok := d.store[hashVal.(*IntegerInst).Value]; ok {
-        for _, pair := range pairs {
-            if op_EQ(pair.Key, key) == Py_True {
-                return pair.Value
-            }
-        }
-    }
-
-    return nil
-}
-
-func (d *DictInst) Set(key Object, val Object) {
+func (d *DictInst) set(key *StringInst, val Object) {
     hashVal := Pystr__hash__.Call(key)
 
     var flag bool = false
     for _, pair := range d.store[hashVal.(*IntegerInst).Value] {
-        if op_EQ(pair.Key, key) == Py_True {
+        if Pystr__eq__.Call(key, pair.Key) == Py_True {
             pair.Value = val
             flag = true
         }
@@ -1368,16 +1400,16 @@ func newPyrange_iterator() *Pyrange_iterator {
 }
 
 func (pri *Pyrange_iterator) init() {
-    pri.attrs().Set(__name__, newStringInst("range_iterator"))
+    pri.attrs().set(__name__, newStringInst("range_iterator"))
 
-    pri.attrs().Set(__iter__, newBuiltinFunc(__iter__,
+    pri.attrs().set(__iter__, newBuiltinFunc(__iter__,
             func(objs ...Object) Object {
                 return objs[0]
             },
         ),
     )
 
-    pri.attrs().Set(__next__, newBuiltinFunc(__next__,
+    pri.attrs().set(__next__, newBuiltinFunc(__next__,
             func(objs ...Object) Object {
                 self := objs[0].(*RangeIteratorInst)
                 if self.rangeInst.step > 0 {
@@ -1433,9 +1465,9 @@ func newPyrange() *Pyrange {
 }
 
 func (pr *Pyrange) init() {
-    pr.attrs().Set(__name__, newStringInst("range"))
+    pr.attrs().set(__name__, newStringInst("range"))
 
-    pr.attrs().Set(__new__, newBuiltinFunc(__new__,
+    pr.attrs().set(__new__, newBuiltinFunc(__new__,
             func (objs ...Object) Object {
                 if len(objs) == 2 {
                     return newRangeInst(
@@ -1462,7 +1494,7 @@ func (pr *Pyrange) init() {
         ),
     )
 
-    pr.attrs().Set(__iter__, newBuiltinFunc(__iter__,
+    pr.attrs().set(__iter__, newBuiltinFunc(__iter__,
             func (objs ...Object) Object {
                 return newRangeIteratorInst(objs[0].(*RangeInst))
             },
@@ -1514,7 +1546,7 @@ var Py_Exception = &PyException{
     },
 }
 func init() {
-    Py_Exception.attrs().Set(__name__, newStringInst("Exception"))
+    Py_Exception.attrs().set(__name__, newStringInst("Exception"))
 }
 
 type ExceptionInst struct {
@@ -1559,12 +1591,12 @@ func attrItself(obj Object, name *StringInst) Object {
     case Class:
         cls := obj.(Class)
         for c := cls; c != nil; c = c.Base() {
-            if rv := c.attrs().lookForAttr(name); rv != nil {
+            if rv := c.attrs().get(name); rv != nil {
                 return rv
             }
         }
     default:
-        if rv := obj.attrs().lookForAttr(name); rv != nil {
+        if rv := obj.attrs().get(name); rv != nil {
             return rv
         }
     }

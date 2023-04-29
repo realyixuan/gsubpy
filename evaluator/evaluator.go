@@ -136,12 +136,12 @@ func Eval(expression ast.Expression, env *Environment) Object {
         }
         return listObj
     case *ast.DictExpression:
-        dictObj := newDictInst()
+        dict := newDictInst()
         for i := 0; i < len(node.Keys); i++ {
-            k, v := node.Keys[i], node.Vals[i]
-            dictObj.Set(Eval(k, env), Eval(v, env))
+            k, v := Eval(node.Keys[i], env), Eval(node.Vals[i], env)
+            op_SUBSCR_SET(dict, k, v)
         }
-        return dictObj
+        return dict
     case *ast.CallExpression:
         return evalCallExpression(node, env)
     case *ast.AttributeExpression:
@@ -274,8 +274,12 @@ func op_SETATTR(inst Object, attr *StringInst, value Object) {
     typeCall(__setattr__, inst, attr, value)
 }
 
-func op_SUBSCR(inst Object, item Object) Object {
+func op_SUBSCR_GET(inst Object, item Object) Object {
     return typeCall(__getitem__, inst, item)
+}
+
+func op_SUBSCR_SET(inst Object, key Object, item Object) Object {
+    return typeCall(__setitem__, inst, key, item)
 }
 
 func op_CALL(obj Object, args ...Object) Object {

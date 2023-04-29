@@ -44,21 +44,21 @@ func (e *Environment) SetFromString(key string, value Object) {
     e.Set(newStringInst(key), value)
 }
 
-func (self *Environment) Set(key Object, value Object) {
-    self.store.Set(key, value)
+func (self *Environment) Set(key *StringInst, value Object) {
+    self.store.set(key, value)
 }
 
 func (e *Environment) GetFromString(key string) Object {
     return e.Get(newStringInst(key))
 }
 
-func (self *Environment) Get(key Object) Object {
+func (self *Environment) Get(key *StringInst) Object {
     if self.parent == nil {
-        val := self.store.Get(key)
+        val := self.store.get(key)
         return val
     }
 
-    if obj := self.store.Get(key); obj != nil {
+    if obj := self.store.get(key); obj != nil {
         return obj
     } else {
         return self.parent.Get(key)
