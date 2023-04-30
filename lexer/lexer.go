@@ -7,14 +7,6 @@ import (
     "github.com/realyixuan/gsubpy/evaluator"
 )
 
-/*
-the lexer have following aiblities: 
-    - view current token of lexer
-    - read next token
-    - peek next token
-    
-*/
-
 type Lexer struct {
     input       string
     idx         int
@@ -37,13 +29,21 @@ func New(input string) *Lexer {
 func (l *Lexer) ReadNextToken() {
     l.readNextToken()
 
-    lc := *l
-    lc.readNextToken()
-    letters := l.CurToken.Literals + " " + lc.CurToken.Literals
-    if tokType, ok := token.Keywords[letters]; ok {
-        l.readNextToken()
-        l.CurToken = token.Token{Type: tokType, Literals: letters}
+    if _, ok := token.Keywords[l.CurToken.Literals]; ok {
+        cl := *l
+        cl.readNextToken()
+        if _, ok := token.Keywords[cl.CurToken.Literals]; ok {
+            letters := l.CurToken.Literals + " " + cl.CurToken.Literals
+            if tokType, ok := token.Keywords[letters]; ok {
+                l.readNextToken()
+                l.CurToken = token.Token{Type: tokType, Literals: letters}
+            } else {
+                panic(evaluator.Error(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax", l.LineNum, l.Line)))
+            }
+        }
     }
+
+
 }
 
 func (l *Lexer) readNextToken() {

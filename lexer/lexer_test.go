@@ -491,10 +491,12 @@ func TestLogicOperator(t *testing.T) {
         expectedTokens []token.Token
     }{
         {
-            "and or not",
+            "and, or, not",
             []token.Token{
                 token.Token{Type: token.AND, Literals: "and"},
+                token.Token{Type: token.COMMA, Literals: ","},
                 token.Token{Type: token.OR, Literals: "or"},
+                token.Token{Type: token.COMMA, Literals: ","},
                 token.Token{Type: token.NOT, Literals: "not"},
             },
         },
