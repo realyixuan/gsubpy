@@ -54,6 +54,11 @@ var __contains__ = newStringInst("__contains__")
 var __iter__ = newStringInst("__iter__")
 var __next__ = newStringInst("__next__")
 
+var __add__ = newStringInst("__add__")
+var __sub__ = newStringInst("__sub__")
+var __mul__ = newStringInst("__mul__")
+var __floordiv__ = newStringInst("__floordiv__")
+
 type Object interface {
     Type()          Class
     Id()            int64
@@ -674,6 +679,48 @@ func init() {
             },
         ),
     )
+
+    Py_int.attrs().set(__add__, newBuiltinFunc(__add__,
+            func(objs ...Object) Object {
+                if objs[0].Type() != objs[1].Type() {
+                    panic(Error("TypeError: two different types"))
+                }
+
+                self, other := objs[0].(*IntegerInst), objs[1].(*IntegerInst)
+                return newIntegerInst(self.Value + other.Value)
+            },
+        ),
+    )
+
+    Py_int.attrs().set(__sub__, newBuiltinFunc(__sub__,
+            func(objs ...Object) Object {
+                self, other := objs[0].(*IntegerInst), objs[1].(*IntegerInst)
+                return newIntegerInst(self.Value - other.Value)
+            },
+        ),
+    )
+
+    Py_int.attrs().set(__mul__, newBuiltinFunc(__mul__,
+            func(objs ...Object) Object {
+                self, other := objs[0].(*IntegerInst), objs[1].(*IntegerInst)
+                return newIntegerInst(self.Value * other.Value)
+            },
+        ),
+    )
+
+    Py_int.attrs().set(__floordiv__, newBuiltinFunc(__floordiv__,
+            func(objs ...Object) Object {
+                self, other := objs[0].(*IntegerInst), objs[1].(*IntegerInst)
+
+                if other.Value == 0 {
+                    panic(Error("ZeroDivisionError: division by zero"))
+                }
+
+                return newIntegerInst(self.Value / other.Value)
+            },
+        ),
+    )
+
 }
 
 
@@ -899,6 +946,18 @@ func init() {
                 self := objs[0].(*StringInst)
                 idx := objs[1].(*IntegerInst)
                 return newStringInst(string(self.Value[idx.Value]))
+            },
+        ),
+    )
+
+    Py_str.attrs().set(__add__, newBuiltinFunc(__add__,
+            func(objs ...Object) Object {
+                if objs[0].Type() != objs[1].Type() {
+                    panic(Error("TypeError: two different types"))
+                }
+
+                self, other := objs[0].(*StringInst), objs[1].(*StringInst)
+                return newStringInst(self.Value + other.Value)
             },
         ),
     )
@@ -1130,6 +1189,16 @@ func init() {
             func(objs ...Object) Object {
                 self := objs[0].(*ListInst)
                 return newListIteratorInst(self)
+            },
+        ),
+    )
+
+    Py_list.attrs().set(__add__, newBuiltinFunc(__add__,
+            func(objs ...Object) Object {
+                self, other := objs[0].(*ListInst), objs[1].(*ListInst)
+                li := newListInst()
+                li.items = append(self.items, other.items...)
+                return li
             },
         ),
     )

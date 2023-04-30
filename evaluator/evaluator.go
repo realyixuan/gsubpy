@@ -56,37 +56,21 @@ func Eval(expression ast.Expression, env *Environment) Object {
     case *ast.IdentifierExpression:
         return env.Get(newStringInst(node.Identifier.Literals))
     case *ast.PlusExpression:
-        leftObj := Eval(node.Left, env)
-        rightObj := Eval(node.Right, env)
-
-        if leftObj.Type() != rightObj.Type() {
-            panic(Error("TypeError: two different types"))
-        }
-
-        switch leftObj.(type) {
-        case *IntegerInst:
-            return newIntegerInst(leftObj.(*IntegerInst).Value + rightObj.(*IntegerInst).Value)
-        case *StringInst:
-            return newStringInst(leftObj.(*StringInst).Value + rightObj.(*StringInst).Value)
-        }
-
+        left := Eval(node.Left, env)
+        right := Eval(node.Right, env)
+        return op_ADD(left, right)
     case *ast.MinusExpression:
-        leftObj := Eval(node.Left, env)
-        rightObj := Eval(node.Right, env)
-        return newIntegerInst(leftObj.(*IntegerInst).Value - rightObj.(*IntegerInst).Value)
+        left := Eval(node.Left, env)
+        right := Eval(node.Right, env)
+        return op_SUB(left, right)
     case *ast.MulExpression:
-        leftObj := Eval(node.Left, env)
-        rightObj := Eval(node.Right, env)
-        return newIntegerInst(leftObj.(*IntegerInst).Value * rightObj.(*IntegerInst).Value)
+        left := Eval(node.Left, env)
+        right := Eval(node.Right, env)
+        return op_MUL(left, right)
     case *ast.DivideExpression:
-        leftObj := Eval(node.Left, env)
-        rightObj := Eval(node.Right, env)
-
-        if rightObj.(*IntegerInst).Value == 0 {
-            panic(Error("ZeroDivisionError: division by zero"))
-        }
-
-        return newIntegerInst(leftObj.(*IntegerInst).Value / rightObj.(*IntegerInst).Value)
+        left := Eval(node.Left, env)
+        right := Eval(node.Right, env)
+        return op_DIV(left, right)
     case *ast.ComparisonExpression:
         leftObj := Eval(node.Left, env)
         rightObj := Eval(node.Right, env)
@@ -264,6 +248,22 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) Ob
     }
     
     return op_CALL(callObj, args...)
+}
+
+func op_ADD(left Object, right Object) Object {
+    return typeCall(__add__, left, right)
+}
+
+func op_SUB(left Object, right Object) Object {
+    return typeCall(__sub__, left, right)
+}
+
+func op_MUL(left Object, right Object) Object {
+    return typeCall(__mul__, left, right)
+}
+
+func op_DIV(left Object, right Object) Object {
+    return typeCall(__floordiv__, left, right)
 }
 
 func op_IN(left Object, right Object) Object {
