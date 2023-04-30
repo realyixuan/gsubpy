@@ -134,6 +134,8 @@ func Eval(expression ast.Expression, env *Environment) Object {
             op_SUBSCR_SET(dict, k, v)
         }
         return dict
+    case *ast.SubscriptExpression:
+        return op_SUBSCR_GET(Eval(node.Target, env), Eval(node.Val, env))
     case *ast.CallExpression:
         return evalCallExpression(node, env)
     case *ast.AttributeExpression:

@@ -71,6 +71,13 @@ type DictExpression struct {
 
 func (de *DictExpression) getExpression() {}
 
+type SubscriptExpression struct {
+    Target Expression
+    Val   Expression
+}
+
+func (se *SubscriptExpression) getExpression() {}
+
 type PlusExpression struct {
     Left    Expression
     Right   Expression

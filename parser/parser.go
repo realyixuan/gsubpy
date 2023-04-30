@@ -66,6 +66,7 @@ func New(l *lexer.Lexer) *Parser {
     p.registerInfixFn(token.IS, p.getISInfix)
     p.registerInfixFn(token.ISN, p.getISNInfix)
     p.registerInfixFn(token.LPAREN, p.getLPARENInfix)
+    p.registerInfixFn(token.LBRACKET, p.getLBRACKETInfix)
     p.registerInfixFn(token.AND, p.getANDInfix)
     p.registerInfixFn(token.OR, p.getORInfix)
 
@@ -433,6 +434,16 @@ func (p *Parser)parsingCallParams(precedence int) []ast.Expression {
     return params
 }
 
+func (p *Parser)parsingSubscript(precedence int) ast.Expression {
+    var val ast.Expression
+    for p.l.CurToken.Type != token.RBRACKET && p.l.CurToken.Type != token.EOF {
+        val = p.parsingExpression(LOWEST)
+        p.l.ReadNextToken()
+    }
+
+    return val
+}
+
 func (p *Parser)isWhiteLine() bool {
     if p.l.CurToken.Type != token.LINEFEED {
         return false
@@ -458,6 +469,8 @@ func getPrecedence(tok token.TokenType) int {
     case token.DOT:
         return ATTR
     case token.LPAREN:
+        return CALL
+    case token.LBRACKET:
         return CALL
     case token.LT:
         return COMPARISON
@@ -706,6 +719,13 @@ func (p *Parser) getLPARENInfix(left ast.Expression) ast.Expression {
     return &ast.CallExpression{
         Name: left,
         Params: p.parsingCallParams(getPrecedence(token.LPAREN)),
+    }
+}
+
+func (p *Parser) getLBRACKETInfix(left ast.Expression) ast.Expression {
+    return &ast.SubscriptExpression{
+        Target: left,
+        Val: p.parsingSubscript(getPrecedence(token.LBRACKET)),
     }
 }
 
