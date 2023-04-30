@@ -101,6 +101,10 @@ func Eval(expression ast.Expression, env *Environment) Object {
             return op_IN(leftObj, rightObj)
         case token.NIN:
             return op_NIN(leftObj, rightObj)
+        case token.IS:
+            return op_IS(leftObj, rightObj)
+        case token.ISN:
+            return op_ISN(leftObj, rightObj)
         }
         return Py_True
     case *ast.NotExpression:
@@ -262,20 +266,36 @@ func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) Ob
     return op_CALL(callObj, args...)
 }
 
-func op_EQ(left Object, right Object) Object {
-    return typeCall(__eq__, left, right)
-}
-
 func op_IN(left Object, right Object) Object {
     return typeCall(__contains__, right, left)
 }
 
 func op_NIN(left Object, right Object) Object {
-    if typeCall(__contains__, right, left) == Py_True {
+    if op_IN(left, right) == Py_True {
         return Py_False
     } else {
         return Py_True
     }
+}
+
+func op_IS(left Object, right Object) Object {
+    if left.Id() == right.Id() {
+        return Py_True
+    } else {
+        return Py_False
+    }
+}
+
+func op_ISN(left Object, right Object) Object {
+    if op_IS(left, right) == Py_True {
+        return Py_False
+    } else {
+        return Py_True
+    }
+}
+
+func op_EQ(left Object, right Object) Object {
+    return typeCall(__eq__, left, right)
 }
 
 func op_GT(left Object, right Object) Object {

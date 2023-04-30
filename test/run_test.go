@@ -104,6 +104,30 @@ res = 's' not in 'abc'
     }
 }
 
+func TestIS(t *testing.T) {
+    input := `
+a = 1
+b = a
+res = a is b
+`
+    env := testRunProgram(input)
+    if obj := env.GetFromString("res"); obj != evaluator.Py_True {
+        t.Errorf("expect True, got %v", obj)
+    }
+}
+
+func TestISN(t *testing.T) {
+    input := `
+a = 1
+b = 1
+res = a is not b
+`
+    env := testRunProgram(input)
+    if obj := env.GetFromString("res"); obj != evaluator.Py_True {
+        t.Errorf("expect True, got %v", obj)
+    }
+}
+
 func TestNOT(t *testing.T) {
     input := `
 res = not 1 > 2

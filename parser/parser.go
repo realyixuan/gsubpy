@@ -63,6 +63,8 @@ func New(l *lexer.Lexer) *Parser {
     p.registerInfixFn(token.EQ, p.getEQInfix)
     p.registerInfixFn(token.IN, p.getINInfix)
     p.registerInfixFn(token.NIN, p.getNINInfix)
+    p.registerInfixFn(token.IS, p.getISInfix)
+    p.registerInfixFn(token.ISN, p.getISNInfix)
     p.registerInfixFn(token.LPAREN, p.getLPARENInfix)
     p.registerInfixFn(token.AND, p.getANDInfix)
     p.registerInfixFn(token.OR, p.getORInfix)
@@ -467,6 +469,10 @@ func getPrecedence(tok token.TokenType) int {
         return COMPARISON
     case token.NIN:
         return COMPARISON
+    case token.IS:
+        return COMPARISON
+    case token.ISN:
+        return COMPARISON
     case token.PLUS:
         return SUM
     case token.MINUS:
@@ -677,6 +683,22 @@ func (p *Parser) getNINInfix(left ast.Expression) ast.Expression {
         Operator: token.Token{token.NIN, "not in"},
         Left: left,
         Right: p.parsingExpression(getPrecedence(token.NIN)),
+    }
+}
+
+func (p *Parser) getISInfix(left ast.Expression) ast.Expression {
+    return &ast.ComparisonExpression{
+        Operator: token.Token{token.IS, "is"},
+        Left: left,
+        Right: p.parsingExpression(getPrecedence(token.IS)),
+    }
+}
+
+func (p *Parser) getISNInfix(left ast.Expression) ast.Expression {
+    return &ast.ComparisonExpression{
+        Operator: token.Token{token.ISN, "is not"},
+        Left: left,
+        Right: p.parsingExpression(getPrecedence(token.ISN)),
     }
 }
 

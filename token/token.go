@@ -17,6 +17,8 @@ const (
     FOR         = "for"
     IN          = "in"
     NIN         = "not in"
+    IS          = "is"
+    ISN         = "is not"
 
     ASSIGN      = "="
     IDENTIFIER  = "IDENTIFIER"
@@ -67,6 +69,8 @@ var Keywords = map[string]TokenType {
     "for":      FOR,
     "in":       IN,
     "not in":   NIN,
+    "is":       IS,
+    "is not":   ISN,
 }
 
 
