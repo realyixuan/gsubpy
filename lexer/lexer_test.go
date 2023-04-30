@@ -535,3 +535,29 @@ func TestComparisonOperator(t *testing.T) {
     }
 }
 
+func TestOperatorIn(t *testing.T) {
+    testCases := []struct {
+        input   string
+        expectedTokens []token.Token
+    }{
+        {
+            "not in, in",
+            []token.Token{
+                token.Token{Type: token.NIN, Literals: "not in"},
+                token.Token{Type: token.COMMA, Literals: ","},
+                token.Token{Type: token.IN, Literals: "in"},
+            },
+        },
+    }
+
+    for _, testCase := range testCases {
+        l := New(testCase.input)
+        for _, tk := range testCase.expectedTokens {
+            if tk != l.CurToken {
+                t.Errorf("expected token %s, got token %s", tk, l.CurToken)
+            }
+            l.ReadNextToken()
+        }
+    }
+}
+

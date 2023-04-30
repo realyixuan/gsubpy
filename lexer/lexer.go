@@ -35,6 +35,18 @@ func New(input string) *Lexer {
 }
 
 func (l *Lexer) ReadNextToken() {
+    l.readNextToken()
+
+    lc := *l
+    lc.readNextToken()
+    letters := l.CurToken.Literals + " " + lc.CurToken.Literals
+    if tokType, ok := token.Keywords[letters]; ok {
+        l.readNextToken()
+        l.CurToken = token.Token{Type: tokType, Literals: letters}
+    }
+}
+
+func (l *Lexer) readNextToken() {
     l.skipWhitespace()
     l.skipoverComment()
 
@@ -128,7 +140,7 @@ func (l *Lexer) ReadNextToken() {
             num := l.readNumber()
             l.CurToken = token.Token{Type: token.INTEGER, Literals: num}
         } else if isLetter(l.ch) {
-            identifier := l.readLetter()
+            identifier := l.readLetters()
             if tokType, ok := token.Keywords[identifier]; ok {
                 l.CurToken = token.Token{Type: tokType, Literals: identifier}
             } else {
@@ -188,7 +200,7 @@ func (l *Lexer) readNumber() string {
     return res
 }
 
-func (l *Lexer) readLetter() string {
+func (l *Lexer) readLetters() string {
     res := ""
     for isLetter(l.ch) || isDigit(l.ch) {
         res += string(l.ch)
