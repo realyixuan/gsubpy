@@ -608,6 +608,17 @@ res = next(iterator)
     }
 }
 
+func TestBackSlash(t *testing.T) {
+    input := `
+res = 1 + \
+    2
+`
+    env := testRunProgram(input)
+    if res := env.GetFromString("res"); res.(*evaluator.IntegerInst).Value != 3 {
+        t.Errorf("expect 3, got %v", evaluator.StringOf(res))
+    }
+}
+
 func testRunProgram(input string) *evaluator.Environment{
     l := lexer.New(input)
     p := parser.New(l)

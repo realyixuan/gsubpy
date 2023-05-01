@@ -128,6 +128,16 @@ func (l *Lexer) readNextToken() {
         l.CurToken = token.Token{Type: token.STRING}
         l.CurToken.Literals = l.readString()
         l.readChar()
+    case '\\':
+        l.readChar()
+        if l.ch != '\n' {
+            panic(evaluator.Error(fmt.Sprintf(
+                "line %v\n\t%s\nSyntaxError: unexpected character after line continuation character",
+                l.LineNum, l.Line)))
+        }
+        l.readChar()
+        l.LineNum++
+        l.readNextToken()
     case '\n':
         l.CurToken = token.Token{Type: token.LINEFEED, Literals: string(l.ch)}
         l.readLine()
@@ -221,9 +231,18 @@ func (l *Lexer) readChar() {
 func (l *Lexer)readLine() {
     l.Line = ""
     for idx := l.idx; idx < len(l.input) && l.input[idx] != '\n'; idx++ {
-        l.Line += string(l.input[idx])
+        if l.input[idx] == '\\' {
+            if idx+1 < len(l.input) && l.input[idx+1] == '\n' {
+                l.Line += string(l.input[idx:idx+2])
+                idx++
+            } else {
+                l.Line += string(l.input[idx])
+            }
+        } else {
+            l.Line += string(l.input[idx])
+        }
     }
-    l.LineNum += 1
+    l.LineNum++
 }
 
 func (l *Lexer) skipoverComment() {

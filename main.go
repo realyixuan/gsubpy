@@ -3,6 +3,7 @@ package main
 import (
     "os"
     "fmt"
+    "strings"
 
     "github.com/realyixuan/gsubpy/repl"
     "github.com/realyixuan/gsubpy/lexer"
@@ -17,7 +18,7 @@ func main() {
             case *evaluator.ExceptionInst:
                 for _, f := range evaluator.Py_traceback.Frames {
                     fmt.Println("line", f.LineNum)
-                    fmt.Println("\t", f.Line)
+                    fmt.Println("\t", strings.TrimLeft(f.Line, " \t"))
                 }
                 fmt.Println(o.Payload)
             default:
