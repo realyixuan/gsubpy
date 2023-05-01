@@ -424,10 +424,10 @@ func (p *Parser)parsingCallParams(precedence int) []ast.Expression {
     var params []ast.Expression
     for p.l.CurToken.Type != token.RPAREN && p.l.CurToken.Type != token.EOF {
         param := p.parsingExpression(LOWEST)
-        p.l.ReadNextToken()
+        p.readNotLineFeedToken()
         params = append(params, param)
         if p.l.CurToken.Type == token.COMMA {
-            p.l.ReadNextToken()
+            p.readNotLineFeedToken()
         }
     }
 
@@ -438,7 +438,7 @@ func (p *Parser)parsingSubscript(precedence int) ast.Expression {
     var val ast.Expression
     for p.l.CurToken.Type != token.RBRACKET && p.l.CurToken.Type != token.EOF {
         val = p.parsingExpression(LOWEST)
-        p.l.ReadNextToken()
+        p.readNotLineFeedToken()
     }
 
     return val
@@ -556,13 +556,13 @@ func (p *Parser) getSTRINGPrefix() ast.Expression {
 func (p *Parser) getLBRACKETPrefix() ast.Expression {
     expr := &ast.ListExpression{}
 
-    p.l.ReadNextToken()
+    p.readNotLineFeedToken()
     for p.l.CurToken.Type != token.EOF && p.l.CurToken.Type != token.RBRACKET {
         expr.Items = append(expr.Items, p.parsingExpression(LOWEST))
-        p.l.ReadNextToken()
+        p.readNotLineFeedToken()
 
         if p.l.CurToken.Type == token.COMMA {
-            p.l.ReadNextToken()
+            p.readNotLineFeedToken()
         }
     }
 
@@ -572,21 +572,21 @@ func (p *Parser) getLBRACKETPrefix() ast.Expression {
 func (p *Parser) getLBRACEPrefix() ast.Expression {
     expr := &ast.DictExpression{}
 
-    p.l.ReadNextToken()
+    p.readNotLineFeedToken()
     for p.l.CurToken.Type != token.EOF && p.l.CurToken.Type != token.RBRACE {
         expr.Keys = append(expr.Keys, p.parsingExpression(LOWEST))
-        p.l.ReadNextToken()
+        p.readNotLineFeedToken()
 
         if p.l.CurToken.Type != token.COLON {
             panic(evaluator.Error(fmt.Sprintf("line %v\n\t%s\nSyntaxError: there is a syntax error in dict", p.l.LineNum, p.l.Line)))
         }
-        p.l.ReadNextToken()
+        p.readNotLineFeedToken()
 
         expr.Vals = append(expr.Vals, p.parsingExpression(LOWEST))
-        p.l.ReadNextToken()
+        p.readNotLineFeedToken()
 
         if p.l.CurToken.Type == token.COMMA {
-            p.l.ReadNextToken()
+            p.readNotLineFeedToken()
         }
     }
 
@@ -598,12 +598,12 @@ func (p *Parser) getLBRACEPrefix() ast.Expression {
 }
 
 func (p *Parser) getLPARENPrefix() ast.Expression {
-    p.l.ReadNextToken()
+    p.readNotLineFeedToken()
 
     expr := p.parsingExpression(LOWEST)
 
     if p.l.PeekNextToken().Type == token.RPAREN {
-        p.l.ReadNextToken()
+        p.readNotLineFeedToken()
     } else {
         panic(evaluator.Error(fmt.Sprintf("line %v\n\t%s\nSyntaxError: expect ')'", p.l.LineNum, p.l.Line)))
     }
@@ -745,6 +745,10 @@ func (p *Parser) getORInfix(left ast.Expression) ast.Expression {
 
 func (p *Parser) registerInfixFn(tok token.TokenType, fn prefInfixFn) {
     p.infixFns[tok] = fn
+}
+
+func (p *Parser) readNotLineFeedToken() {
+    for p.l.ReadNextToken(); p.l.CurToken.Type == token.LINEFEED; p.l.ReadNextToken() {}
 }
 
 const (

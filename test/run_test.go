@@ -586,6 +586,22 @@ res = list[2]
     }
 }
 
+func TestListWithMultiline(t *testing.T) {
+    input := `
+list = [1,
+    2,
+    3
+,
+
+4]
+res = list[2]
+`
+    env := testRunProgram(input)
+    if res := env.GetFromString("res"); res.(*evaluator.IntegerInst).Value != 3 {
+        t.Errorf("expect 3, got %v", evaluator.StringOf(res))
+    }
+}
+
 func TestIterString(t *testing.T) {
     input := `
 iterator = iter("abc")
