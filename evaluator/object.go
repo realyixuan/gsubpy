@@ -60,20 +60,19 @@ var __mul__ = newStringInst("__mul__")
 var __floordiv__ = newStringInst("__floordiv__")
 
 type Object interface {
-    Type()          Class
-    Id()            int64
-    Attr(*StringInst)    Object
+    otype()          Class
+    id()            int64
     attrs()         *DictInst
 }
 
 type Class interface {
     Object
-    Base() Class
+    cbase() Class
 }
 
 type Function interface {
     Object
-    Call(...Object) Object
+    call(...Object) Object
 }
 
 type objectData struct {
@@ -98,7 +97,8 @@ var Pyobject__repr__ = newBuiltinFunc(
     __repr__,
     func(objs ...Object) Object {
         self := objs[0]
-        s := fmt.Sprintf("<%v object at 0x%x>", self.Type().Attr(__name__).(*StringInst).Value, self.Id())
+        s := fmt.Sprintf("<%v object at 0x%x>",
+            op_GETATTR(self.otype(), __name__), self.id())
         return newStringInst(s)
     },
 )
@@ -111,9 +111,9 @@ var Pyobject__str__ = newBuiltinFunc(
         var s string
         switch self.(type) {
         case Class:
-            s = fmt.Sprintf("<class '%v'>", self.Attr(__name__).(*StringInst).Value)
+            s = fmt.Sprintf("<class '%v'>", op_GETATTR(self.otype(), __name__))
         default:
-            s = Pyobject__repr__.Call(self).(*StringInst).Value
+            s = Pyobject__repr__.call(self).(*StringInst).Value
         }
 
         return newStringInst(s)
@@ -124,7 +124,7 @@ var Pyobject__eq__ = newBuiltinFunc(__eq__,
     func(objs ...Object) Object {
         self := objs[0]
         other := objs[1]
-        if self.Id() == other.Id() {
+        if self.id() == other.id() {
             return Py_True
         } else {
             return Py_False
@@ -144,7 +144,7 @@ var Pyobject__gt__ = newBuiltinFunc(__gt__,
 var Pyobject__hash__ = newBuiltinFunc(__hash__,
     func(objs ...Object) Object {
         self := objs[0]
-        id := self.Id()
+        id := self.id()
 
         buf := make([]byte, 8)
         binary.LittleEndian.PutUint64(buf, uint64(id))
@@ -185,10 +185,9 @@ func newPyobject() *Pyobject {
     return o
 }
 
-func (po *Pyobject) Type() Class { return Py_type }
-func (po *Pyobject) Base() Class { return nil }
-func (po *Pyobject) Id() int64 { return int64(uintptr(unsafe.Pointer(po))) }
-func (po *Pyobject) Attr(name *StringInst) Object { return po.d.get(name) }
+func (po *Pyobject) otype() Class { return Py_type }
+func (po *Pyobject) cbase() Class { return nil }
+func (po *Pyobject) id() int64 { return int64(uintptr(unsafe.Pointer(po))) }
 
 var Py_object = newPyobject()
 func init() {
@@ -218,19 +217,21 @@ func newPytype() *Pytype {
     return o
 }
 
-func (pt *Pytype) Type() Class { return Py_type }
-func (pt *Pytype) Base() Class { return Py_object }
-func (pt *Pytype) Id() int64 { return int64(uintptr(unsafe.Pointer(pt))) }
-func (pt *Pytype) Attr(name *StringInst) Object { return Getattr(pt, name) }
+func (pt *Pytype) otype() Class { return Py_type }
+func (pt *Pytype) cbase() Class { return Py_object }
+func (pt *Pytype) id() int64 { return int64(uintptr(unsafe.Pointer(pt))) }
 
 var Py_type = newPytype()
 func init()  {
     Py_type.attrs().set(__name__, newStringInst("type"))
     Py_type.attrs().set(__new__, newBuiltinFunc(__new__,
             func(objs ...Object) Object {
-                var name *StringInst = objs[0].(*StringInst)
-                var base *Pyclass = objs[1].(*Pyclass)
-                var attrs *DictInst = objs[2].(*DictInst)
+                if len(objs[1:]) == 1 {
+                    return objs[1].otype()
+                }
+                var name *StringInst = objs[1].(*StringInst)
+                var base = objs[2].(Class)
+                var attrs = (objs[3]).(*DictInst)
                 return newPyclass(name, base, attrs)
             },
         ),
@@ -246,16 +247,10 @@ func init()  {
     Py_type.attrs().set(__call__, newBuiltinFunc(__call__,
             func(objs ...Object) Object {
                 cls := objs[0]
-                switch cls {
-                case Py_type:
-                    return objs[1].Type()
-                default:
-                    self := op_CALL(attrItself(cls, __new__), objs...)
-
-                    args := append([]Object{self}, objs[1:]...)
-                    op_CALL(attrItself(cls, __init__), args...)
-                    return self
-                }
+                self := op_CALL(attrItself(cls, __new__), objs...)
+                args := append([]Object{self}, objs[1:]...)
+                op_CALL(attrItself(cls, __init__), args...)
+                return self
             },
         ),
     )
@@ -297,10 +292,9 @@ func (pc *Pyclass) init() {
     pc.attrs().set(__name__, pc.name)
 }
 
-func (pc *Pyclass) Type() Class { return Py_type }
-func (pc *Pyclass) Base() Class { return pc.base }
-func (pc *Pyclass) Id() int64 { return int64(uintptr(unsafe.Pointer(pc))) }
-func (pc *Pyclass) Attr(name *StringInst) Object { return Getattr(pc, name) }
+func (pc *Pyclass) otype() Class { return Py_type }
+func (pc *Pyclass) cbase() Class { return pc.base }
+func (pc *Pyclass) id() int64 { return int64(uintptr(unsafe.Pointer(pc))) }
 
 type PyInst struct {
     *objectData
@@ -316,9 +310,8 @@ func newPyInst(cls Class) *PyInst {
     }
 }
 
-func (i *PyInst) Type() Class { return i.class }
-func (i *PyInst) Id() int64 { return int64(uintptr(unsafe.Pointer(i))) }
-func (i *PyInst) Attr(name *StringInst) Object { return Getattr(i, name) }
+func (i *PyInst) otype() Class { return i.class }
+func (i *PyInst) id() int64 { return int64(uintptr(unsafe.Pointer(i))) }
 
 type PyFunction struct {
     *objectData
@@ -333,10 +326,9 @@ func newPyFunction() *PyFunction {
     return o
 }
 
-func (pf *PyFunction) Type() Class { return Py_type }
-func (pf *PyFunction) Base() Class { return Py_object }
-func (pf *PyFunction) Id() int64 { return int64(uintptr(unsafe.Pointer(pf))) }
-func (pf *PyFunction) Attr(name *StringInst) Object { return Getattr(pf, name) }
+func (pf *PyFunction) otype() Class { return Py_type }
+func (pf *PyFunction) cbase() Class { return Py_object }
+func (pf *PyFunction) id() int64 { return int64(uintptr(unsafe.Pointer(pf))) }
 
 var Py_function = newPyFunction()
 func init() {
@@ -344,7 +336,7 @@ func init() {
     Py_function.attrs().set(__call__, newBuiltinFunc(__call__,
             func(objs ...Object) Object {
                 self := objs[0]
-                return self.(Function).Call(objs[1:]...)
+                return self.(Function).call(objs[1:]...)
             },
         ),
     )
@@ -353,7 +345,7 @@ func init() {
 var PyBuiltinFunction__call__ = newBuiltinFunc(__call__,
     func(objs ...Object) Object {
         self := objs[0]
-        return self.(Function).Call(objs[1:]...)
+        return self.(Function).call(objs[1:]...)
     },
 )
 
@@ -370,10 +362,9 @@ func newPyBuiltinFunction() *PyBuiltinFunction {
     return o
 }
 
-func (bf *PyBuiltinFunction) Type() Class { return Py_type }
-func (bf *PyBuiltinFunction) Base() Class { return Py_object }
-func (bf *PyBuiltinFunction) Id() int64 { return int64(uintptr(unsafe.Pointer(bf))) }
-func (bf *PyBuiltinFunction) Attr(name *StringInst) Object { return Getattr(bf, name) }
+func (bf *PyBuiltinFunction) otype() Class { return Py_type }
+func (bf *PyBuiltinFunction) cbase() Class { return Py_object }
+func (bf *PyBuiltinFunction) id() int64 { return int64(uintptr(unsafe.Pointer(bf))) }
 
 var Py_builtin_function = newPyBuiltinFunction()
 func init() {
@@ -412,7 +403,7 @@ func (f *FunctionInst) init() {
     f.attrs().set(__name__, f.Name)
 }
 
-func (f *FunctionInst) Call(objs ...Object) Object {
+func (f *FunctionInst) call(objs ...Object) Object {
     env := f.env.DeriveEnv()
     for i := 0; i < len(f.Params); i++ {
         env.Set(f.Params[i], objs[i])
@@ -421,9 +412,8 @@ func (f *FunctionInst) Call(objs ...Object) Object {
     return rv
 }
 
-func (f *FunctionInst) Type() Class { return Py_function }
-func (f *FunctionInst) Id() int64 { return int64(uintptr(unsafe.Pointer(f))) }
-func (f *FunctionInst) Attr(name *StringInst) Object { return Getattr(f, name) }
+func (f *FunctionInst) otype() Class { return Py_function }
+func (f *FunctionInst) id() int64 { return int64(uintptr(unsafe.Pointer(f))) }
 
 type builtinFn func(...Object) Object
 
@@ -443,10 +433,9 @@ func newBuiltinFunc(name *StringInst, f builtinFn) *BuiltinFunctionInst {
     }
 }
 
-func (f *BuiltinFunctionInst) Call(objs ...Object) Object { return f.gfunc(objs...) }
-func (f *BuiltinFunctionInst) Type() Class { return Py_builtin_function }
-func (f *BuiltinFunctionInst) Id() int64 { return int64(uintptr(unsafe.Pointer(f))) }
-func (f *BuiltinFunctionInst) Attr(name *StringInst) Object { return Getattr(f, name) }
+func (f *BuiltinFunctionInst) call(objs ...Object) Object { return f.gfunc(objs...) }
+func (f *BuiltinFunctionInst) otype() Class { return Py_builtin_function }
+func (f *BuiltinFunctionInst) id() int64 { return int64(uintptr(unsafe.Pointer(f))) }
 
 var Py_print = newBuiltinFunc(
     newStringInst("print"),
@@ -463,7 +452,7 @@ var Py_print = newBuiltinFunc(
 var Py_len = newBuiltinFunc(
     newStringInst("len"),
     func(objs ...Object) Object {
-        lenFn := attrItself(objs[0].Type(), __len__)
+        lenFn := attrItself(objs[0].otype(), __len__)
         return op_CALL(lenFn, objs[0])
     },
 )
@@ -471,15 +460,22 @@ var Py_len = newBuiltinFunc(
 var Py_hash = newBuiltinFunc(
     newStringInst("hash"),
     func(objs ...Object) Object {
-        hashFn := attrItself(objs[0].Type(), __hash__).(Function)
+        hashFn := attrItself(objs[0].otype(), __hash__).(Function)
         return op_CALL(hashFn, objs[0])
+    },
+)
+
+var Py_id = newBuiltinFunc(
+    newStringInst("id"),
+    func(objs ...Object) Object {
+        return newIntegerInst(objs[0].id())
     },
 )
 
 var Py_iter = newBuiltinFunc(
     newStringInst("iter"),
     func(objs ...Object) Object {
-        iterFn := attrItself(objs[0].Type(), __iter__)
+        iterFn := attrItself(objs[0].otype(), __iter__)
         return op_CALL(iterFn, objs[0])
     },
 )
@@ -487,7 +483,7 @@ var Py_iter = newBuiltinFunc(
 var Py_next = newBuiltinFunc(
     newStringInst("next"),
     func(objs ...Object) Object {
-        nextFn := attrItself(objs[0].Type(), __next__)
+        nextFn := attrItself(objs[0].otype(), __next__)
         return op_CALL(nextFn, objs[0])
     },
 )
@@ -508,20 +504,19 @@ func newMethod(inst Object, f Function) *MethodInst {
     }
 }
 
-func (m *MethodInst) Type() Class { return Py_function }
-func (m *MethodInst) Id() int64 { return int64(uintptr(unsafe.Pointer(m))) }
-func (m *MethodInst) Attr(name *StringInst) Object { return Getattr(m, name) }
-func (m *MethodInst) Call(objs ...Object) Object {
+func (m *MethodInst) otype() Class { return Py_function }
+func (m *MethodInst) id() int64 { return int64(uintptr(unsafe.Pointer(m))) }
+func (m *MethodInst) call(objs ...Object) Object {
     objs = append([]Object{m.inst}, objs...)
     return op_CALL(m.f, objs...)
 }
 
-type PyNoneType struct {
+type PyNoneotype struct {
     *objectData
 }
 
-func newPyNoneType() *PyNoneType {
-    o := &PyNoneType{
+func newPyNoneotype() *PyNoneotype {
+    o := &PyNoneotype{
         objectData: &objectData{
             d: newDictInst(),
         },
@@ -529,15 +524,14 @@ func newPyNoneType() *PyNoneType {
     return o
 }
 
-func (pn *PyNoneType) Type() Class { return Py_type }
-func (pn *PyNoneType) Base() Class { return Py_object }
-func (pn *PyNoneType) Id() int64 { return int64(uintptr(unsafe.Pointer(pn))) }
-func (pn *PyNoneType) Attr(name *StringInst) Object { return Getattr(pn, name) }
+func (pn *PyNoneotype) otype() Class { return Py_type }
+func (pn *PyNoneotype) cbase() Class { return Py_object }
+func (pn *PyNoneotype) id() int64 { return int64(uintptr(unsafe.Pointer(pn))) }
 
-var Py_NoneType = newPyNoneType()
+var Py_Noneotype = newPyNoneotype()
 func init() {
-    Py_NoneType.attrs().set(__name__, newStringInst("NoneType"))
-    Py_NoneType.attrs().set(__str__, newBuiltinFunc(__str__,
+    Py_Noneotype.attrs().set(__name__, newStringInst("Noneotype"))
+    Py_Noneotype.attrs().set(__str__, newBuiltinFunc(__str__,
             func(objs ...Object) Object {
                 return newStringInst("None")
             },
@@ -555,9 +549,8 @@ func newPyNone() *PyNone {
     }
 }
 
-func (n *PyNone) Type() Class { return Py_NoneType }
-func (n *PyNone) Id() int64 { return int64(uintptr(unsafe.Pointer(n))) }
-func (n *PyNone) Attr(name *StringInst) Object { return Getattr(n, name) }
+func (n *PyNone) otype() Class { return Py_Noneotype }
+func (n *PyNone) id() int64 { return int64(uintptr(unsafe.Pointer(n))) }
 
 var Py_None = newPyNone()
 
@@ -574,10 +567,9 @@ func newPyint() *Pyint {
     return o
 }
 
-func (pi *Pyint) Type() Class { return Py_type }
-func (pi *Pyint) Base() Class { return Py_object }
-func (pi *Pyint) Id() int64 { return int64(uintptr(unsafe.Pointer(pi))) }
-func (pi *Pyint) Attr(name *StringInst) Object { return Getattr(pi, name) }
+func (pi *Pyint) otype() Class { return Py_type }
+func (pi *Pyint) cbase() Class { return Py_object }
+func (pi *Pyint) id() int64 { return int64(uintptr(unsafe.Pointer(pi))) }
 
 var Py_int = newPyint()
 func init() {
@@ -682,8 +674,8 @@ func init() {
 
     Py_int.attrs().set(__add__, newBuiltinFunc(__add__,
             func(objs ...Object) Object {
-                if objs[0].Type() != objs[1].Type() {
-                    panic(Error("TypeError: two different types"))
+                if objs[0].otype() != objs[1].otype() {
+                    panic(Error("otypeError: two different types"))
                 }
 
                 self, other := objs[0].(*IntegerInst), objs[1].(*IntegerInst)
@@ -740,9 +732,8 @@ func newIntegerInst(v int64) *IntegerInst {
     }
 }
 
-func (i *IntegerInst) Type() Class { return i.class }
-func (i *IntegerInst) Id() int64 { return int64(uintptr(unsafe.Pointer(i))) }
-func (i *IntegerInst) Attr(name *StringInst) Object { return Getattr(i, name) }
+func (i *IntegerInst) otype() Class { return i.class }
+func (i *IntegerInst) id() int64 { return int64(uintptr(unsafe.Pointer(i))) }
 
 type Pystr_iterator struct {
     *objectData
@@ -783,10 +774,9 @@ func (psi *Pystr_iterator) init() {
 
 }
 
-func (psi *Pystr_iterator) Type() Class { return Py_type }
-func (psi *Pystr_iterator) Base() Class { return Py_object }
-func (psi *Pystr_iterator) Id() int64 { return int64(uintptr(unsafe.Pointer(psi))) }
-func (psi *Pystr_iterator) Attr(name *StringInst) Object { return Getattr(psi, name) }
+func (psi *Pystr_iterator) otype() Class { return Py_type }
+func (psi *Pystr_iterator) cbase() Class { return Py_object }
+func (psi *Pystr_iterator) id() int64 { return int64(uintptr(unsafe.Pointer(psi))) }
 
 var Py_str_iterator = newPystr_iterator()
 
@@ -804,9 +794,8 @@ func newStringIteratorInst(t *StringInst) *StringIteratorInst {
     }
 }
 
-func (lsi *StringIteratorInst) Type() Class { return Py_str_iterator }
-func (lsi *StringIteratorInst) Id() int64 { return int64(uintptr(unsafe.Pointer(lsi))) }
-func (lsi *StringIteratorInst) Attr(name *StringInst) Object { return Getattr(lsi, name) }
+func (lsi *StringIteratorInst) otype() Class { return Py_str_iterator }
+func (lsi *StringIteratorInst) id() int64 { return int64(uintptr(unsafe.Pointer(lsi))) }
 
 
 var Pystr__hash__ = newBuiltinFunc(__hash__,
@@ -842,10 +831,9 @@ func newPystr() *Pystr {
     return o
 }
 
-func (ps *Pystr) Type() Class { return Py_type }
-func (ps *Pystr) Base() Class { return Py_object }
-func (ps *Pystr) Id() int64 { return int64(uintptr(unsafe.Pointer(ps))) }
-func (ps *Pystr) Attr(name *StringInst) Object { return Getattr(ps, name) }
+func (ps *Pystr) otype() Class { return Py_type }
+func (ps *Pystr) cbase() Class { return Py_object }
+func (ps *Pystr) id() int64 { return int64(uintptr(unsafe.Pointer(ps))) }
 
 var Py_str = newPystr()
 func init() {
@@ -952,8 +940,8 @@ func init() {
 
     Py_str.attrs().set(__add__, newBuiltinFunc(__add__,
             func(objs ...Object) Object {
-                if objs[0].Type() != objs[1].Type() {
-                    panic(Error("TypeError: two different types"))
+                if objs[0].otype() != objs[1].otype() {
+                    panic(Error("otypeError: two different types"))
                 }
 
                 self, other := objs[0].(*StringInst), objs[1].(*StringInst)
@@ -978,9 +966,8 @@ func newStringInst(s string) *StringInst {
     }
 }
 
-func (s *StringInst) Type() Class { return Py_str }
-func (s *StringInst) Id() int64 { return int64(uintptr(unsafe.Pointer(s))) }
-func (s *StringInst) Attr(name *StringInst) Object { return Getattr(s, name) }
+func (s *StringInst) otype() Class { return Py_str }
+func (s *StringInst) id() int64 { return int64(uintptr(unsafe.Pointer(s))) }
 func (s *StringInst) String() string { return s.Value }
 
 type Pybool struct {
@@ -996,18 +983,17 @@ func newPybool() *Pybool {
     return o
 }
 
-func (pb *Pybool) Type() Class { return Py_type }
-func (pb *Pybool) Base() Class { return Py_int }
-func (pb *Pybool) Id() int64 { return int64(uintptr(unsafe.Pointer(pb))) }
-func (pb *Pybool) Attr(name *StringInst) Object { return Getattr(pb, name) }
+func (pb *Pybool) otype() Class { return Py_type }
+func (pb *Pybool) cbase() Class { return Py_int }
+func (pb *Pybool) id() int64 { return int64(uintptr(unsafe.Pointer(pb))) }
 
 var Py_bool = newPybool()
 func init() {
     Py_bool.attrs().set(__new__, newBuiltinFunc(__new__,
             func(objs ...Object) Object {
-                if boolFn := attrItself(objs[1].Type(), __bool__); boolFn != nil {
+                if boolFn := attrItself(objs[1].otype(), __bool__); boolFn != nil {
                     return op_CALL(boolFn, objs[1])
-                } else if lenFn := attrItself(objs[1].Type(), __len__); lenFn != nil {
+                } else if lenFn := attrItself(objs[1].otype(), __len__); lenFn != nil {
                     l := op_CALL(lenFn, objs[1]).(*IntegerInst)
                     if l.Value != 0 {
                         return Py_True
@@ -1089,10 +1075,9 @@ func (pli *Pylist_iterator) init() {
 
 }
 
-func (pli *Pylist_iterator) Type() Class { return Py_type }
-func (pli *Pylist_iterator) Base() Class { return Py_object }
-func (pli *Pylist_iterator) Id() int64 { return int64(uintptr(unsafe.Pointer(pli))) }
-func (pli *Pylist_iterator) Attr(name *StringInst) Object { return Getattr(pli, name) }
+func (pli *Pylist_iterator) otype() Class { return Py_type }
+func (pli *Pylist_iterator) cbase() Class { return Py_object }
+func (pli *Pylist_iterator) id() int64 { return int64(uintptr(unsafe.Pointer(pli))) }
 
 var Py_list_iterator = newPylist_iterator()
 
@@ -1110,9 +1095,8 @@ func newListIteratorInst(t *ListInst) *ListIteratorInst {
     }
 }
 
-func (lii *ListIteratorInst) Type() Class { return Py_list_iterator }
-func (lii *ListIteratorInst) Id() int64 { return int64(uintptr(unsafe.Pointer(lii))) }
-func (lii *ListIteratorInst) Attr(name *StringInst) Object { return Getattr(lii, name) }
+func (lii *ListIteratorInst) otype() Class { return Py_list_iterator }
+func (lii *ListIteratorInst) id() int64 { return int64(uintptr(unsafe.Pointer(lii))) }
 
 type Pylist struct {
     *objectData
@@ -1126,10 +1110,9 @@ func newPylist() *Pylist {
     }
 }
 
-func (pl *Pylist) Type() Class { return Py_type }
-func (pl *Pylist) Base() Class { return Py_object }
-func (pl *Pylist) Id() int64 { return int64(uintptr(unsafe.Pointer(pl))) }
-func (pl *Pylist) Attr(name *StringInst) Object { return Getattr(pl, name) }
+func (pl *Pylist) otype() Class { return Py_type }
+func (pl *Pylist) cbase() Class { return Py_object }
+func (pl *Pylist) id() int64 { return int64(uintptr(unsafe.Pointer(pl))) }
 
 var Py_list = newPylist()
 func init() {
@@ -1219,9 +1202,8 @@ func newListInst() *ListInst {
     }
 }
 
-func (l *ListInst) Type() Class { return Py_list }
-func (l *ListInst) Id() int64 { return int64(uintptr(unsafe.Pointer(l))) }
-func (l *ListInst) Attr(name *StringInst) Object { return Getattr(l, name) }
+func (l *ListInst) otype() Class { return Py_list }
+func (l *ListInst) id() int64 { return int64(uintptr(unsafe.Pointer(l))) }
 
 type Pydict_keyiterator struct {
     *objectData
@@ -1262,10 +1244,9 @@ func (dki *Pydict_keyiterator) init() {
 
 }
 
-func (dki *Pydict_keyiterator) Type() Class { return Py_type }
-func (dki *Pydict_keyiterator) Base() Class { return Py_object }
-func (dki *Pydict_keyiterator) Id() int64 { return int64(uintptr(unsafe.Pointer(dki))) }
-func (dki *Pydict_keyiterator) Attr(name *StringInst) Object { return Getattr(dki, name) }
+func (dki *Pydict_keyiterator) otype() Class { return Py_type }
+func (dki *Pydict_keyiterator) cbase() Class { return Py_object }
+func (dki *Pydict_keyiterator) id() int64 { return int64(uintptr(unsafe.Pointer(dki))) }
 
 var Py_dict_keyiterator = newPydict_keyiterator()
 
@@ -1291,9 +1272,8 @@ func newDictKeyiteratorInst(t *DictInst) *DictKeyiteratorInst {
     }
 }
 
-func (ki *DictKeyiteratorInst) Type() Class { return Py_dict_keyiterator }
-func (ki *DictKeyiteratorInst) Id() int64 { return int64(uintptr(unsafe.Pointer(ki))) }
-func (ki *DictKeyiteratorInst) Attr(name *StringInst) Object { return Getattr(ki, name) }
+func (ki *DictKeyiteratorInst) otype() Class { return Py_dict_keyiterator }
+func (ki *DictKeyiteratorInst) id() int64 { return int64(uintptr(unsafe.Pointer(ki))) }
 
 type Pydict struct {
     *objectData
@@ -1307,10 +1287,9 @@ func newPydict() *Pydict {
     }
 }
 
-func (pd *Pydict) Type() Class { return Py_type }
-func (pd *Pydict) Base() Class { return Py_object }
-func (pd *Pydict) Id() int64 { return int64(uintptr(unsafe.Pointer(pd))) }
-func (pd *Pydict) Attr(name *StringInst) Object { return Getattr(pd, name) }
+func (pd *Pydict) otype() Class { return Py_type }
+func (pd *Pydict) cbase() Class { return Py_object }
+func (pd *Pydict) id() int64 { return int64(uintptr(unsafe.Pointer(pd))) }
 
 var Py_dict = newPydict()
 func init() {
@@ -1421,15 +1400,14 @@ func newDictInst() *DictInst {
 }
 
 func (d *DictInst) attrs() *DictInst { return d.d }
-func (d *DictInst) Type() Class { return Py_dict }
-func (d *DictInst) Id() int64 { return int64(uintptr(unsafe.Pointer(d))) }
-func (d *DictInst) Attr(name *StringInst) Object { return Getattr(d, name) }
+func (d *DictInst) otype() Class { return Py_dict }
+func (d *DictInst) id() int64 { return int64(uintptr(unsafe.Pointer(d))) }
 
 func (d *DictInst) get(key *StringInst) Object {
-    hashVal := Pystr__hash__.Call(key)
+    hashVal := Pystr__hash__.call(key)
     if pairs, ok := d.store[hashVal.(*IntegerInst).Value]; ok {
         for _, pair := range pairs {
-            if Pystr__eq__.Call(key, pair.Key) == Py_True {
+            if Pystr__eq__.call(key, pair.Key) == Py_True {
                 return pair.Value
             }
         }
@@ -1439,11 +1417,11 @@ func (d *DictInst) get(key *StringInst) Object {
 }
 
 func (d *DictInst) set(key *StringInst, val Object) {
-    hashVal := Pystr__hash__.Call(key)
+    hashVal := Pystr__hash__.call(key)
 
     var flag bool = false
     for _, pair := range d.store[hashVal.(*IntegerInst).Value] {
-        if Pystr__eq__.Call(key, pair.Key) == Py_True {
+        if Pystr__eq__.call(key, pair.Key) == Py_True {
             pair.Value = val
             flag = true
         }
@@ -1498,10 +1476,9 @@ func (pri *Pyrange_iterator) init() {
     )
 }
 
-func (pri *Pyrange_iterator) Type() Class { return Py_type }
-func (pri *Pyrange_iterator) Base() Class { return Py_object }
-func (pri *Pyrange_iterator) Id() int64 { return int64(uintptr(unsafe.Pointer(pri))) }
-func (pri *Pyrange_iterator) Attr(name *StringInst) Object { return Getattr(pri, name) }
+func (pri *Pyrange_iterator) otype() Class { return Py_type }
+func (pri *Pyrange_iterator) cbase() Class { return Py_object }
+func (pri *Pyrange_iterator) id() int64 { return int64(uintptr(unsafe.Pointer(pri))) }
 
 var Py_range_iterator = newPyrange_iterator()
 
@@ -1519,9 +1496,8 @@ func newRangeIteratorInst(t *RangeInst) *RangeIteratorInst {
     }
 }
 
-func (rii *RangeIteratorInst) Type() Class { return Py_range_iterator }
-func (rii *RangeIteratorInst) Id() int64 { return int64(uintptr(unsafe.Pointer(rii))) }
-func (rii *RangeIteratorInst) Attr(name *StringInst) Object { return Getattr(rii, name) }
+func (rii *RangeIteratorInst) otype() Class { return Py_range_iterator }
+func (rii *RangeIteratorInst) id() int64 { return int64(uintptr(unsafe.Pointer(rii))) }
 
 type Pyrange struct {
     *objectData
@@ -1572,10 +1548,9 @@ func (pr *Pyrange) init() {
 
 }
 
-func (pr *Pyrange) Type() Class { return Py_type }
-func (pr *Pyrange) Base() Class { return Py_object }
-func (pr *Pyrange) Id() int64 { return int64(uintptr(unsafe.Pointer(pr))) }
-func (pr *Pyrange) Attr(name *StringInst) Object { return Getattr(pr, name) }
+func (pr *Pyrange) otype() Class { return Py_type }
+func (pr *Pyrange) cbase() Class { return Py_object }
+func (pr *Pyrange) id() int64 { return int64(uintptr(unsafe.Pointer(pr))) }
 
 var Py_range = newPyrange()
 
@@ -1595,19 +1570,17 @@ func newRangeInst(start, end, step int64) *RangeInst {
     }
 }
 
-func (ri *RangeInst) Type() Class { return Py_range }
-func (ri *RangeInst) Id() int64 { return int64(uintptr(unsafe.Pointer(ri))) }
-func (ri *RangeInst) Attr(name *StringInst) Object { return Getattr(ri, name) }
+func (ri *RangeInst) otype() Class { return Py_range }
+func (ri *RangeInst) id() int64 { return int64(uintptr(unsafe.Pointer(ri))) }
 
 
 type PyException struct {
     *objectData
 }
 
-func (pe *PyException) Type() Class { return Py_type }
-func (pe *PyException) Id() int64 { return int64(uintptr(unsafe.Pointer(pe))) }
-func (pe *PyException) Base() Class { return Py_object }
-func (pe *PyException) Attr(name *StringInst) Object { return Getattr(pe, name) }
+func (pe *PyException) otype() Class { return Py_type }
+func (pe *PyException) id() int64 { return int64(uintptr(unsafe.Pointer(pe))) }
+func (pe *PyException) cbase() Class { return Py_object }
 
 var Py_Exception = &PyException{
     &objectData{
@@ -1636,9 +1609,8 @@ func Error(s string) *ExceptionInst {
     return newExceptionInst(newStringInst(s))
 }
 
-func (e *ExceptionInst) Type() Class { return Py_Exception }
-func (e *ExceptionInst) Id() int64 { return int64(uintptr(unsafe.Pointer(e))) }
-func (e *ExceptionInst) Attr(name *StringInst) Object { return Getattr(e, name) }
+func (e *ExceptionInst) otype() Class { return Py_Exception }
+func (e *ExceptionInst) id() int64 { return int64(uintptr(unsafe.Pointer(e))) }
 
 func hash(bv []byte) int64 {
     // sha1 just fine
@@ -1651,7 +1623,7 @@ func hash(bv []byte) int64 {
 }
 
 func Getattr(obj Object, name *StringInst) Object {
-    __getattribute__ := attrFromAll(obj.Type(), __getattribute__).(Function)
+    __getattribute__ := attrFromAll(obj.otype(), __getattribute__).(Function)
     return op_CALL(__getattribute__, obj, name)
 }
 
@@ -1659,7 +1631,7 @@ func attrItself(obj Object, name *StringInst) Object {
     switch obj.(type) {
     case Class:
         cls := obj.(Class)
-        for c := cls; c != nil; c = c.Base() {
+        for c := cls; c != nil; c = c.cbase() {
             if rv := c.attrs().get(name); rv != nil {
                 return rv
             }
@@ -1678,7 +1650,7 @@ func attrFromAll(obj Object, name *StringInst) Object {
         return rv
     }
 
-    if rv := attrItself(obj.Type(), name); rv != nil {
+    if rv := attrItself(obj.otype(), name); rv != nil {
         switch v := rv.(type) {
         case Function:
             return newMethod(obj, v)

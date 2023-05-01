@@ -397,11 +397,11 @@ res = Foo(1).a
 func TestTypeReturnType(t *testing.T) {
     input := `
 s = "hello world"
-res = type(s)
+res = type(s) is str
     `
     env := testRunProgram(input)
-    if obj := env.GetFromString("res"); obj != evaluator.Py_str {
-        t.Errorf("type() wrong: expected Py_str %v, got %v", evaluator.Py_str.Id(), obj.Id())
+    if obj := env.GetFromString("res"); obj != evaluator.Py_True {
+        t.Errorf("type() wrong: expected True , got %v", evaluator.StringOf(obj))
     }
 }
 

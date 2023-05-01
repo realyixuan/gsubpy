@@ -12,6 +12,7 @@ var __builtins__ = map[string] Object{
     "len": Py_len,
     "bool": Py_bool,
     "hash": Py_hash,
+    "id": Py_id,
     "Exception": Py_Exception,
 
     "iter": Py_iter,

@@ -140,7 +140,7 @@ func Eval(expression ast.Expression, env *Environment) Object {
         return evalCallExpression(node, env)
     case *ast.AttributeExpression:
         inst := Eval(node.Expr, env)
-        return inst.Attr(newStringInst(node.Attr.Literals))
+        return op_GETATTR(inst, newStringInst(node.Attr.Literals))
     case *ast.ExpressionStatement:
         return Eval(node.Value, env)
     }
@@ -232,13 +232,14 @@ func execClassStatement(node *ast.ClassStatement, env *Environment) {
         base = Py_object
     }
 
-    clsObj := newPyclass(
+    clsObj := op_CALL(
+        Py_type,
         newStringInst(node.Name.Literals),
         base,
         clsEnv.Store(),
     )
 
-    env.Set(clsObj.name, clsObj)
+    env.SetFromString(node.Name.Literals, clsObj)
 }
 
 func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) Object {
@@ -281,7 +282,7 @@ func op_NIN(left Object, right Object) Object {
 }
 
 func op_IS(left Object, right Object) Object {
-    if left.Id() == right.Id() {
+    if left.id() == right.id() {
         return Py_True
     } else {
         return Py_False
@@ -312,6 +313,10 @@ func op_SETATTR(inst Object, attr *StringInst, value Object) {
     typeCall(__setattr__, inst, attr, value)
 }
 
+func op_GETATTR(inst Object, attr *StringInst) Object {
+    return typeCall(__getattribute__, inst, attr)
+}
+
 func op_SUBSCR_GET(inst Object, item Object) Object {
     return typeCall(__getitem__, inst, item)
 }
@@ -321,32 +326,34 @@ func op_SUBSCR_SET(inst Object, key Object, item Object) Object {
 }
 
 func op_CALL(obj Object, args ...Object) Object {
-    __call__Fn := attrItself(obj.Type(), __call__)
+    // eliminate obj.otype() here ?
+    __call__Fn := attrItself(obj.otype(), __call__)
     args = append([]Object{obj}, args...)
 
     if __call__Fn != PyBuiltinFunction__call__ {
         return op_CALL(__call__Fn, args...)
     } else {
-        return __call__Fn.(Function).Call(args...)
+        return __call__Fn.(Function).call(args...)
     }
 }
 
 func typeCall(attrName *StringInst, obj Object, args ...Object) Object {
-    attr := attrItself(obj.Type(), attrName)
+    attr := attrItself(obj.otype(), attrName)
     if attr == nil {
-        panic(Error(fmt.Sprintf("%v object is not callable", StringOf(obj.Type()))))
+        panic(Error(fmt.Sprintf("%v object is not callable", StringOf(obj.otype()))))
     }
 
     fn, ok := attr.(Function) 
     if !ok {
-        panic(Error(fmt.Sprintf("%v object is not callable", StringOf(attr.Type()))))
+        panic(Error(fmt.Sprintf("%v object is not callable", StringOf(obj.otype()))))
     }
     
     args = append([]Object{obj}, args...)
     return op_CALL(fn, args...)
 }
+
 func StringOf(obj Object) Object {
-    __str__Fn := attrItself(obj.Type(), __str__)
+    __str__Fn := attrItself(obj.otype(), __str__)
     return op_CALL(__str__Fn, obj)
 }
 
