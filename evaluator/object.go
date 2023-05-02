@@ -108,15 +108,12 @@ var Pyobject__str__ = newBuiltinFunc(
     func(objs ...Object) Object {
         self := objs[0]
 
-        var s string
         switch self.(type) {
         case Class:
-            s = fmt.Sprintf("<class '%v'>", op_GETATTR(self.otype(), __name__))
+            return newStringInst(fmt.Sprintf("<class '%v'>", op_GETATTR(self, __name__)))
         default:
-            s = Pyobject__repr__.call(self).(*StringInst).Value
+            return Pyobject__repr__.call(self)
         }
-
-        return newStringInst(s)
     },
 )
 
@@ -989,6 +986,7 @@ func (pb *Pybool) id() int64 { return int64(uintptr(unsafe.Pointer(pb))) }
 
 var Py_bool = newPybool()
 func init() {
+    Py_bool.attrs().set(__name__, newStringInst("bool"))
     Py_bool.attrs().set(__new__, newBuiltinFunc(__new__,
             func(objs ...Object) Object {
                 if boolFn := attrItself(objs[1].otype(), __bool__); boolFn != nil {
