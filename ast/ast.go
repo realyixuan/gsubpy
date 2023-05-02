@@ -152,6 +152,15 @@ type ForStatement struct {
 func (fs *ForStatement) getStatement() {}
 func (fs *ForStatement) GetLiterals() Literals {return fs.Literals}
 
+type AssertStatement struct {
+    Condition   Expression
+    Msg         Expression
+    Literals
+}
+
+func (as *AssertStatement) getStatement() {}
+func (as *AssertStatement) GetLiterals() Literals {return as.Literals}
+
 type ComparisonExpression struct {
     Operator    token.Token
     Left        Expression

@@ -24,6 +24,7 @@ func main() {
             default:
                 panic(r)
             }
+            os.Exit(1)
         }
     }()
 

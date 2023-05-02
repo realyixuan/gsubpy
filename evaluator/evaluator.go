@@ -46,6 +46,8 @@ func Exec(stmts []ast.Statement, env *Environment) (Object, bool) {
             Eval(node, env)
         case *ast.ReturnStatement:
             return Eval(node.Value, env), true
+        case *ast.AssertStatement:
+            execAssertStatement(node, env)
         }
     }
     return Py_None, false
@@ -240,6 +242,12 @@ func execClassStatement(node *ast.ClassStatement, env *Environment) {
     )
 
     env.SetFromString(node.Name.Literals, clsObj)
+}
+
+func execAssertStatement(stmt *ast.AssertStatement, env *Environment) {
+    for op_CALL(Py_bool, Eval(stmt.Condition, env)) == Py_False {
+        panic(Error(fmt.Sprintf("assert error:  %v", StringOf(Eval(stmt.Msg, env)))))
+    }
 }
 
 func evalCallExpression(callNode *ast.CallExpression, parentEnv *Environment) Object {
