@@ -485,6 +485,30 @@ var Py_next = newBuiltinFunc(
     },
 )
 
+var Py_issubclass = newBuiltinFunc(
+    newStringInst("issubclass"),
+    func(objs ...Object) Object {
+        cls, ok := objs[0].(Class)
+        if !ok {
+            panic(Error("SyntaxError: first arguments should be class"))
+        }
+        for ; cls != nil; cls = cls.cbase() {
+            if cls == objs[1] {
+                return Py_True
+            }
+        }
+        return Py_False
+    },
+)
+
+var Py_isinstance = newBuiltinFunc(
+    newStringInst("isinstance"),
+    func(objs ...Object) Object {
+        typ := objs[0].otype()
+        return op_CALL(Py_issubclass, typ, objs[1])
+    },
+)
+
 type MethodInst struct {
     *objectData
     inst       Object
@@ -760,8 +784,7 @@ func (psi *Pystr_iterator) init() {
             func(objs ...Object) Object {
                 self := objs[0].(*StringIteratorInst)
                 if self.idx >= op_CALL(Py_len, self.stringInst).(*IntegerInst).Value {
-                    // TODO: replace it with StopIteration Exception
-                    return nil
+                    panic(op_CALL(Py_StopIteration))
                 }
                 self.idx += 1
                 return op_SUBSCR_GET(self.stringInst, newIntegerInst(self.idx-1))
@@ -1062,8 +1085,7 @@ func (pli *Pylist_iterator) init() {
             func(objs ...Object) Object {
                 self := objs[0].(*ListIteratorInst)
                 if self.idx >= op_CALL(Py_len, self.listInst).(*IntegerInst).Value {
-                    // TODO: replace it with StopIteration Exception
-                    return nil
+                    panic(op_CALL(Py_StopIteration))
                 }
                 self.idx += 1
                 return op_SUBSCR_GET(self.listInst, newIntegerInst(self.idx-1))
@@ -1230,7 +1252,7 @@ func (dki *Pydict_keyiterator) init() {
                 self := objs[0].(*DictKeyiteratorInst)
 
                 if self.idx >= int64(len(self.keys)) {
-                    return nil
+                    panic(op_CALL(Py_StopIteration))
                 }
 
                 res := self.keys[self.idx]
@@ -1459,11 +1481,11 @@ func (pri *Pyrange_iterator) init() {
                 self := objs[0].(*RangeIteratorInst)
                 if self.rangeInst.step > 0 {
                     if self.curV >= self.rangeInst.end {
-                        return nil
+                        panic(op_CALL(Py_StopIteration))
                     }
                 } else if self.rangeInst.step < 0 {
                     if self.curV <= self.rangeInst.end {
-                        return nil
+                        panic(op_CALL(Py_StopIteration))
                     }
                 }
                 res := self.curV
@@ -1587,10 +1609,41 @@ var Py_Exception = &PyException{
 }
 func init() {
     Py_Exception.attrs().set(__name__, newStringInst("Exception"))
+    Py_Exception.attrs().set(__new__, newBuiltinFunc(__new__,
+            func (objs ...Object) Object {
+                var inst *ExceptionInst
+                if len(objs) == 1 {
+                    inst = newExceptionInst(newStringInst(""))
+                } else {
+                    inst = newExceptionInst(objs[1])
+                }
+                inst.class = objs[0].(Class)
+                return inst
+            },
+        ),
+    )
+}
+
+type PyStopIteration struct {
+    *objectData
+}
+
+func (psi *PyStopIteration) otype() Class { return Py_type }
+func (psi *PyStopIteration) cbase() Class { return Py_Exception }
+func (psi *PyStopIteration) id() int64 { return int64(uintptr(unsafe.Pointer(psi))) }
+
+var Py_StopIteration = &PyStopIteration{
+    &objectData{
+        d: newDictInst(),
+    },
+}
+func init() {
+    Py_StopIteration.attrs().set(__name__, newStringInst("StopIteration"))
 }
 
 type ExceptionInst struct {
     *objectData
+    class        Class
     Payload     Object
 }
 
@@ -1599,6 +1652,7 @@ func newExceptionInst(obj Object) *ExceptionInst {
         objectData: &objectData{
             d: newDictInst(),
         },
+        class: Py_Exception,
         Payload: obj,
     }
 }
@@ -1607,7 +1661,7 @@ func Error(s string) *ExceptionInst {
     return newExceptionInst(newStringInst(s))
 }
 
-func (e *ExceptionInst) otype() Class { return Py_Exception }
+func (e *ExceptionInst) otype() Class { return e.class }
 func (e *ExceptionInst) id() int64 { return int64(uintptr(unsafe.Pointer(e))) }
 
 func hash(bv []byte) int64 {

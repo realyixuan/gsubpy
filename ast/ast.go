@@ -187,6 +187,14 @@ type ReturnStatement struct {
 func (rs *ReturnStatement) getStatement() {}
 func (rs *ReturnStatement) GetLiterals() Literals {return rs.Literals}
 
+type RaiseStatement struct {
+    Value   Expression
+    Literals
+}
+
+func (rs *RaiseStatement) getStatement() {}
+func (rs *RaiseStatement) GetLiterals() Literals {return rs.Literals}
+
 type CallExpression struct {
     Name        Expression
     Params      []Expression

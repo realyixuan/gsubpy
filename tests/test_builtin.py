@@ -22,3 +22,6 @@ it = iter(range(2))
 assert next(it) == 0
 assert next(it) == 1
 
+assert isinstance(1, int)
+assert issubclass(StopIteration, Exception)
+

@@ -20,6 +20,7 @@ const (
     IS          = "is"
     ISN         = "is not"
     ASSERT      = "assert"
+    RAISE       = "raise"
 
     ASSIGN      = "="
     IDENTIFIER  = "IDENTIFIER"
@@ -73,6 +74,7 @@ var Keywords = map[string]TokenType {
     "is":       IS,
     "is not":   ISN,
     "assert":   ASSERT,
+    "raise":    RAISE,
 }
 
 

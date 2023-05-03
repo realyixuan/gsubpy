@@ -46,6 +46,8 @@ func Exec(stmts []ast.Statement, env *Environment) (Object, bool) {
             Eval(node, env)
         case *ast.ReturnStatement:
             return Eval(node.Value, env), true
+        case *ast.RaiseStatement:
+             execRaiseStatement(node.Value, env)
         case *ast.AssertStatement:
             execAssertStatement(node, env)
         }
@@ -194,16 +196,29 @@ func execForStatement(stmt *ast.ForStatement, env *Environment) (Object, bool) {
     target := Eval(stmt.Target, env)
     iterator := op_CALL(Py_iter, target)
 
-    for val := op_CALL(Py_next, iterator); val != nil; {
+    for val := forIterationNext(iterator); val != nil; {
         // not considering multi-values currently,
         env.SetFromString(stmt.Identifiers[0].Literals, val)
         rv, isReturn := Exec(stmt.Body, env)
         if isReturn {
             return rv, isReturn
         }
-        val = op_CALL(Py_next, iterator)
+        val = forIterationNext(iterator)
     }
     return nil, false
+}
+
+func forIterationNext(iterator Object) Object {
+    defer func() {
+        e := recover()
+        if e != nil {
+            oe, ok := e.(Object)
+            if !ok || op_CALL(Py_isinstance, oe, Py_StopIteration) != Py_True {
+                panic(oe)
+            }
+        }
+    }()
+    return op_CALL(Py_next, iterator)
 }
 
 func execDefStatement(stmt *ast.DefStatement, env *Environment) {
@@ -242,6 +257,17 @@ func execClassStatement(node *ast.ClassStatement, env *Environment) {
     )
 
     env.SetFromString(node.Name.Literals, clsObj)
+}
+
+func execRaiseStatement(node ast.Expression, env *Environment) {
+    rv := Eval(node, env)
+    if op_CALL(Py_isinstance, rv, Py_Exception) == Py_True {
+        panic(rv)
+    } else if op_CALL(Py_issubclass, rv, Py_Exception) == Py_True {
+        panic(op_CALL(rv))
+    } else {
+        panic(Error("SyntaxError: target of raise should be based on Exception class"))
+    }
 }
 
 func execAssertStatement(stmt *ast.AssertStatement, env *Environment) {

@@ -38,6 +38,7 @@ func New(l *lexer.Lexer) *Parser {
     p.registerStatementParsingFn(token.DEF, p.parsingDefStatement)
     p.registerStatementParsingFn(token.CLASS, p.parsingClassStatement)
     p.registerStatementParsingFn(token.RETURN, p.parsingReturnStatement)
+    p.registerStatementParsingFn(token.RAISE, p.parsingRaiseStatement)
     p.registerStatementParsingFn(token.ASSERT, p.parsingAssertStatement)
 
     // a trick, if the a statement doesn't belong to any one above, then
@@ -340,6 +341,17 @@ func (p *Parser)parsingReturnStatement() ast.Statement {
         Value: p.parsingExpression(LOWEST),
         Literals: ast.Literals{LineNum: p.l.LineNum, Line: p.l.Line},
     }
+    p.l.ReadNextToken()
+    return stmt
+}
+
+func (p *Parser)parsingRaiseStatement() ast.Statement {
+    p.l.ReadNextToken()
+    stmt := &ast.RaiseStatement{
+        Value: p.parsingExpression(LOWEST),
+        Literals: ast.Literals{LineNum: p.l.LineNum, Line: p.l.Line},
+    }
+    p.l.ReadNextToken()
     p.l.ReadNextToken()
     return stmt
 }

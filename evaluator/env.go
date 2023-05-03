@@ -14,6 +14,10 @@ var __builtins__ = map[string] Object{
     "hash": Py_hash,
     "id": Py_id,
     "Exception": Py_Exception,
+    "StopIteration": Py_StopIteration,
+
+    "isinstance": Py_isinstance,
+    "issubclass": Py_issubclass,
 
     "iter": Py_iter,
     "next": Py_next,
