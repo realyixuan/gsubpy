@@ -1173,6 +1173,15 @@ func init() {
         ),
     )
 
+    Py_list.attrs().set(__setitem__, newBuiltinFunc(__setitem__,
+            func(objs ...Object) Object {
+                self, key, value := objs[0].(*ListInst), objs[1].(*IntegerInst), objs[2]
+                self.items[key.Value] = value
+                return Py_None
+            },
+        ),
+    )
+
     Py_list.attrs().set(__contains__, newBuiltinFunc(__contains__,
             func(objs ...Object) Object {
                 self := objs[0].(*ListInst)

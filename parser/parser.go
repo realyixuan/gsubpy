@@ -126,7 +126,7 @@ func (p *Parser) getStmtParsingFn() statementParsingFn {
         return p.statementParsingFns[p.l.CurToken.Type]
     }
 
-    if p.isAttributeAssign() {
+    if p.isAssignStatement() {
         return p.statementParsingFns[token.ASSIGN]
     } else {
         return p.statementParsingFns[token.IDENTIFIER]
@@ -387,10 +387,21 @@ func (p *Parser)parsingDefParams() []token.Token {
 }
 
 func (p *Parser)parsingAssignStatement() ast.Statement {
+    expr := p.parsingExpression(LOWEST)
+    switch expr.(type) {
+    case *ast.IdentifierExpression:
+    case *ast.AttributeExpression:
+    case *ast.SubscriptExpression:
+    default:
+        panic(evaluator.Error(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax", p.l.LineNum, p.l.Line)))
+    }
+
     assignment := ast.AssignStatement{
-        Target: p.getAttrOrIdentExpr(),
+        Target: expr,
         Literals: ast.Literals{LineNum: p.l.LineNum, Line: p.l.Line},
     }
+
+    p.l.ReadNextToken()
 
     symbol := p.l.CurToken.Type
 
@@ -539,39 +550,33 @@ func (p *Parser) getIDENTIFIERPrefix() ast.Expression {
     return &ast.IdentifierExpression{p.l.CurToken}
 }
 
-func (p *Parser) isAttributeAssign() bool {
+func (p *Parser) isAssignStatement() bool {
     cl := *p.l
-    cl.ReadNextToken()
+    defer func() {
+        p.l = &cl
+    }()
 
-    for cl.CurToken.Type == token.DOT {
-        cl.ReadNextToken()
-        cl.ReadNextToken() // skip over 'identifier', no error check
-    }
+    p.parsingExpression(LOWEST)
 
-    if cl.CurToken.Type == token.ASSIGN ||
-        cl.CurToken.Type == token.PLUSASSIGN ||
-        cl.CurToken.Type == token.MINUSASSIGN ||
-        cl.CurToken.Type == token.MULASSIGN ||
-        cl.CurToken.Type == token.DIVIDEASSIGN {
+    p.l.ReadNextToken()
+
+    if p.isAssignType(p.l.CurToken.Type) {
         return true
     } else {
         return false
     }
-
 }
 
-func (p *Parser) getAttrOrIdentExpr() ast.Expression {
-    var attrExpr ast.Expression = &ast.IdentifierExpression{Identifier: p.l.CurToken}
-    p.l.ReadNextToken()
-    for p.l.CurToken.Type == token.DOT {
-        p.l.ReadNextToken()
-        attrExpr = &ast.AttributeExpression{
-            Expr: attrExpr,
-            Attr: p.l.CurToken,
-        }
-        p.l.ReadNextToken()
+func (p *Parser) isAssignType(tokType token.TokenType) bool {
+    if tokType == token.ASSIGN ||
+       tokType == token.PLUSASSIGN ||
+       tokType == token.MINUSASSIGN ||
+       tokType == token.MULASSIGN ||
+       tokType == token.DIVIDEASSIGN {
+        return true
+    } else {
+        return false
     }
-    return attrExpr
 }
 
 func (p *Parser) getINTEGERPrefix() ast.Expression {

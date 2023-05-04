@@ -152,14 +152,19 @@ func Eval(expression ast.Expression, env *Environment) Object {
 }
 
 func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
+    val := Eval(stmt.Value, env)
     switch attr := stmt.Target.(type) {
+    case *ast.SubscriptExpression:
+        target := Eval(attr.Target, env)
+        subscr := Eval(attr.Val, env)
+
+        op_SUBSCR_SET(target, subscr, val)
     case *ast.AttributeExpression:
         inst := Eval(attr.Expr, env)
-        val := Eval(stmt.Value, env)
 
         op_SETATTR(inst, newStringInst(attr.Attr.Literals), val)
     case *ast.IdentifierExpression:
-        env.SetFromString(attr.Identifier.Literals, Eval(stmt.Value, env))
+        env.SetFromString(attr.Identifier.Literals, val)
     }
 }
 
