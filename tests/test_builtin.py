@@ -25,3 +25,9 @@ assert next(it) == 1
 assert isinstance(1, int)
 assert issubclass(StopIteration, Exception)
 
+assert max(1, 2, 3) == 3
+assert max([1, 2, 3]) == 3
+
+assert min(1, 2, 3) == 1
+assert min([1, 2, 3]) == 1
+

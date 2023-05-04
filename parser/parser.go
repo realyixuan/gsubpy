@@ -280,7 +280,7 @@ func (p *Parser)parsingDefStatement() ast.Statement {
     p.l.ReadNextToken()
     if p.l.CurToken.Type == token.COLON {
         p.l.ReadNextToken()
-        p.l.ReadNextToken() // skip over '\n'
+        p.readNotLineFeedToken()
     }
 
     if isLTIndents(p.l.Indents, curIndents) && isEQIndents(p.l.Indents, curIndents) {

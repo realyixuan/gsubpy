@@ -454,6 +454,54 @@ var Py_len = newBuiltinFunc(
     },
 )
 
+var Py_max = newBuiltinFunc(
+    newStringInst("max"),
+    func(objs ...Object) Object {
+        var res Object
+        if len(objs) > 1 {
+            res = objs[0]
+            for _, item := range objs[1:] {
+                if op_GT(item, res) == Py_True {
+                    res = item
+                }
+            }
+        } else {
+            iterator := op_CALL(Py_iter, objs[0])
+            res = iterationNext(iterator)
+            for item := iterationNext(iterator); item != nil; item = iterationNext(iterator) {
+                if op_GT(item, res) == Py_True {
+                    res = item
+                }
+            }
+        }
+        return res
+    },
+)
+
+var Py_min = newBuiltinFunc(
+    newStringInst("min"),
+    func(objs ...Object) Object {
+        var res Object
+        if len(objs) > 1 {
+            res = objs[0]
+            for _, item := range objs[1:] {
+                if op_LT(item, res) == Py_True {
+                    res = item
+                }
+            }
+        } else {
+            iterator := op_CALL(Py_iter, objs[0])
+            res = iterationNext(iterator)
+            for item := iterationNext(iterator); item != nil; item = iterationNext(iterator) {
+                if op_LT(item, res) == Py_True {
+                    res = item
+                }
+            }
+        }
+        return res
+    },
+)
+
 var Py_hash = newBuiltinFunc(
     newStringInst("hash"),
     func(objs ...Object) Object {
@@ -1145,6 +1193,24 @@ func init() {
         ),
     )
 
+    Py_list.attrs().set(__eq__, newBuiltinFunc(__eq__,
+            func(objs ...Object) Object {
+                self, oli := objs[0].(*ListInst), objs[1].(*ListInst)
+                if len(self.items) != len(oli.items) {
+                    return Py_False
+                }
+
+                for i := range self.items {
+                    if op_EQ(self.items[i], self.items[i]) == Py_False {
+                        return Py_False
+                    }
+                }
+
+                return Py_True
+            },
+        ),
+    )
+
     Py_list.attrs().set(__str__, newBuiltinFunc(__str__,
             func(objs ...Object) Object {
                 li := objs[0].(*ListInst)
@@ -1211,6 +1277,25 @@ func init() {
                 li := newListInst()
                 li.items = append(self.items, other.items...)
                 return li
+            },
+        ),
+    )
+
+    Py_list.attrs().set(newStringInst("append"), newBuiltinFunc(newStringInst("append"),
+            func(objs ...Object) Object {
+                self, item := objs[0].(*ListInst), objs[1]
+                self.items = append(self.items, item)
+                return Py_None
+            },
+        ),
+    )
+
+    Py_list.attrs().set(newStringInst("pop"), newBuiltinFunc(newStringInst("pop"),
+            func(objs ...Object) Object {
+                self := objs[0].(*ListInst)
+                res := self.items[len(self.items)-1]
+                self.items = self.items[:len(self.items)-1]
+                return res
             },
         ),
     )

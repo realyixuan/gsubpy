@@ -203,19 +203,18 @@ func execForStatement(stmt *ast.ForStatement, env *Environment) (Object, bool) {
     target := Eval(stmt.Target, env)
     iterator := op_CALL(Py_iter, target)
 
-    for val := forIterationNext(iterator); val != nil; {
+    for val := iterationNext(iterator); val != nil; val = iterationNext(iterator) {
         // not considering multi-values currently,
         env.SetFromString(stmt.Identifiers[0].Literals, val)
         rv, isReturn := Exec(stmt.Body, env)
         if isReturn {
             return rv, isReturn
         }
-        val = forIterationNext(iterator)
     }
     return nil, false
 }
 
-func forIterationNext(iterator Object) Object {
+func iterationNext(iterator Object) Object {
     defer func() {
         e := recover()
         if e != nil {

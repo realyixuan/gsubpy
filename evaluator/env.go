@@ -22,6 +22,9 @@ var __builtins__ = map[string] Object{
     "iter": Py_iter,
     "next": Py_next,
     "range": Py_range,
+
+    "max": Py_max,
+    "min": Py_min,
 }
 
 type Environment struct {
