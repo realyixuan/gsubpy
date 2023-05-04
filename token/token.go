@@ -41,6 +41,7 @@ const (
     GT          = ">"
     LT          = "<"
     EQ          = "=="
+    NEQ         = "!="
 
     AND         = "and"
     OR          = "or"

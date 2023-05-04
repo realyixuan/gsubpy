@@ -59,6 +59,14 @@ func (l *Lexer) readNextToken() {
         } else {
             l.CurToken = token.Token{Type: token.ASSIGN, Literals: token.ASSIGN}
         }
+    case '!':
+        l.readChar()
+        if l.ch == '=' {
+            l.CurToken = token.Token{Type: token.NEQ, Literals: token.NEQ}
+            l.readChar()
+        } else {
+            panic(evaluator.Error(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax", l.LineNum, l.Line)))
+        }
     case '+':
         l.readChar()
         if l.ch == '=' {

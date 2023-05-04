@@ -519,9 +519,11 @@ func TestComparisonOperator(t *testing.T) {
         expectedTokens []token.Token
     }{
         {
-            "==",
+            "==, !=",
             []token.Token{
                 token.Token{Type: token.EQ, Literals: "=="},
+                token.Token{Type: token.COMMA, Literals: ","},
+                token.Token{Type: token.NEQ, Literals: "!="},
             },
         },
     }
