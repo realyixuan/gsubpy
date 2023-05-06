@@ -909,13 +909,16 @@ func init() {
 
     Py_str.attrs().set(__new__, newBuiltinFunc(__new__,
             func(objs ...Object) Object {
+                var inst *StringInst
+
                 if len(objs[1:]) == 0 {
-                    return newStringInst("")
+                    inst = newStringInst("")
+                } else {
+                    inst = typeCall(__str__, objs[1]).(*StringInst)
                 }
 
-                o := objs[1]
-
-                return typeCall(__str__, o)
+                inst.class = objs[0].(Class)
+                return inst
             },
         ),
     )
@@ -1023,6 +1026,7 @@ func init() {
 type StringInst struct {
     *objectData
     Value   string
+    class   Class
 }
 
 func newStringInst(s string) *StringInst {
@@ -1031,10 +1035,11 @@ func newStringInst(s string) *StringInst {
             d: newDictInst(),
         },
         Value: s,
+        class: Py_str,
     }
 }
 
-func (s *StringInst) otype() Class { return Py_str }
+func (s *StringInst) otype() Class { return s.class }
 func (s *StringInst) id() int64 { return int64(uintptr(unsafe.Pointer(s))) }
 func (s *StringInst) String() string { return s.Value }
 
