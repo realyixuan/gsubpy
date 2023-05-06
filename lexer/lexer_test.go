@@ -161,13 +161,13 @@ func TestWhileStatement(t *testing.T) {
         expectedTokens  []token.Token
     } {
         {
-            "while 10 > 5:",
+            "while, break, continue",
             []token.Token{
                 token.Token{Type: token.WHILE, Literals: "while"},
-                token.Token{Type: token.INTEGER, Literals: "10"},
-                token.Token{Type: token.GT, Literals: ">"},
-                token.Token{Type: token.INTEGER, Literals: "5"},
-                token.Token{Type: token.COLON, Literals: ":"},
+                token.Token{Type: token.COMMA, Literals: ","},
+                token.Token{Type: token.BREAK, Literals: "break"},
+                token.Token{Type: token.COMMA, Literals: ","},
+                token.Token{Type: token.CONTINUE, Literals: "continue"},
             },
         },
     }

@@ -11,6 +11,8 @@ const (
     ELIF        = "elif"
     ELSE        = "else"
     WHILE       = "while"
+    BREAK       = "break"
+    CONTINUE    = "continue"
     DEF         = "def"
     RETURN      = "return"
     CLASS       = "class"
@@ -63,6 +65,8 @@ var Keywords = map[string]TokenType {
     "elif":     ELIF,
     "else":     ELSE,
     "while":    WHILE,
+    "break":    BREAK,
+    "continue": CONTINUE,
     "def":      DEF,
     "return":   RETURN,
     "class":    CLASS,

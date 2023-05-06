@@ -8,7 +8,16 @@ import (
     "github.com/realyixuan/gsubpy/token"
 )
 
-func Exec(stmts []ast.Statement, env *Environment) (Object, bool) {
+type quitType string
+
+const (
+    END         = "end"
+    RETURN      = "return"
+    CONTINUE    = "continue"
+    BREAK       = "break"
+)
+
+func Exec(stmts []ast.Statement, env *Environment) (Object, quitType) {
     var s ast.Statement
     defer func() {
         if r := recover(); r != nil {
@@ -24,19 +33,19 @@ func Exec(stmts []ast.Statement, env *Environment) (Object, bool) {
         case *ast.AssignStatement:
             execAssignStatement(node, env)
         case *ast.IfStatement:
-            rv, isReturn := execIfStatement(node, env)
-            if isReturn {
-                return rv, isReturn
+            rv, why := execIfStatement(node, env)
+            if why != END {
+                return rv, why
             }
         case *ast.WhileStatement:
-            rv, isReturn := execWhileStatement(node, env)
-            if isReturn {
-                return rv, isReturn
+            rv, why := execWhileStatement(node, env)
+            if why == RETURN {
+                return rv, why
             }
         case *ast.ForStatement:
-            rv, isReturn := execForStatement(node, env)
-            if isReturn {
-                return rv, isReturn
+            rv, why := execForStatement(node, env)
+            if why == RETURN {
+                return rv, why
             }
         case *ast.DefStatement:
             execDefStatement(node, env)
@@ -45,14 +54,18 @@ func Exec(stmts []ast.Statement, env *Environment) (Object, bool) {
         case *ast.ExpressionStatement:
             Eval(node, env)
         case *ast.ReturnStatement:
-            return Eval(node.Value, env), true
+            return Eval(node.Value, env), RETURN
         case *ast.RaiseStatement:
              execRaiseStatement(node.Value, env)
         case *ast.AssertStatement:
             execAssertStatement(node, env)
+        case *ast.BreakStatement:
+            return nil, BREAK
+        case *ast.ContinueStatement:
+            return nil, CONTINUE
         }
     }
-    return Py_None, false
+    return Py_None, END
 }
 
 func Eval(expression ast.Expression, env *Environment) Object {
@@ -170,48 +183,56 @@ func execAssignStatement(stmt *ast.AssignStatement, env *Environment) {
     }
 }
 
-func execIfStatement(stmt ast.Statement, env *Environment) (Object, bool) {
+func execIfStatement(stmt ast.Statement, env *Environment) (Object, quitType) {
     if stmt != nil {
         ifstmt := stmt.(*ast.IfStatement)
         if ifstmt.Condition == nil || Eval(ifstmt.Condition, env) == Py_True {
-            rv, isReturn := Exec(ifstmt.Body, env)
-            if isReturn {
-                return rv, true
+            rv, why := Exec(ifstmt.Body, env)
+            if why != END {
+                return rv, why
             }
         } else {
-            rv, isReturn := execIfStatement(ifstmt.Else, env)
-            if isReturn {
-                return rv, true
+            rv, why := execIfStatement(ifstmt.Else, env)
+            if why != END {
+                return rv, why
             }
         }
     }
 
-    return nil, false
+    return nil, END
 }
 
-func execWhileStatement(stmt *ast.WhileStatement, env *Environment) (Object, bool) {
+func execWhileStatement(stmt *ast.WhileStatement, env *Environment) (Object, quitType) {
     for Eval(stmt.Condition, env) == Py_True {
-        rv, isReturn := Exec(stmt.Body, env)
-        if isReturn {
-            return rv, isReturn
+        rv, why := Exec(stmt.Body, env)
+        if why == RETURN {
+            return rv, why
+        } else if why == BREAK {
+            break
+        } else if why == CONTINUE {
+            continue
         }
     }
-    return nil, false
+    return nil, END
 }
 
-func execForStatement(stmt *ast.ForStatement, env *Environment) (Object, bool) {
+func execForStatement(stmt *ast.ForStatement, env *Environment) (Object, quitType) {
     target := Eval(stmt.Target, env)
     iterator := op_CALL(Py_iter, target)
 
     for val := iterationNext(iterator); val != nil; val = iterationNext(iterator) {
         // not considering multi-values currently,
         env.SetFromString(stmt.Identifiers[0].Literals, val)
-        rv, isReturn := Exec(stmt.Body, env)
-        if isReturn {
-            return rv, isReturn
+        rv, why := Exec(stmt.Body, env)
+        if why == RETURN {
+            return rv, why
+        } else if why == BREAK {
+            break
+        } else if why == CONTINUE {
+            continue
         }
     }
-    return nil, false
+    return nil, END
 }
 
 func iterationNext(iterator Object) Object {

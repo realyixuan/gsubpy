@@ -142,6 +142,20 @@ type WhileStatement struct {
 func (ws *WhileStatement) getStatement() {}
 func (ws *WhileStatement) GetLiterals() Literals {return ws.Literals}
 
+type BreakStatement struct {
+    Literals
+}
+
+func (bs *BreakStatement) getStatement() {}
+func (bs *BreakStatement) GetLiterals() Literals {return bs.Literals}
+
+type ContinueStatement struct {
+    Literals
+}
+
+func (cs *ContinueStatement) getStatement() {}
+func (cs *ContinueStatement) GetLiterals() Literals {return cs.Literals}
+
 type ForStatement struct {
     Identifiers []token.Token
     Target      Expression

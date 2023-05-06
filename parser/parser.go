@@ -34,6 +34,8 @@ func New(l *lexer.Lexer) *Parser {
     p.registerStatementParsingFn(token.ASSIGN, p.parsingAssignStatement)
     p.registerStatementParsingFn(token.IF, p.parsingIfStatement)
     p.registerStatementParsingFn(token.WHILE, p.parsingWhileStatement)
+    p.registerStatementParsingFn(token.BREAK, p.parsingBreakStatement)
+    p.registerStatementParsingFn(token.CONTINUE, p.parsingContinueStatement)
     p.registerStatementParsingFn(token.FOR, p.parsingForStatement)
     p.registerStatementParsingFn(token.DEF, p.parsingDefStatement)
     p.registerStatementParsingFn(token.CLASS, p.parsingClassStatement)
@@ -207,6 +209,24 @@ func (p *Parser)parsingWhileStatement() ast.Statement {
     
     stmt.Body = p.parsing(p.l.Indents)
 
+    return stmt
+}
+
+func (p *Parser)parsingBreakStatement() ast.Statement {
+    stmt := &ast.BreakStatement{
+        Literals: ast.Literals{LineNum: p.l.LineNum, Line: p.l.Line},
+    }
+    p.l.ReadNextToken()
+    p.readNotLineFeedToken()
+    return stmt
+}
+
+func (p *Parser)parsingContinueStatement() ast.Statement {
+    stmt := &ast.ContinueStatement{
+        Literals: ast.Literals{LineNum: p.l.LineNum, Line: p.l.Line},
+    }
+    p.l.ReadNextToken()
+    p.readNotLineFeedToken()
     return stmt
 }
 
