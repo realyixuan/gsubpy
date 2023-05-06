@@ -22,21 +22,29 @@ $ gsubpy
 Hello world 
 ~~~
 
-or with `.py` file:
+or with `.py` file (there are some examples under `demos/`):
 
 ~~~shell
 $ gsubpy a_py_file.py
 ~~~
 
-### Supporting features (currently):
+### Supporting features:
 
-- types: `int`, `str`, `list`, `dict`
+- data: `int`, `str`, `list`, `dict`
 
-- builtin: `print`, `len`, `int`, `str`, `bool`, `hash`, `type`, `object`
+- builtin: `print`, `len`, `int`, `str`, `bool`, `hash`, `type`, `object`, `id`, `Exception`, `StopIteration`, `list`, `dict`, `isinstance`, `issubclass`, `iter`, `next`, `range`, `max`, `min`, `dir`
 
-- statement: `if`, `while`, `def`, `class`, `return`
+- statement: `if`, `while`, `def`, `class`, `return`, `break`, `for`, `break`, `continue`, `raise`, `assert`
 
-- operations: dot operation for your own defined attrs (and some special methods), `+-*/` and `> < ==` between integers
+- operations:
+
+    - dot operation for your own defined attrs (and some special methods)
+
+    - `+-*/`
+
+    - `>`, `<`, `==`, `!=`
+
+    - `not`, `in`, `not in`, `is`, `is not`, `and`, `or`
 
 - function without keyword arguments
 
@@ -46,3 +54,4 @@ $ gsubpy a_py_file.py
 ### Reference:
 
 - [Writing An Interpreter In Go - Thorsten Ball](https://www.amazon.com/Writing-Interpreter-Go-Thorsten-Ball/dp/3982016118)
+
