@@ -557,6 +557,45 @@ var Py_isinstance = newBuiltinFunc(
     },
 )
 
+var Py_dir = newBuiltinFunc(
+    newStringInst("dir"),
+    func(objs ...Object) Object {
+        _, ok := objs[0].(Class)
+        d := newDictInst()
+        if !ok {
+            iterator := op_CALL(Py_iter, objs[0].attrs())
+            for key := iterationNext(iterator); key != nil; key = iterationNext(iterator) {
+                d.set(key.(*StringInst), nil)
+            }
+        } else {
+            for cls := objs[0].(Class); cls != nil; cls = cls.cbase() {
+                iterator := op_CALL(Py_iter, cls.attrs())
+                for key := iterationNext(iterator); key != nil; key = iterationNext(iterator) {
+                    d.set(key.(*StringInst), nil)
+                }
+            }
+        }
+
+        for cls := objs[0].otype(); cls != nil; cls = cls.cbase() {
+            iterator := op_CALL(Py_iter, cls.attrs())
+            for key := iterationNext(iterator); key != nil; key = iterationNext(iterator) {
+                d.set(key.(*StringInst), nil)
+            }
+        }
+        
+        items := []Object{}
+        iterator := op_CALL(Py_iter, d)
+        for obj := iterationNext(iterator); obj != nil; obj = iterationNext(iterator) {
+            items = append(items, obj)
+        }
+
+        li := newListInst()
+        li.items = items
+
+        return li
+    },
+)
+
 type MethodInst struct {
     *objectData
     inst       Object

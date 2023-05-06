@@ -31,3 +31,6 @@ assert max([1, 2, 3]) == 3
 assert min(1, 2, 3) == 1
 assert min([1, 2, 3]) == 1
 
+assert isinstance(dir(list), list)
+assert isinstance(dir(dict), list)
+

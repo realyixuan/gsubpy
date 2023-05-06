@@ -7,14 +7,17 @@ var __builtins__ = map[string] Object{
     "None": Py_None,
     "print": Py_print,
     "type": Py_type,
-    "int": Py_int,
-    "str": Py_str,
     "len": Py_len,
     "bool": Py_bool,
     "hash": Py_hash,
     "id": Py_id,
     "Exception": Py_Exception,
     "StopIteration": Py_StopIteration,
+
+    "int": Py_int,
+    "str": Py_str,
+    "list": Py_list,
+    "dict": Py_dict,
 
     "isinstance": Py_isinstance,
     "issubclass": Py_issubclass,
@@ -25,6 +28,8 @@ var __builtins__ = map[string] Object{
 
     "max": Py_max,
     "min": Py_min,
+
+    "dir": Py_dir,
 }
 
 type Environment struct {
