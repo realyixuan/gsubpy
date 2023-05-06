@@ -338,8 +338,7 @@ func (p *Parser)parsingClassStatement() ast.Statement {
         panic(evaluator.Error(fmt.Sprintf("line %v\n\t%s\nSyntaxError: class define wrong syntax", p.l.LineNum, p.l.Line)))
     }
 
-    p.l.ReadNextToken()
-    p.l.ReadNextToken() // skip over '\n'
+    p.readNotLineFeedToken()
 
     internalIndents := p.l.Indents
     

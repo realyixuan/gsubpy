@@ -13,3 +13,6 @@ class Foo:
 for i in Foo():
     'pass'
 
+
+assert not 1 > 2 is True
+

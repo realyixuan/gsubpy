@@ -37,8 +37,6 @@ func (l *Lexer) ReadNextToken() {
             if tokType, ok := token.Keywords[letters]; ok {
                 l.readNextToken()
                 l.CurToken = token.Token{Type: tokType, Literals: letters}
-            } else {
-                panic(evaluator.Error(fmt.Sprintf("line %v\n\t%s\nSyntaxError: invalid syntax", l.LineNum, l.Line)))
             }
         }
     }
