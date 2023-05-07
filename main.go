@@ -9,6 +9,7 @@ import (
     "github.com/realyixuan/gsubpy/lexer"
     "github.com/realyixuan/gsubpy/parser"
     "github.com/realyixuan/gsubpy/evaluator"
+    "github.com/realyixuan/gsubpy/pytest"
 )
 
 func main() {
@@ -30,6 +31,8 @@ func main() {
 
     if len(os.Args) == 1 {
         repl.REPLRunning()
+    } else if len(os.Args) == 3 && os.Args[1] == "-t" {
+        pytest.Main()
     } else {
         data, _ := os.ReadFile(os.Args[1])
         l := lexer.New(string(data))
