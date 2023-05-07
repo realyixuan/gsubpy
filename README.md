@@ -9,7 +9,7 @@ In a word, gsubpy, a Python interpreter for fun, not big things.
 - install
 
 ~~~shell
-$ go install github.com/realyixuan/gsubpy
+$ go install github.com/realyixuan/gsubpy@latest
 ~~~
 
 - running
