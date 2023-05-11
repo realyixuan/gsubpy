@@ -15,6 +15,7 @@ type Lexer struct {
     ch          byte
     Indents     string
     indentReady bool
+    lineReady   bool
     CurToken    token.Token
 }
 
@@ -146,9 +147,9 @@ func (l *Lexer) readNextToken() {
         l.readNextToken()
     case '\n':
         l.CurToken = token.Token{Type: token.LINEFEED, Literals: string(l.ch)}
-        l.readLine()
         l.readChar()
         l.indentReady = true
+        l.lineReady = true
     case '\x03':
         l.CurToken = token.Token{Type: token.EOF}
     default:
@@ -179,6 +180,11 @@ func (l *Lexer) PeekNextToken() token.Token {
 }
 
 func (l *Lexer) skipWhitespace() {
+    if l.lineReady {
+        l.readLine()
+        l.lineReady = false
+    }
+
     var indentStr string
     for l.ch == ' ' || l.ch == '\t' {
         indentStr += string(l.ch)
@@ -189,6 +195,7 @@ func (l *Lexer) skipWhitespace() {
         l.Indents = indentStr
         l.indentReady = false
     }
+
 }
 
 func (l *Lexer) readString() string {
