@@ -51,11 +51,10 @@ $ gsubpy a_py_file.py
 - class without multi-inheritance
 
 ### Supports
-<a href="https://jb.gg/OpenSourceSupport">
-    <img align="left" width="100" height="100" src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg" alt="JetBrains Logo (Main) logo.">
-</a>
 
-<br>
+<a href="https://jb.gg/OpenSourceSupport">
+    <img width="100" height="100" src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg" alt="JetBrains Logo (Main) logo.">
+</a>
 
 ### Reference:
 
