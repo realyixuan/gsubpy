@@ -1,5 +1,9 @@
 # gsubpy
 
+<a href="https://jb.gg/OpenSourceSupport">
+<img align="left" width="80" height="80" src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg" alt="JetBrains Logo (Main) logo.">
+</a>
+
 This is an interpreter for subset of Python3 written by golang, which means it will just realize some certain features, some like import, many things will not be implementd. It's intended to be small and simple. (Maybe I will add some features I think cool. At that time, I need give it a new name.)
 
 In a word, gsubpy, a Python interpreter for fun, not big things.
